@@ -344,7 +344,13 @@ void SPLEmitter_EmitChildren(SPLParticle *ptcl, SPLEmitter *emtr, SPLParticleLis
         child->age = 0;
         child->texture = childRes->misc.texture;
 
+#ifdef SDK_BUILD_ARM
         child->loopTimeFactor = 0xFFFF / (ptcl->lifeTime / 2);
+#else
+        // A one-frame parent has a zero half-life. ARM division tolerates this,
+        // but native division traps; use the one-frame factor in that case.
+        child->loopTimeFactor = 0xFFFF / (ptcl->lifeTime > 1 ? ptcl->lifeTime / 2 : 1);
+#endif
         child->lifeTimeFactor = 0xFFFF / ptcl->lifeTime;
         child->lifeRateOffset = 0;
     }
