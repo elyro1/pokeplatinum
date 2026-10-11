@@ -470,7 +470,7 @@ static void TrainerCase_SetVRAMBanks(void)
         GX_VRAM_SUB_BGEXTPLTT_NONE,
         GX_VRAM_OBJ_128_B,
         GX_VRAM_OBJEXTPLTT_NONE,
-        GX_VRAM_SUB_OBJ_16_I,
+        GX_VRAM_SUB_OBJ_128_D,
         GX_VRAM_SUB_OBJEXTPLTT_NONE,
         GX_VRAM_TEX_NONE,
         GX_VRAM_TEXPLTT_NONE
@@ -771,6 +771,7 @@ static BOOL TrainerCase_FlipTrainerCard(TrainerCaseApp *trainerCaseApp)
 
     switch (trainerCaseApp->subState) {
     case FLIP_SUBSTATE_INITIAL:
+        TrainerCase_SetCardBadgesVisible(&trainerCaseApp->spriteData, trainerCaseApp->trainerCase, FALSE);
         trainerCaseApp->cardScalingSpeed = 8;
         trainerCaseApp->cardXScale = 1 << FX32_SHIFT;
         trainerCaseApp->cardYScale = 1 << FX32_SHIFT;
@@ -828,6 +829,7 @@ static BOOL TrainerCase_FlipTrainerCard(TrainerCaseApp *trainerCaseApp)
             trainerCaseApp->cardXScale = 1 << FX32_SHIFT;
             trainerCaseApp->cardXScale = 1 << FX32_SHIFT;
             trainerCaseApp->cardYScale = 1 << FX32_SHIFT;
+            TrainerCase_SetCardBadgesVisible(&trainerCaseApp->spriteData, trainerCaseApp->trainerCase, trainerCaseApp->viewingBack);
             doneFlipping = TRUE;
         }
         break;

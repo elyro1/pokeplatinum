@@ -69,6 +69,8 @@ typedef struct TrainerCaseSpriteData {
     SpriteResource *spriteResources[MAX_SPRITE_RESOURCE_GEN4];
     u8 padding[16];
     Sprite *sprites[MAX_BADGES * 3 + 1];
+    Sprite *cardBadges[MAX_BADGES];
+    Sprite *cardSparkles[MAX_BADGES];
     void *badgePaletteBuffers[MAX_BADGES];
     NNSG2dPaletteData *badgePalettes[MAX_BADGES];
 } TrainerCaseSpriteData;

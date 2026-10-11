@@ -56,14 +56,14 @@ void TrainerCaseApp_InitSpriteData(TrainerCaseSpriteData *spriteData, NARC *narc
     NNS_G2dInitOamManagerModule();
     RenderOam_Init(0, 128, 0, 32, 0, 128, 0, 32, HEAP_ID_TRAINER_CASE);
 
-    spriteData->spriteList = SpriteList_InitRendering(MAX_BADGES * 3 + 1, &spriteData->g2dRenderer, HEAP_ID_TRAINER_CASE);
+    spriteData->spriteList = SpriteList_InitRendering(MAX_BADGES * 5 + 1, &spriteData->g2dRenderer, HEAP_ID_TRAINER_CASE);
 
     for (int resourceType = SPRITE_RESOURCE_CHAR; resourceType < MAX_SPRITE_RESOURCE_GEN4; resourceType++) {
         spriteData->spriteResourceCollection[resourceType] = SpriteResourceCollection_New(sSpriteResourceCapacities[resourceType], resourceType, HEAP_ID_TRAINER_CASE);
     }
 
-    spriteData->spriteResources[SPRITE_RESOURCE_CHAR] = SpriteResourceCollection_AddTilesFrom(spriteData->spriteResourceCollection[SPRITE_RESOURCE_CHAR], narc, badge_case_sprites_NCGR, FALSE, 1, NNS_G2D_VRAM_TYPE_2DMAIN, HEAP_ID_TRAINER_CASE);
-    spriteData->spriteResources[SPRITE_RESOURCE_PLTT] = SpriteResourceCollection_AddPaletteFrom(spriteData->spriteResourceCollection[SPRITE_RESOURCE_PLTT], narc, badge_case_sprites_NCLR, FALSE, 1, NNS_G2D_VRAM_TYPE_2DMAIN, 9, HEAP_ID_TRAINER_CASE);
+    spriteData->spriteResources[SPRITE_RESOURCE_CHAR] = SpriteResourceCollection_AddTilesFrom(spriteData->spriteResourceCollection[SPRITE_RESOURCE_CHAR], narc, badge_case_sprites_NCGR, FALSE, 1, NNS_G2D_VRAM_TYPE_2DBOTH, HEAP_ID_TRAINER_CASE);
+    spriteData->spriteResources[SPRITE_RESOURCE_PLTT] = SpriteResourceCollection_AddPaletteFrom(spriteData->spriteResourceCollection[SPRITE_RESOURCE_PLTT], narc, badge_case_sprites_NCLR, FALSE, 1, NNS_G2D_VRAM_TYPE_2DBOTH, 9, HEAP_ID_TRAINER_CASE);
     spriteData->spriteResources[SPRITE_RESOURCE_CELL] = SpriteResourceCollection_AddFrom(spriteData->spriteResourceCollection[SPRITE_RESOURCE_CELL], narc, badge_case_sprites_cell_NCER, FALSE, 1, SPRITE_RESOURCE_CELL, HEAP_ID_TRAINER_CASE);
     spriteData->spriteResources[SPRITE_RESOURCE_ANIM] = SpriteResourceCollection_AddFrom(spriteData->spriteResourceCollection[SPRITE_RESOURCE_ANIM], narc, badge_case_sprites_anim_NANR, FALSE, 1, SPRITE_RESOURCE_ANIM, HEAP_ID_TRAINER_CASE);
 
@@ -95,6 +95,7 @@ void TrainerCaseApp_InitSpriteData(TrainerCaseSpriteData *spriteData, NARC *narc
     }
 
     GXLayers_EngineAToggleLayers(GX_PLANEMASK_OBJ, TRUE);
+    GXLayers_EngineBToggleLayers(GX_PLANEMASK_OBJ, TRUE);
 }
 
 void TrainerCase_DrawBadgeCaseSprites(TrainerCaseSpriteData *spriteData, u8 *badgesObtained)
@@ -179,6 +180,50 @@ void TrainerCase_DrawBadgeCaseSprites(TrainerCaseSpriteData *spriteData, u8 *bad
     Sprite_SetAnimateFlag(spriteData->sprites[index], FALSE);
     Sprite_SetAnim(spriteData->sprites[index], BADGE_CASE_ANIM_BUTTON_PRESS_EFFECT);
     Sprite_SetDrawFlag(spriteData->sprites[index], FALSE);
+
+    // Fit four earned badges into each narrow margin beside the signature.
+    template.vramType = NNS_G2D_VRAM_TYPE_2DSUB;
+    template.affineScale.x = FX32_ONE * 3 / 8;
+    template.affineScale.y = FX32_ONE * 3 / 8;
+
+    for (int badgeID = 0; badgeID < MAX_BADGES; badgeID++) {
+        template.position.x = FX32_ONE * (badgeID < MAX_BADGES / 2 ? 14 : 226);
+        template.position.y = FX32_ONE * (HW_LCD_HEIGHT + 112 + (badgeID % (MAX_BADGES / 2)) * 16);
+        // The lower-row badge cells have 24 pixels of padding above the artwork.
+        // Apply the same badge-to-sparkle offset as the case, at the card's scale.
+        fx32 badgeYOffset = (sSparkleCoordinates[badgeID].y - sBadgeCoordinates[badgeID].y) * template.affineScale.y;
+        template.position.y -= badgeYOffset;
+        template.priority = 1;
+        spriteData->cardBadges[badgeID] = SpriteList_AddAffine(&template);
+        Sprite_SetAffineOverwriteMode(spriteData->cardBadges[badgeID], AFFINE_OVERWRITE_MODE_NORMAL);
+        Sprite_SetAnim(spriteData->cardBadges[badgeID], badgeID);
+        Sprite_SetDrawFlag(spriteData->cardBadges[badgeID], FALSE);
+
+        template.position.y += badgeYOffset;
+        template.priority = 0;
+        spriteData->cardSparkles[badgeID] = SpriteList_AddAffine(&template);
+        Sprite_SetAffineOverwriteMode(spriteData->cardSparkles[badgeID], AFFINE_OVERWRITE_MODE_NORMAL);
+        Sprite_SetAnim(spriteData->cardSparkles[badgeID], BADGE_CASE_ANIM_FOUR_SPARKLES);
+        Sprite_SetAnimateFlag(spriteData->cardSparkles[badgeID], TRUE);
+        Sprite_SetAnimFrame(spriteData->cardSparkles[badgeID], badgeID % 4);
+        Sprite_SetDrawFlag(spriteData->cardSparkles[badgeID], FALSE);
+
+        // The card copies stay polished independently of the touch-screen badges.
+        NNSG2dImagePaletteProxy *paletteProxy = Sprite_GetPaletteProxy(spriteData->cardBadges[badgeID]);
+        u32 vramLocation = NNS_G2dGetImagePaletteLocation(paletteProxy, NNS_G2D_VRAM_TYPE_2DSUB);
+        u8 *rawData = spriteData->badgePalettes[badgeID]->pRawData;
+        DC_FlushRange(rawData, PALETTE_SIZE_BYTES);
+        GXS_LoadOBJPltt(rawData, vramLocation + badgeID * PALETTE_SIZE_BYTES, PALETTE_SIZE_BYTES);
+    }
+}
+
+void TrainerCase_SetCardBadgesVisible(TrainerCaseSpriteData *spriteData, const TrainerCase *trainerCase, BOOL visible)
+{
+    for (int badgeID = 0; badgeID < MAX_BADGES; badgeID++) {
+        BOOL draw = visible && trainerCase->badges[badgeID].obtained;
+        Sprite_SetDrawFlag(spriteData->cardBadges[badgeID], draw);
+        Sprite_SetDrawFlag(spriteData->cardSparkles[badgeID], draw);
+    }
 }
 
 void TrainerCase_FreeSprites(TrainerCaseSpriteData *spriteData)
@@ -219,7 +264,7 @@ static void TrainerCaseApp_InitCharPlttTransferBuffers(void)
     CharTransferTemplate template = {
         .maxTasks = 1,
         .sizeMain = 2048,
-        .sizeSub = 0,
+        .sizeSub = 2048,
         .heapID = HEAP_ID_TRAINER_CASE
     };
 

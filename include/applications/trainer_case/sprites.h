@@ -11,6 +11,7 @@
 
 void TrainerCaseApp_InitSpriteData(TrainerCaseSpriteData *spriteData, NARC *narc);
 void TrainerCase_DrawBadgeCaseSprites(TrainerCaseSpriteData *spriteData, u8 *badgesObtained);
+void TrainerCase_SetCardBadgesVisible(TrainerCaseSpriteData *spriteData, const TrainerCase *trainerCase, BOOL visible);
 void TrainerCase_FreeSprites(TrainerCaseSpriteData *spriteData);
 void TrainerCase_DrawBadgeDirt(TrainerCaseSpriteData *spriteData, u8 badgeID, u8 dirtLevel);
 
