@@ -21,12 +21,14 @@ anims = files(
     'cursor_anim.json',
     'icons_anim.json',
     'underground_icons_anim.json',
+    'poketch_icon_anim.json',
 )
 nanrs = nanr_gen.process(anims)
 
 palettes = files(
     'menu.pal',
     'underground_menu.pal',
+    'poketch_icon.pal',
 )
 nclrs = nclr_gen.process(palettes,
     extra_args: [

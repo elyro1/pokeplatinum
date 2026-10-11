@@ -11,7 +11,11 @@
 #include "menu.h"
 #include "string_list.h"
 
+#ifdef SDK_PORT
+#define MAX_START_MENU_OPTIONS 8
+#else
 #define MAX_START_MENU_OPTIONS 7
+#endif
 
 typedef struct StartMenu {
     Window primaryWindow;
@@ -32,6 +36,11 @@ typedef struct StartMenu {
     FieldMoveContext fieldMoveContext;
     void *taskData;
     void *additionalTaskContext;
+#ifdef SDK_PORT
+    u8 rowPitch;
+    GXDispSelect poketchPreviousDisplay;
+    BOOL poketchCloseRequested;
+#endif
 } StartMenu;
 
 enum StartMenuState {
@@ -51,6 +60,13 @@ enum StartMenuState {
     START_MENU_STATE_END,
     START_MENU_STATE_REINIT_WAIT_FOR_FADE,
     START_MENU_STATE_SAVED,
+#ifdef SDK_PORT
+    START_MENU_STATE_POKETCH_WAIT,
+    START_MENU_STATE_POKETCH_OPEN,
+    START_MENU_STATE_POKETCH_RUN,
+    START_MENU_STATE_POKETCH_CLOSE_WAIT,
+    START_MENU_STATE_POKETCH_CLOSE,
+#endif
 };
 
 enum MailUsageType {

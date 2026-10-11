@@ -114,9 +114,17 @@ struct PoketchSystem {
     Poketch *poketch;
     FieldSystem *fieldSystem;
     enum ButtonDir buttonDir;
+#ifdef SDK_PORT
+    BOOL menuActive;
+    u8 menuButtonTimer;
+#endif
 };
 
 #ifdef SDK_PORT
+void PoketchSystem_SetMenuActive(PoketchSystem *poketchSys, BOOL active);
+BOOL PoketchSystem_IsReadyForMenu(const PoketchSystem *poketchSys);
+BOOL PoketchSystem_RequestAppChange(PoketchSystem *poketchSys, enum ButtonDir direction);
+
 void PoketchAppStaticInit_DigitalWatch();
 void PoketchAppStaticInit_Stopwatch();
 void PoketchAppStaticInit_Calculator();

@@ -19,6 +19,7 @@
 #include "applications/poffin_case/main.h"
 #include "applications/pokedex/pokedex_main.h"
 #include "applications/pokemon_summary_screen/main.h"
+#include "applications/poketch/poketch_system.h"
 #include "applications/town_map/main.h"
 #include "field/field_system.h"
 #include "overlay005/fieldmap.h"
@@ -28,6 +29,7 @@
 #include "appearance.h"
 #include "bag.h"
 #include "bag_context.h"
+#include "unk_0206B9D8.h"
 #include "berry_tag_data.h"
 #include "bg_window.h"
 #include "catching_show.h"
@@ -40,6 +42,7 @@
 #include "field_move_tasks.h"
 #include "field_overworld_state.h"
 #include "field_system.h"
+#include "unk_020559DC.h"
 #include "field_task.h"
 #include "font.h"
 #include "game_records.h"
@@ -80,10 +83,8 @@
 #include "trainer_info.h"
 #include "unk_02033200.h"
 #include "unk_0203D1B8.h"
-#include "unk_020559DC.h"
 #include "unk_0205B33C.h"
 #include "unk_0205C22C.h"
-#include "unk_0206B9D8.h"
 #include "vars_flags.h"
 
 #include "res/graphics/start_menu/start_menu.naix"
@@ -101,6 +102,9 @@ enum StartMenuOption {
     START_MENU_OPTION_EXIT,
     START_MENU_OPTION_CHAT,
     START_MENU_OPTION_RETIRE,
+#ifdef SDK_PORT
+    START_MENU_OPTION_POKETCH,
+#endif
 };
 
 typedef struct MenuMailData {
@@ -138,7 +142,7 @@ static u32 StartMenu_GetColosseumHiddenOptions(FieldSystem *fieldSystem);
 static void StartMenu_InitSprites(StartMenu *menu, u8 *options, u32 optionCount, u8 gender);
 static void StartMenu_FreeSprites(StartMenu *menu);
 static void StartMenu_AnimateSprites(StartMenu *menu);
-static void StartMenu_SetCursorPos(Sprite *sprite, u32 pos);
+static void StartMenu_SetCursorPos(StartMenu *menu, Sprite *sprite, u32 pos);
 static void StartMenu_SetIconAnimationAndPalette(Sprite *sprite, u16 anim, u16 palette);
 static void StartMenu_ChangeActiveMenuIcon(StartMenu *menu, u16 oldIndex, u16 index);
 static void StartMenu_TryTransitionIconAnimationToWiggle(Sprite *sprite);
@@ -179,6 +183,11 @@ static void StartMenu_EvolveInit(FieldTask *fieldTask);
 static void StartMenu_Evolve(FieldTask *fieldTask);
 static BOOL StartMenu_SelectRetire(FieldTask *fieldTask);
 static void StartMenu_ProcessGivenMail(FieldSystem *fieldSystem, StartMenu *menu, u8 mode);
+#ifdef SDK_PORT
+static BOOL StartMenu_CanOpenPoketch(FieldSystem *fieldSystem);
+static BOOL StartMenu_SelectPoketch(FieldTask *fieldTask);
+static void StartMenu_Poketch(FieldTask *fieldTask);
+#endif
 
 typedef struct StartMenuAction {
     u32 bankEntry;
@@ -198,6 +207,9 @@ static const StartMenuAction sStartMenuActions[] = {
     [START_MENU_OPTION_EXIT]         = { .bankEntry = StartMenu_Text_Exit,           .callback = (void *)MENU_CANCEL         },
     [START_MENU_OPTION_CHAT]         = { .bankEntry = StartMenu_Text_Chat,           .callback = StartMenu_SelectChat        },
     [START_MENU_OPTION_RETIRE]       = { .bankEntry = StartMenu_Text_Retire,         .callback = StartMenu_SelectRetire      },
+#ifdef SDK_PORT
+    [START_MENU_OPTION_POKETCH]      = { .bankEntry = StartMenu_Text_Poketch,        .callback = StartMenu_SelectPoketch     },
+#endif
 };
 // clang-format on
 
@@ -272,6 +284,9 @@ BOOL FieldSystem_IsInValidLocation(FieldSystem *fieldSystem)
 #define HIDE_OPTION_EXIT         (1 << 6)
 #define HIDE_OPTION_CHAT         (1 << 7)
 #define HIDE_OPTION_RETIRE       (1 << 8)
+#ifdef SDK_PORT
+#define HIDE_OPTION_POKETCH (1 << 9)
+#endif
 
 void StartMenu_Open(FieldSystem *fieldSystem)
 {
@@ -431,6 +446,15 @@ static BOOL StartMenu_Main(FieldTask *fieldTask)
             return FALSE;
         }
         break;
+#ifdef SDK_PORT
+    case START_MENU_STATE_POKETCH_WAIT:
+    case START_MENU_STATE_POKETCH_OPEN:
+    case START_MENU_STATE_POKETCH_RUN:
+    case START_MENU_STATE_POKETCH_CLOSE_WAIT:
+    case START_MENU_STATE_POKETCH_CLOSE:
+        StartMenu_Poketch(fieldTask);
+        break;
+#endif
     case START_MENU_STATE_APP_START:
         StartMenu_ApplicationStart(fieldTask);
         break;
@@ -522,9 +546,23 @@ static void StartMenu_InitMenu(FieldTask *fieldTask)
 
     fieldSystem = FieldTask_GetFieldSystem(fieldTask);
     StartMenu *menu = FieldTask_GetEnv(fieldTask);
+#ifdef SDK_PORT
+    if (StartMenu_CanOpenPoketch(fieldSystem)) {
+        menu->hideOptionFlags &= ~HIDE_OPTION_POKETCH;
+    } else {
+        menu->hideOptionFlags |= HIDE_OPTION_POKETCH;
+    }
+#endif
     u32 optionCount = StartMenu_MakeOptionList(menu, menu->options);
 
+#ifdef SDK_PORT
+    GF_ASSERT(optionCount <= MAX_START_MENU_OPTIONS);
+    menu->rowPitch = optionCount > 7 ? 20 : 24;
+    u32 windowHeight = ((optionCount - 1) * menu->rowPitch + 24 + 7) / 8;
+    Window_Add(fieldSystem->bgConfig, &menu->primaryWindow, BG_LAYER_MAIN_3, 20, 1, 11, windowHeight, 12, BASE_TILE_MESSAGE_WINDOW - 11 * 22);
+#else
     Window_Add(fieldSystem->bgConfig, &menu->primaryWindow, BG_LAYER_MAIN_3, 20, 1, 11, optionCount * 3, 12, BASE_TILE_MESSAGE_WINDOW - 11 * 22);
+#endif
     LoadStandardWindowGraphics(fieldSystem->bgConfig, BG_LAYER_MAIN_3, BASE_TILE_STANDARD_WINDOW_FRAME, 11, STANDARD_WINDOW_FIELD, HEAP_ID_FIELD2);
     Window_DrawStandardFrame(&menu->primaryWindow, TRUE, BASE_TILE_STANDARD_WINDOW_FRAME, 11);
 
@@ -565,6 +603,9 @@ static void StartMenu_InitMenu(FieldTask *fieldTask)
     template.xSize = 1;
     template.ySize = optionCount;
     template.lineSpacing = 8;
+#ifdef SDK_PORT
+    template.lineSpacing = menu->rowPitch - 16;
+#endif
     template.suppressCursor = TRUE;
 
     if (optionCount >= 4) {
@@ -595,6 +636,9 @@ static u32 StartMenu_MakeOptionList(StartMenu *menu, u8 *listOut)
     ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_POKEDEX, HIDE_OPTION_POKEDEX);
     ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_POKEMON, HIDE_OPTION_POKEMON);
     ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_BAG, HIDE_OPTION_BAG);
+#ifdef SDK_PORT
+    ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_POKETCH, HIDE_OPTION_POKETCH);
+#endif
     ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_TRAINER_CASE, HIDE_OPTION_TRAINER_CASE);
     ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_SAVE, HIDE_OPTION_SAVE);
     ADD_OPTION_IF_NOT_HIDDEN(START_MENU_OPTION_OPTIONS, HIDE_OPTION_OPTIONS);
@@ -691,7 +735,7 @@ static BOOL StartMenu_Select(FieldTask *fieldTask)
     menu->cursorPos = Menu_GetCursorPos(menu->menu);
 
     if (prevPos != menu->cursorPos) {
-        StartMenu_SetCursorPos(menu->sprites[CURSOR_SPRITE_INDEX]->sprite, menu->cursorPos);
+        StartMenu_SetCursorPos(menu, menu->sprites[CURSOR_SPRITE_INDEX]->sprite, menu->cursorPos);
         StartMenu_ChangeActiveMenuIcon(menu, prevPos, menu->cursorPos);
         fieldSystem->menuCursorPos = menu->options[menu->cursorPos];
     }
@@ -741,6 +785,11 @@ static void StartMenu_InitSprites(StartMenu *menu, u8 *options, u32 optionCount,
         }
     };
 
+#ifdef SDK_PORT
+    capacities.asStruct.plttCapacity++;
+    capacities.asStruct.cellCapacity++;
+    capacities.asStruct.animCapacity++;
+#endif
     SpriteResourceManager_SetCapacities(&menu->spriteManager, &capacities, MAX_START_MENU_OPTIONS + 1, HEAP_ID_FIELD2);
 
     NARC *narc = NARC_ctor(NARC_INDEX_GRAPHIC__MENU_GRA, HEAP_ID_FIELD2);
@@ -752,20 +801,47 @@ static void StartMenu_InitSprites(StartMenu *menu, u8 *options, u32 optionCount,
 
     menu->sprites[CURSOR_SPRITE_INDEX] = SpriteResourceManager_CreateManagedSprite(&menu->spriteManager, &sSpriteTemplates[CURSOR_TEMPLATE]);
 
-    StartMenu_SetCursorPos(menu->sprites[CURSOR_SPRITE_INDEX]->sprite, menu->cursorPos);
+    StartMenu_SetCursorPos(menu, menu->sprites[CURSOR_SPRITE_INDEX]->sprite, menu->cursorPos);
 
     SpriteResourceManager_LoadCell(&menu->spriteManager, narc, icons_cell_NCER, FALSE, 13529);
     SpriteResourceManager_LoadAnimation(&menu->spriteManager, narc, icons_anim_NANR, FALSE, 13529);
     SpriteResourceManager_LoadTiles(&menu->spriteManager, narc, icons_NCGR, FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, 13529);
+
+#ifdef SDK_PORT
+    for (u32 i = 0; i < optionCount; i++) {
+        if (options[i] == START_MENU_OPTION_POKETCH) {
+            NARC *itemNarc = NARC_ctor(NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, HEAP_ID_FIELD2);
+            SpriteResourceManager_LoadTiles(&menu->spriteManager, itemNarc, Item_FileID(ITEM_POKE_RADAR, ITEM_FILE_TYPE_ICON), FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, 13530);
+            SpriteResourceManager_LoadCell(&menu->spriteManager, itemNarc, Item_IconNCERFile(), FALSE, 13530);
+            SpriteResourceManager_LoadAnimation(&menu->spriteManager, narc, poketch_icon_anim_NANR, FALSE, 13530);
+            SpriteResourceManager_LoadPalette(&menu->spriteManager, narc, poketch_icon_NCLR, FALSE, 2, NNS_G2D_VRAM_TYPE_2DMAIN, 13530);
+            NARC_dtor(itemNarc);
+            break;
+        }
+    }
+#endif
 
     for (u32 i = 0; i < optionCount; i++) {
         SpriteTemplate template;
 
         template = sSpriteTemplates[ICON_TEMPLATE];
         template.y += 24 * i;
+#ifdef SDK_PORT
+        template.y = sSpriteTemplates[ICON_TEMPLATE].y + menu->rowPitch * i;
+#endif
 
         if (options[i] == START_MENU_OPTION_BAG && gender == GENDER_FEMALE) {
             template.animIdx = 9 * ICON_ANIM_COUNT;
+#ifdef SDK_PORT
+        } else if (options[i] == START_MENU_OPTION_POKETCH) {
+            // Item artwork occupies the upper-left 24 pixels of its 32-pixel cell.
+            template.x += 5;
+            template.y += 4;
+            template.animIdx = ICON_ANIM_NONE;
+            for (int resource = 0; resource < 4; resource++) {
+                template.resources[resource] = 13530;
+            }
+#endif
         } else {
             template.animIdx = options[i] * ICON_ANIM_COUNT;
         }
@@ -799,13 +875,113 @@ static void StartMenu_AnimateSprites(StartMenu *menu)
     }
 }
 
-static void StartMenu_SetCursorPos(Sprite *sprite, u32 pos)
+static void StartMenu_SetCursorPos(StartMenu *menu, Sprite *sprite, u32 pos)
 {
     VecFx32 position = *(Sprite_GetPosition(sprite));
     position.y = (20 + 24 * pos) * FX32_ONE;
+#ifdef SDK_PORT
+    position.y = (20 + menu->rowPitch * pos) * FX32_ONE;
+#endif
 
     Sprite_SetPosition(sprite, &position);
 }
+
+#ifdef SDK_PORT
+static BOOL StartMenu_CanOpenPoketch(FieldSystem *fieldSystem)
+{
+    return fieldSystem->mapLoadType == MAP_LOAD_TYPE_OVERWORLD
+        && fieldSystem->bottomScreen == 1
+        && !FieldSystem_IsInBattleTowerSalon(fieldSystem)
+        && Poketch_IsEnabled(SaveData_GetPoketch(fieldSystem->saveData))
+        && !SystemFlag_CheckPoketchHidden(SaveData_GetVarsFlags(fieldSystem->saveData))
+        && FieldSystem_GetPoketchSystem() != NULL;
+}
+
+static BOOL StartMenu_SelectPoketch(FieldTask *fieldTask)
+{
+    FieldSystem *fieldSystem = FieldTask_GetFieldSystem(fieldTask);
+    StartMenu *menu = FieldTask_GetEnv(fieldTask);
+
+    if (StartMenu_CanOpenPoketch(fieldSystem)) {
+        menu->poketchCloseRequested = FALSE;
+        menu->state = START_MENU_STATE_POKETCH_WAIT;
+    }
+
+    return FALSE;
+}
+
+static void StartMenu_Poketch(FieldTask *fieldTask)
+{
+    StartMenu *menu = FieldTask_GetEnv(fieldTask);
+    PoketchSystem *poketchSys = FieldSystem_GetPoketchSystem();
+
+    switch (menu->state) {
+    case START_MENU_STATE_POKETCH_WAIT:
+        if (!StartMenu_CanOpenPoketch(FieldTask_GetFieldSystem(fieldTask))
+            || (gSystem.pressedKeys & (PAD_BUTTON_B | PAD_BUTTON_X))) {
+            menu->state = START_MENU_STATE_SELECT;
+            break;
+        }
+        if (PoketchSystem_IsReadyForMenu(poketchSys)) {
+            menu->poketchPreviousDisplay = GX_GetDispSelect();
+            PoketchSystem_SetMenuActive(poketchSys, TRUE);
+            FieldMap_FadeScreen(FADE_TYPE_BRIGHTNESS_OUT);
+            menu->state = START_MENU_STATE_POKETCH_OPEN;
+        }
+        break;
+    case START_MENU_STATE_POKETCH_OPEN:
+        if (gSystem.pressedKeys & (PAD_BUTTON_B | PAD_BUTTON_X)) {
+            menu->poketchCloseRequested = TRUE;
+        }
+        if (IsScreenFadeDone()) {
+            StartMenu_Close(menu);
+            Window_EraseStandardFrame(&menu->primaryWindow, TRUE);
+            Window_Remove(&menu->primaryWindow);
+            StartMenu_EraseBallCount(fieldTask);
+            GX_SetDispSelect(GX_DISP_SELECT_SUB_MAIN);
+            FieldMap_FadeScreen(FADE_TYPE_BRIGHTNESS_IN);
+            menu->state = START_MENU_STATE_POKETCH_RUN;
+        }
+        break;
+    case START_MENU_STATE_POKETCH_RUN:
+        if (poketchSys == NULL || (gSystem.pressedKeys & (PAD_BUTTON_B | PAD_BUTTON_X))) {
+            menu->poketchCloseRequested = TRUE;
+        }
+        if (!IsScreenFadeDone()) {
+            break;
+        }
+        if (menu->poketchCloseRequested) {
+            menu->state = START_MENU_STATE_POKETCH_CLOSE_WAIT;
+            break;
+        }
+        // Raw PAD edges retain L/R even when the player's button mode is L=A.
+        switch (gSystem.pressedKeysRaw & (PAD_BUTTON_L | PAD_BUTTON_R)) {
+        case PAD_BUTTON_L:
+            PoketchSystem_RequestAppChange(poketchSys, BUTTON_UP);
+            break;
+        case PAD_BUTTON_R:
+            PoketchSystem_RequestAppChange(poketchSys, BUTTON_DOWN);
+            break;
+        }
+        break;
+    case START_MENU_STATE_POKETCH_CLOSE_WAIT:
+        if (poketchSys == NULL || PoketchSystem_IsReadyForMenu(poketchSys)) {
+            FieldMap_FadeScreen(FADE_TYPE_BRIGHTNESS_OUT);
+            menu->state = START_MENU_STATE_POKETCH_CLOSE;
+        }
+        break;
+    case START_MENU_STATE_POKETCH_CLOSE:
+        if (IsScreenFadeDone()) {
+            if (poketchSys != NULL) {
+                PoketchSystem_SetMenuActive(poketchSys, FALSE);
+            }
+            GX_SetDispSelect(menu->poketchPreviousDisplay);
+            menu->state = START_MENU_STATE_REINIT;
+        }
+        break;
+    }
+}
+#endif
 
 static void StartMenu_SetIconAnimationAndPalette(Sprite *sprite, u16 anim, u16 palette)
 {

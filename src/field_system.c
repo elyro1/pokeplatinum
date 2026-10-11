@@ -186,6 +186,9 @@ static FieldSystem *InitFieldSystem(ApplicationManager *appMan)
 static void TeardownFieldSystem(ApplicationManager *appMan)
 {
     FieldSystem *fieldSystem = ApplicationManager_Data(appMan);
+#ifdef SDK_PORT
+    DEBUG_SetFieldSystem(NULL);
+#endif
 
     MapMatrix_Free(fieldSystem->mapMatrix);
     MapHeaderData_Free(fieldSystem);

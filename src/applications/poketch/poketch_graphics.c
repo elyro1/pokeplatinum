@@ -126,13 +126,22 @@ BOOL PoketchGraphics_Main(PoketchGraphics_TaskData **taskDataPtr, const PoketchG
         PoketchGraphics_SetupAppCounterData(&newTaskData->appCounterAnim, newTaskData->animMan);
         PoketchTask_InitActiveTaskList((*taskDataPtr)->activeTasks, NUM_TASK_SLOTS);
 
+#ifdef SDK_PORT
+        // The border artwork's raised and depressed tile sets are reversed
+        // relative to the original task names.
+        GENERATE_UP_BUTTON_SPRITE((*taskDataPtr)->tilemapUpBtnPressed, 16);
+        GENERATE_UP_BUTTON_SPRITE((*taskDataPtr)->tilemapUpBtn, 8);
+        GENERATE_DOWN_BUTTON_SPRITE((*taskDataPtr)->tilemapDownBtnPressed, 28);
+        GENERATE_DOWN_BUTTON_SPRITE((*taskDataPtr)->tilemapDownBtn, 20);
+#else
         GENERATE_UP_BUTTON_SPRITE((*taskDataPtr)->tilemapUpBtnPressed, 8);
-        GENERATE_UP_BUTTON_SPRITE((*taskDataPtr)->tilemapUpBtnHalfPressed, 12);
         GENERATE_UP_BUTTON_SPRITE((*taskDataPtr)->tilemapUpBtn, 16);
 
         GENERATE_DOWN_BUTTON_SPRITE((*taskDataPtr)->tilemapDownBtnPressed, 20);
-        GENERATE_DOWN_BUTTON_SPRITE((*taskDataPtr)->tilemapDownBtnHalfPressed, 24);
         GENERATE_DOWN_BUTTON_SPRITE((*taskDataPtr)->tilemapDownBtn, 28);
+#endif
+        GENERATE_UP_BUTTON_SPRITE((*taskDataPtr)->tilemapUpBtnHalfPressed, 12);
+        GENERATE_DOWN_BUTTON_SPRITE((*taskDataPtr)->tilemapDownBtnHalfPressed, 24);
 
         newTaskData->task = SysTask_ExecuteAfterVBlank(PoketchGraphics_TaskCallback, newTaskData, 0);
 

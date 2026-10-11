@@ -2,6 +2,9 @@
 
 #include <nitro.h>
 #include <string.h>
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
 
 #include "constants/field/dynamic_map_features.h"
 #include "constants/field/field_effect_renderer.h"
@@ -270,6 +273,9 @@ static BOOL FieldMap_Exit(ApplicationManager *appMan, int *param1)
 
     switch (*param1) {
     case 0:
+#ifdef SDK_PORT
+        SIM_SetFieldWidescreen(FALSE);
+#endif
         DynamicMapFeatures_Free(fieldSystem);
         LandDataManager_ForgetTrackedTarget(fieldSystem->landDataMan);
 
@@ -677,6 +683,17 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
     MtxFx44 v0, v1;
 
     G3_ResetG3X();
+
+#ifdef SDK_PORT
+    // The field remains alive behind Poketch; only widen it while it is on top.
+    u32 viewWidth = SIM_SetFieldWidescreen(GX_GetDispSelect() == GX_DISP_SELECT_MAIN_SUB);
+    Camera_ComputeProjectionMatrix(fieldSystem->camera->projection, fieldSystem->camera);
+    if (viewWidth > 256) {
+        MtxFx44 v2 = *NNS_G3dGlbGetProjectionMtx();
+        v2._00 = FX_Mul(v2._00, FX_Div(256 * FX32_ONE, viewWidth * FX32_ONE));
+        NNS_G3dGlbSetProjectionMtx(&v2);
+    }
+#endif
 
     if (fieldSystem->unk_20 == 1) {
         if (FieldMap_InDistortionWorld(fieldSystem) == TRUE) {

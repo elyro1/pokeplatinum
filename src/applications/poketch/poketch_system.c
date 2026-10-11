@@ -176,6 +176,10 @@ void PoketchSystem_Create(FieldSystem *fieldSystem, PoketchSystem **poketchSys, 
 
 void PoketchSystem_StartShutdown(PoketchSystem *poketchSys)
 {
+#ifdef SDK_PORT
+    poketchSys->menuActive = FALSE;
+    poketchSys->menuButtonTimer = 0;
+#endif
     if (poketchSys->systemState != POKETCH_SYSTEM_SHUTDOWN && poketchSys->systemState != POKETCH_SYSTEM_UNLOAD) {
         PoketchSystem_SetState(poketchSys, POKETCH_SYSTEM_SHUTDOWN);
     }
@@ -185,6 +189,48 @@ BOOL PoketchSystem_IsSystemShutdown(PoketchSystem *poketchSys)
 {
     return poketchSys == NULL;
 }
+
+#ifdef SDK_PORT
+void PoketchSystem_SetMenuActive(PoketchSystem *poketchSys, BOOL active)
+{
+    poketchSys->menuActive = active;
+    poketchSys->menuButtonTimer = 0;
+    poketchSys->touchingScreen = FALSE;
+    poketchSys->buttonState = BUTTON_MANAGER_STATE_NULL;
+}
+
+BOOL PoketchSystem_IsReadyForMenu(const PoketchSystem *poketchSys)
+{
+    return poketchSys != NULL
+        && poketchSys->systemState == POKETCH_SYSTEM_UPDATE
+        && poketchSys->subState == 0
+        && poketchSys->appState == POKETCH_APP_STATE_UPDATE
+        && !poketchSys->appChanging
+        && !poketchSys->appStarting
+        && PoketchGraphics_NoActiveTasks(poketchSys->taskData);
+}
+
+BOOL PoketchSystem_RequestAppChange(PoketchSystem *poketchSys, enum ButtonDir direction)
+{
+    if (!PoketchSystem_IsReadyForMenu(poketchSys)
+        || !poketchSys->menuActive
+        || poketchSys->poketch->appCount <= 1
+        || (direction != BUTTON_UP && direction != BUTTON_DOWN)) {
+        return FALSE;
+    }
+
+    // Start the existing asynchronous switch without enabling app touch input
+    // or bypassing field-task blocking for any other Poketch operation.
+    poketchSys->buttonDir = direction;
+    poketchSys->skipApp = FALSE;
+    poketchSys->appChanging = TRUE;
+    PoketchGraphics_StartTask(poketchSys->taskData, direction == BUTTON_UP ? TASK_UP_PRESSED : TASK_DOWN_PRESSED);
+    poketchSys->menuButtonTimer = 6;
+    PoketchGraphics_StartTask(poketchSys->taskData, TASK_CONCEAL_SCREEN);
+    poketchSys->subState = 1;
+    return TRUE;
+}
+#endif
 
 void PoketchSystem_SendEvent(PoketchSystem *poketchSys, enum PoketchEventID eventID, u32)
 {
@@ -236,6 +282,10 @@ static BOOL PoketchSystem_InitInternal(PoketchSystem *poketchSys)
         poketchSys->appState = POKETCH_APP_STATE_NONE;
         poketchSys->buttonState = BUTTON_MANAGER_STATE_NULL;
         poketchSys->buttonDir = BUTTON_UP;
+#ifdef SDK_PORT
+        poketchSys->menuActive = FALSE;
+        poketchSys->menuButtonTimer = 0;
+#endif
 
         if (PoketchSystem_ButtonInit(poketchSys)) {
             return TRUE;
@@ -501,9 +551,9 @@ static void PoketchSystem_LoadApp(PoketchSystem *poketchSys, int appID)
         }
     }
 
-    #ifdef SDK_PORT
+#ifdef SDK_PORT
     PoketchOverlayLoadFunctions[appID]();
-    #endif
+#endif
 }
 
 static void PoketchSystem_UnloadApp(PoketchSystem *poketchSys)
@@ -597,6 +647,15 @@ static void PoketchSystem_ButtonShutdown(PoketchSystem *poketchSys)
 static void PoketchSystem_ButtonUpdate(PoketchSystem *poketchSys)
 {
     poketchSys->buttonState = BUTTON_MANAGER_STATE_NULL;
+#ifdef SDK_PORT
+    if (poketchSys->menuActive) {
+        if (poketchSys->menuButtonTimer != 0 && --poketchSys->menuButtonTimer == 0) {
+            // The release tasks restore the border button and play its click.
+            PoketchGraphics_StartTask(poketchSys->taskData, poketchSys->buttonDir == BUTTON_UP ? TASK_UP_RELEASED : TASK_DOWN_RELEASED);
+        }
+        return;
+    }
+#endif
     PoketchButtonManager_Update(poketchSys->buttonManager);
 }
 
