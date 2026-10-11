@@ -43,7 +43,7 @@
 static void InitializeSpriteManager(BattleBag *battleBag);
 static void LoadSpriteData(BattleBag *battleBag);
 static void LoadItemIcon(BattleBag *battleBag, u16 item, u32 resourceID);
-static void LoadItemPaletteData(BattleBag *battleBag, u16 item, u16 slotIndex, u32 resourceID);
+static void LoadItemPaletteData(BattleBag *battleBag, u16 item, u32 resourceID);
 static void InitializeSprites(BattleBag *battleBag);
 static void DrawLastUsedItem(BattleBag *battleBag);
 static void DrawPocketItems(BattleBag *battleBag);
@@ -124,9 +124,11 @@ static void LoadItemIcon(BattleBag *battleBag, u16 item, u32 resourceID)
     SpriteSystem_ReplaceCharResObj(spriteSystem, battleBag->spriteManager, NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, Item_FileID(item, ITEM_FILE_TYPE_ICON), FALSE, resourceID);
 }
 
-static void LoadItemPaletteData(BattleBag *battleBag, u16 item, u16 slotIndex, u32 resourceID)
+static void LoadItemPaletteData(BattleBag *battleBag, u16 item, u32 resourceID)
 {
-    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, Item_FileID(item, ITEM_FILE_TYPE_PALETTE), battleBag->context->heapID, PLTTBUF_MAIN_OBJ, PALETTE_SIZE_BYTES, PLTT_DEST(slotIndex));
+    // Battle sprites retain their palette slots while the Bag is open.
+    u32 paletteSlot = SpriteManager_FindPlttResourceOffset(battleBag->spriteManager, resourceID, NNS_G2D_VRAM_TYPE_2DMAIN);
+    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, Item_FileID(item, ITEM_FILE_TYPE_PALETTE), battleBag->context->heapID, PLTTBUF_MAIN_OBJ, PALETTE_SIZE_BYTES, PLTT_DEST(paletteSlot));
 }
 
 static ManagedSprite *CreateSprite(BattleBag *battleBag, u32 spriteIndex)
@@ -200,7 +202,7 @@ static void DrawLastUsedItem(BattleBag *battleBag)
 {
     if (battleBag->context->lastUsedItem != ITEM_NONE) {
         LoadItemIcon(battleBag, battleBag->context->lastUsedItem, POCKET_SLOT_1_RESOURCE_ID);
-        LoadItemPaletteData(battleBag, battleBag->context->lastUsedItem, 0, POCKET_SLOT_1_RESOURCE_ID);
+        LoadItemPaletteData(battleBag, battleBag->context->lastUsedItem, POCKET_SLOT_1_RESOURCE_ID);
         DrawSprite(battleBag->sprites[0], sLastUsedItemSpritePosition.x, sLastUsedItemSpritePosition.y);
     }
 }
@@ -215,7 +217,7 @@ static void DrawPocketItems(BattleBag *battleBag)
         }
 
         LoadItemIcon(battleBag, item, POCKET_SLOT_1_RESOURCE_ID + i);
-        LoadItemPaletteData(battleBag, item, i, POCKET_SLOT_1_RESOURCE_ID + i);
+        LoadItemPaletteData(battleBag, item, POCKET_SLOT_1_RESOURCE_ID + i);
         DrawSprite(battleBag->sprites[i], sPocketItemSpritePositions[i].x, sPocketItemSpritePositions[i].y);
     }
 }
@@ -225,7 +227,7 @@ static void DrawSelectedItem(BattleBag *battleBag)
     u16 item = BattleBag_GetItem(battleBag, battleBag->context->pocketCurrentPagePositions[battleBag->currentBattlePocket]);
 
     LoadItemIcon(battleBag, item, POCKET_SLOT_1_RESOURCE_ID);
-    LoadItemPaletteData(battleBag, item, 0, POCKET_SLOT_1_RESOURCE_ID);
+    LoadItemPaletteData(battleBag, item, POCKET_SLOT_1_RESOURCE_ID);
     DrawSprite(battleBag->sprites[0], sSelectedItemSpritePosition.x, sSelectedItemSpritePosition.y);
 }
 
