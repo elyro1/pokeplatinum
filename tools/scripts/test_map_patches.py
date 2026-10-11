@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+import shlex
 import struct
 import subprocess
 import sys
@@ -45,7 +46,10 @@ def repack(template, files):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', type=Path, default=ROOT / 'build_linux')
+    parser.add_argument('--cxx', default='g++', help='C++ compiler executable')
+    parser.add_argument('--runner', default='', help='Executable runner, e.g. /usr/bin/wine for a Windows cross-build')
     args = parser.parse_args()
+    runner = shlex.split(args.runner)
     build = args.build.resolve()
     land = build / 'res/field/maps/data/land_data.narc'
     matrix = build / 'res/field/matrices/map_matrix.narc'
@@ -87,14 +91,15 @@ def main():
                         '--baseline-text', str(build / 'res/port_patch_baselines/original_text.narc'),
                         '--baseline-scripts', str(build / 'res/port_patch_baselines/original_scripts.narc')], check=True)
         assert (work / 'map_patches.inc').read_bytes() == (build / 'src/map_patches.inc').read_bytes(), 'Embedded build patches are stale'
-        windows = os.name == 'nt' or sys.platform.startswith(('msys', 'cygwin'))
+        target = subprocess.check_output([args.cxx, '-dumpmachine'], text=True).strip()
+        windows = os.name == 'nt' or sys.platform.startswith(('msys', 'cygwin')) or 'mingw' in target
         binary = work / ('patcher.exe' if windows else 'patcher')
         static = ['-static'] if windows else []
-        subprocess.run(['g++', *static, '-std=c++17', '-Wall', '-Wextra', '-Werror', '-DMAP_PATCH_TEST',
+        subprocess.run([args.cxx, *static, '-std=c++17', '-Wall', '-Wextra', '-Werror', '-DMAP_PATCH_TEST',
                         '-I' + str(ROOT / 'include'), '-I' + str(work),
                         str(ROOT / 'src/port/map_patches.cpp'), '-o', str(binary)], check=True)
         def run(directory, success=True):
-            result = subprocess.run([str(binary)], cwd=directory, capture_output=True, text=True,
+            result = subprocess.run([*runner, str(binary)], cwd=directory, capture_output=True, text=True,
                                     env=dict(os.environ, PATH=str(work / 'no-python')))
             assert (result.returncode == 0) == success, result.stderr
             return result.stderr
