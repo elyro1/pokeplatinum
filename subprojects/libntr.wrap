@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/elyro1/libntr.git
-revision = main
+revision = lib_single_screen_mod
 depth = 1
 directory = libntr
 
