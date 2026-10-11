@@ -81,6 +81,9 @@ typedef struct WalkUnevenMovementData {
     u16 unused;
     s16 duration;
     s16 timer;
+#ifdef SDK_PORT
+    s16 frameMultiplier;
+#endif
 } WalkUnevenMovementData;
 
 typedef struct UnkStruct_02066824 {
@@ -1259,6 +1262,12 @@ static void MovementAction_InitWalkUneven(MapObject *mapObj, int dir, s16 durati
     data->unused = param3;
     data->duration = duration;
 
+#ifdef SDK_PORT
+    SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
+    data->frameMultiplier = (myConfig->enable60fps && myConfig->enable60fpsSpeedFix) ? 2 : 1;
+    data->duration *= data->frameMultiplier;
+#endif
+
     MapObject_StepDir(mapObj, dir);
     MapObject_TryFaceAndTurn(mapObj, dir);
     sub_02062A0C(mapObj, param3);
@@ -1270,7 +1279,14 @@ static BOOL MovementAction_WalkUneven(MapObject *mapObj, const fx32 *stepSizes)
 {
     WalkUnevenMovementData *data = MapObject_GetMovementData(mapObj);
 
-    MapObject_MovePosInDir(mapObj, data->dir, stepSizes[data->timer]);
+    fx32 distance;
+#ifdef SDK_PORT
+    // Spread each original step over two frames without overrunning the step table.
+    distance = stepSizes[data->timer / data->frameMultiplier] / data->frameMultiplier;
+#else
+    distance = stepSizes[data->timer];
+#endif
+    MapObject_MovePosInDir(mapObj, data->dir, distance);
     MapObject_RecalculateObjectHeight(mapObj);
 
     if (++(data->timer) < data->duration) {
