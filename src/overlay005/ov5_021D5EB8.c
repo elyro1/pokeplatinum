@@ -1234,15 +1234,15 @@ static void ov5_021D68B8(UnkStruct_ov5_021D6594 *param0, int param1)
         G2_BlendNone();
     }
 
+    if (v0->unk_14 != NULL) {
+        SysTask_Done(v0->unk_14);
+        v0->unk_14 = NULL;
+    }
+
     if (v0->unk_0C != NULL) {
         ov5_021D6690(param0, v0->unk_00, v0->unk_0C);
         Heap_FreeExplicit(HEAP_ID_FIELD1, v0->unk_0C);
         v0->unk_0C = NULL;
-
-        if (v0->unk_14 != NULL) {
-            SysTask_Done(v0->unk_14);
-            v0->unk_14 = NULL;
-        }
     }
 
     if (v0->unk_08 != NULL) {
@@ -1261,19 +1261,18 @@ static void ov5_021D68B8(UnkStruct_ov5_021D6594 *param0, int param1)
             v0->unk_08->unk_B98 = NULL;
         }
 
-        if (v0->unk_10 == 1) {
-            if (v0->unk_14) {
-                SysTask_Done(v0->unk_14);
-            }
-        } else {
-            if (v0->unk_10 == 3) {
-                SysTask_Done(v0->unk_08->unk_B88);
-            }
+        if (v0->unk_10 == 3) {
+            SysTask_Done(v0->unk_08->unk_B88);
         }
 
         Heap_FreeExplicit(HEAP_ID_FIELD1, v0->unk_08);
         v0->unk_08 = NULL;
     }
+
+    // The PC port retains this static entry across field map restarts.
+    // A freed instance must no longer be reported as loading or running.
+    v0->unk_10 = 0;
+    v0->unk_12 = 0;
 
     FogManager_ApplyParameters(param0->fieldSystem->fogMan, FOG_PARAMETER_ENABLED, FALSE, GX_FOGBLEND_COLOR_ALPHA, GX_FOGSLOPE_0x8000, 0);
 }
