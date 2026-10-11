@@ -10603,7 +10603,8 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
     case SEQ_CATCH_MON_CLOSE_POKEDEX:
         ov21_021E8DD0(data->tmpPtr[0]);
         CharTransfer_PushTaskManager(data->tmpPtr[1]);
-        BattleSystem_SetupBattleScreen(data->battleSys);
+        // The nickname prompt uses the backdrop without the baked terrain platforms.
+        BattleSystem_SetupBattleScreen(data->battleSys, FALSE);
         PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
         data->seqNum = SEQ_CATCH_MON_WAIT_FADE_FOR_ASK_NICKNAME;
         break;
@@ -10617,7 +10618,7 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
             PokemonSpriteManager_DeleteAll(monSpriteMan);
             BattlerData_SetTrainerVisibility(BattleSystem_GetBattlerData(data->battleSys, 0), FALSE);
             BattleSystem_HideBattleScreen(data->battleSys);
-            BattleSystem_SetupBattleScreen(data->battleSys);
+            BattleSystem_SetupBattleScreen(data->battleSys, FALSE);
             Pokemon_BuildSpriteTemplate(&monSpriteTemplate, mon, 2);
             PokemonSpriteManager_CreateSprite(monSpriteMan, &monSpriteTemplate, 128, 72, 0, 0, NULL, NULL);
             PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);

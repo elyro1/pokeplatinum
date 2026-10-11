@@ -25,7 +25,7 @@ void BattleSystem_EnterSubMenu(BattleSystem *battleSys);
 void BattleSystem_FreeGraphics(BattleSystem *battleSys);
 void BattleSystem_ExitSubMenu(BattleSystem *battleSys);
 void BattleSystem_HideBattleScreen(BattleSystem *battleSys);
-void BattleSystem_SetupBattleScreen(BattleSystem *battleSys);
+void BattleSystem_SetupBattleScreen(BattleSystem *battleSys, BOOL restoreTerrain);
 void BattleSystem_LoadFightOverlay(BattleSystem *battleSys, int flags);
 
 #endif // POKEPLATINUM_BATTLE_BATTLE_MAIN_H

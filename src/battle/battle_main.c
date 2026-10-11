@@ -385,7 +385,7 @@ void BattleSystem_HideBattleScreen(BattleSystem *battleSys)
     BattleSystem_HideHealthboxes(battleSys);
 }
 
-void BattleSystem_SetupBattleScreen(BattleSystem *battleSys)
+void BattleSystem_SetupBattleScreen(BattleSystem *battleSys, BOOL restoreTerrain)
 {
     battleSys->pendingBlendReset = 1;
 
@@ -462,7 +462,7 @@ void BattleSystem_SetupBattleScreen(BattleSystem *battleSys)
     int frame = BattleSystem_GetOptionsFrame(battleSys);
 
     ReplaceTransparentTiles(battleSys->bgConfig, 1, 1, 10, frame, HEAP_ID_BATTLE);
-    if (battleSys->bgTileSnapshot != NULL) {
+    if (restoreTerrain && battleSys->bgTileSnapshot != NULL) {
         // Terrain sprites are baked into this background before being freed.
         Bg_LoadTiles(battleSys->bgConfig, BG_LAYER_MAIN_3, battleSys->bgTileSnapshot, 0x10000, 0);
         PaletteData_LoadBuffer(battleSys->paletteData, battleSys->bgPaletteSnapshot, PLTTBUF_MAIN_BG, 0, HW_BG_PLTT_SIZE);

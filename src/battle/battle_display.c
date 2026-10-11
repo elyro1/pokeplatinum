@@ -4094,7 +4094,7 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
         break;
     case 6:
         BattleSystem_ExitSubMenu(bagMenuData->battleSys);
-        BattleSystem_SetupBattleScreen(bagMenuData->battleSys);
+        BattleSystem_SetupBattleScreen(bagMenuData->battleSys, TRUE);
         BattleDisplay_RestoreBattleScene(bagMenuData->battleSys, &bagMenuData->sceneVisibility);
         BattleSubscreen_SetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(bagMenuData->battleSys), bagMenuData->isCursorEnabled);
         PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
@@ -4687,7 +4687,7 @@ static void Task_PlayerShowPartyMenu(SysTask *task, void *data)
     case 2:
         if (partyMenuData->battlePartyCtx->battlePartyExited) {
             BattleSystem_ExitSubMenu(partyMenuData->battleSys);
-            BattleSystem_SetupBattleScreen(partyMenuData->battleSys);
+            BattleSystem_SetupBattleScreen(partyMenuData->battleSys, TRUE);
             BattleDisplay_RestoreBattleScene(partyMenuData->battleSys, &partyMenuData->sceneVisibility);
             BattleSubscreen_SetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(partyMenuData->battleSys), partyMenuData->battlePartyCtx->isCursorEnabled);
             PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
@@ -5664,7 +5664,7 @@ static void Task_ForgetMove(SysTask *task, void *data)
     case 2:
         if (forgetMoveData->battlePartyCtx->battlePartyExited) {
             BattleSystem_ExitSubMenu(forgetMoveData->battleSys);
-            BattleSystem_SetupBattleScreen(forgetMoveData->battleSys);
+            BattleSystem_SetupBattleScreen(forgetMoveData->battleSys, TRUE);
             BattleDisplay_RestoreBattleScene(forgetMoveData->battleSys, &forgetMoveData->sceneVisibility);
             PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
             PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(forgetMoveData->battleSys), 16, 0, 0, 0);
