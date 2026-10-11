@@ -139,7 +139,12 @@ static BOOL BerryPatchMoistureEffect_Init(OverworldAnimManager *effect, void *co
 
     moistureEffect->context = *effectContext;
     moistureEffect->localID = MapObject_GetLocalID(moistureEffect->context.mapObject);
+#ifdef SDK_PORT
+    // Soil preloaded from another route keeps its effect when promoted there.
+    moistureEffect->mapHeaderID = MapObject_GetEventOwner(moistureEffect->context.mapObject);
+#else
     moistureEffect->mapHeaderID = MapObject_GetMapHeaderID(moistureEffect->context.mapObject);
+#endif
 
     return TRUE;
 }
