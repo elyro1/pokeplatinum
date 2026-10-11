@@ -309,10 +309,18 @@ if build_target != 'arm'
     )
     main_matrix_source = custom_target('route_204_matrix_widescreen',
         input: main_matrix_source,
-        output: 'map_matrix_000.json',
+        output: 'map_matrix_000_route_204.json',
         command: [
             find_program('../../../tools/scripts/extend_route_204.py', native: true),
             '--matrix', '@INPUT@', '@OUTPUT@',
+        ],
+    )
+    main_matrix_source = custom_target('hearthome_city_matrix_widescreen',
+        input: [main_matrix_source, files('../maps/data/map_data_175.bin', '../maps/data/map_data_176.bin')],
+        output: 'map_matrix_000.json',
+        command: [
+            find_program('../../../tools/scripts/extend_hearthome_city.py', native: true),
+            '@INPUT0@', '@OUTPUT@', '@INPUT1@', '@INPUT2@',
         ],
     )
 endif
