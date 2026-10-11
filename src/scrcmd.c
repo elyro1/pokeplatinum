@@ -224,6 +224,10 @@
 #include "res/text/bank/mystery_gift_phrase.h"
 #include "res/text/bank/tough_words.h"
 
+#ifdef SDK_PORT
+#include "port/scripted_npc_scene.h"
+#endif
+
 typedef struct {
     SysTask *unk_00;
     SysTask *unk_04;
@@ -337,6 +341,8 @@ static BOOL ScrCmd_LockObject(ScriptContext *ctx);
 static BOOL ScrCmd_ReleaseObject(ScriptContext *ctx);
 static BOOL ScrCmd_AddObject(ScriptContext *ctx);
 static BOOL ScrCmd_RemoveObject(ScriptContext *ctx);
+static BOOL ScrCmd_AddObjectFromEdge(ScriptContext *ctx);
+static BOOL ScrCmd_RemoveObjectAtEdge(ScriptContext *ctx);
 static BOOL ScrCmd_AddFreeCamera(ScriptContext *ctx);
 static BOOL ScrCmd_RestoreCamera(ScriptContext *ctx);
 static BOOL ScrCmd_AddCameraOverrideObject(ScriptContext *ctx);
@@ -2386,6 +2392,48 @@ static BOOL ScrCmd_RemoveObject(ScriptContext *ctx)
         MapObject_SetFlagAndDeleteObject(mapObj);
     }
 
+    return FALSE;
+}
+
+static BOOL ScrCmd_AddObjectFromEdge(ScriptContext *ctx)
+{
+    FieldSystem *fieldSystem = ctx->fieldSystem;
+    u16 localID = ScriptContext_GetVar(ctx);
+    u16 action = ScriptContext_ReadHalfWord(ctx);
+    u16 maxTiles = ScriptContext_ReadHalfWord(ctx);
+    MapObject *object = MapObjectMan_AddMapObjectFromLocalID(fieldSystem->mapObjMan, localID, MapHeaderData_GetNumObjectEvents(fieldSystem), fieldSystem->location->mapHeaderID, MapHeaderData_GetObjectEvents(fieldSystem));
+
+    if (object == NULL) {
+        GF_ASSERT(FALSE);
+        return FALSE;
+    }
+#ifdef SDK_PORT
+    if (ScriptedNpcScene_Start(fieldSystem, object, action, maxTiles, FALSE)) {
+        ScriptContext_Pause(ctx, ScriptContext_WaitForMovement);
+        return TRUE;
+    }
+#endif
+    return FALSE;
+}
+
+static BOOL ScrCmd_RemoveObjectAtEdge(ScriptContext *ctx)
+{
+    u16 localID = ScriptContext_GetVar(ctx);
+    u16 action = ScriptContext_ReadHalfWord(ctx);
+    u16 maxTiles = ScriptContext_ReadHalfWord(ctx);
+    MapObject *object = GetLocalMapObjByIndex(ctx->fieldSystem, localID);
+
+    if (object == NULL) {
+        GF_ASSERT(FALSE);
+        return FALSE;
+    }
+#ifdef SDK_PORT
+    if (ScriptedNpcScene_Start(ctx->fieldSystem, object, action, maxTiles, TRUE)) {
+        ScriptContext_Pause(ctx, ScriptContext_WaitForMovement);
+        return TRUE;
+    }
+#endif
+    MapObject_SetFlagAndDeleteObject(object);
     return FALSE;
 }
 

@@ -158,6 +158,9 @@ static BOOL FieldMap_Init(ApplicationManager *appMan, int *state)
 
     switch (*state) {
     case FIELD_MAP_INIT_STATE_RESET:
+#ifdef SDK_PORT
+        fieldSystem->npcSceneViewWidth = 0;
+#endif
         SetVBlankCallback(NULL, NULL);
         DisableHBlank();
 
@@ -717,7 +720,7 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
 
 #ifdef SDK_PORT
     // The field remains alive behind Poketch; only widen it while it is on top.
-    u32 viewWidth = SIM_SetFieldWidescreen(GX_GetDispSelect() == GX_DISP_SELECT_MAIN_SUB && !fieldSystem->encounterEffectBorders);
+    u32 viewWidth = SIM_SetFieldWidescreen(GX_GetDispSelect() == GX_DISP_SELECT_MAIN_SUB && !fieldSystem->encounterEffectBorders && fieldSystem->npcSceneNativeViewLocks == 0);
     Camera_ComputeProjectionMatrix(fieldSystem->camera->projection, fieldSystem->camera);
     if (viewWidth > 256) {
         MtxFx44 v2 = *NNS_G3dGlbGetProjectionMtx();
@@ -735,6 +738,13 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
     } else {
         Camera_ComputeViewMatrix();
     }
+
+#ifdef SDK_PORT
+    fieldSystem->npcSceneViewWidth = viewWidth;
+    fieldSystem->npcSceneViewMatrix = *NNS_G3dGlbGetCameraMtx();
+    fieldSystem->npcSceneProjectionMatrix = *NNS_G3dGlbGetProjectionMtx();
+    fieldSystem->npcSceneRenderFrame++;
+#endif
 
     PokeRadar_ClearIfAllOutOfView(fieldSystem);
     LandDataManager_RenderLoadedMaps(fieldSystem->landDataMan, fieldSystem->areaModelAttrs);

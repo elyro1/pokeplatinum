@@ -147,6 +147,12 @@ static BOOL FieldTask_RunScript(FieldTask *taskManager)
         }
 
         if (scriptManager->numActiveContexts <= 0) {
+#ifdef SDK_PORT
+            if (scriptManager->nativeNpcSceneView) {
+                GF_ASSERT(fieldSystem->npcSceneNativeViewLocks > 0);
+                fieldSystem->npcSceneNativeViewLocks--;
+            }
+#endif
             scriptFunction = scriptManager->function;
             StringTemplate_Free(scriptManager->strTemplate);
             String_Free(scriptManager->msgBuf);
@@ -399,6 +405,18 @@ void *FieldSystem_GetScriptMemberPtr(FieldSystem *fieldSystem, u32 member)
 
     return ScriptManager_GetMemberPtr(script, member);
 }
+
+#ifdef SDK_PORT
+void ScriptManager_UseNativeNpcView(FieldSystem *fieldSystem)
+{
+    ScriptManager *script = FieldTask_GetEnv(fieldSystem->task);
+    GF_ASSERT(script->magic == SCRIPT_MANAGER_MAGIC_NUMBER);
+    if (!script->nativeNpcSceneView) {
+        script->nativeNpcSceneView = TRUE;
+        fieldSystem->npcSceneNativeViewLocks++;
+    }
+}
+#endif
 
 void FieldSystem_ShowStartMenu(FieldSystem *fieldSystem)
 {

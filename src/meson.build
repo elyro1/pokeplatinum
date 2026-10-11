@@ -1017,6 +1017,7 @@ if(build_target != 'arm')
 pokeplatinum_c += files(
     'port/charcode_convert.c',
     'port/debug_field.c',
+    'port/scripted_npc_scene.c',
     'port/sim_config_prj.c',
     'port/sim_gui_prj.cpp',
     'port/gui_cheats.cpp',

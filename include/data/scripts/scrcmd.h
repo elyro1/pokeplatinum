@@ -849,6 +849,9 @@ ScriptCommand(SCRCMD_BUFFERFLOORNUMBER,                                    ScrCm
 ScriptCommand(SCRCMD_GETNEXTREPEL,                                         ScrCmd_GetNextRepel)
 ScriptCommand(SCRCMD_USEREPEL,                                             ScrCmd_UseRepel)
 
+ScriptCommand(SCRCMD_ADDOBJECTFROMEDGE,                                    ScrCmd_AddObjectFromEdge)
+ScriptCommand(SCRCMD_REMOVEOBJECTATEDGE,                                  ScrCmd_RemoveObjectAtEdge)
+
 // clang-format on
 
 #endif // POKEPLATINUM_DATA_SCRIPTS_SCRCMD_H

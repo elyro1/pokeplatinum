@@ -156,6 +156,9 @@ typedef struct ScriptManager {
     MapObject *cameraObject;
     u16 *saveType; // only defined if ScrCmd_StoreSaveResult is called; 0 here can mean overwrite or that the player canceled
     ScriptContext *ctx[NUM_SCRIPT_CONTEXTS];
+#ifdef SDK_PORT
+    BOOL nativeNpcSceneView;
+#endif
     StringTemplate *strTemplate;
     String *msgBuf;
     String *tmpBuf;
@@ -179,6 +182,9 @@ void ScriptManager_Change(FieldTask *taskManager, u16 scriptID, MapObject *objec
 ScriptContext *ScriptContext_CreateAndStart(FieldSystem *fieldSystem, u16 scriptID);
 void *ScriptManager_GetMemberPtr(ScriptManager *scriptManager, u32 member);
 void *FieldSystem_GetScriptMemberPtr(FieldSystem *fieldSystem, u32 member);
+#ifdef SDK_PORT
+void ScriptManager_UseNativeNpcView(FieldSystem *fieldSystem);
+#endif
 void FieldSystem_ShowStartMenu(FieldSystem *fieldSystem);
 u16 *FieldSystem_GetVarPointer(FieldSystem *fieldSystem, u16 varID);
 u16 FieldSystem_TryGetVar(FieldSystem *fieldSystem, u16 varID);

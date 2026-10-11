@@ -698,6 +698,21 @@
     .short \localID
     .endm
 
+    // These helpers block until extra travel finishes. action must be a walk.
+    .macro AddObjectFromEdge localID, action, maxTiles=12
+    .short SCRCMD_ADDOBJECTFROMEDGE
+    .short \localID
+    .short \action
+    .short \maxTiles
+    .endm
+
+    .macro RemoveObjectAtEdge localID, action, maxTiles=12
+    .short SCRCMD_REMOVEOBJECTATEDGE
+    .short \localID
+    .short \action
+    .short \maxTiles
+    .endm
+
     .macro AddFreeCamera x, z
     .short SCRCMD_ADDFREECAMERA
     .short \x

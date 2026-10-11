@@ -126,6 +126,12 @@ typedef struct FieldSystem_t {
     UnkStruct_ov66_0222DCE0_sub1 unk_C4;
 #ifdef SDK_PORT
     BOOL encounterEffectBorders;
+    // The last field render, before effect-specific projection changes.
+    u32 npcSceneViewWidth;
+    u32 npcSceneRenderFrame;
+    u32 npcSceneNativeViewLocks;
+    MtxFx43 npcSceneViewMatrix;
+    MtxFx44 npcSceneProjectionMatrix;
 #endif
 } FieldSystem;
 
