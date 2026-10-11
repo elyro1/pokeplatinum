@@ -92,6 +92,11 @@ void SPLAnim_Alpha(SPLParticle *ptcl, SPLResource *res, int lifeRate)
         value += alphaAnim->alpha.start;
     } else if (lifeRate < out) {
         value = alphaAnim->alpha.mid;
+#ifndef SDK_BUILD_ARM
+    } else if (out == 255) {
+        // The final fade has zero duration; apply its endpoint directly.
+        value = alphaAnim->alpha.end;
+#endif
     } else {
         value = ((lifeRate - 255) * (alphaAnim->alpha.end - alphaAnim->alpha.mid)) / (255 - out);
         value += alphaAnim->alpha.end;
