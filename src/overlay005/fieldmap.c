@@ -422,6 +422,10 @@ static BOOL FieldMap_ChangeZone(FieldSystem *fieldSystem)
     MapHeaderData_Load(fieldSystem, newMapHeaderID);
     FieldMapChange_UpdateGameData(fieldSystem, 1);
 
+#ifdef SDK_PORT
+    MapHeaderData_PreloadNeighborObjects(fieldSystem);
+#endif
+
     int objEventCount = MapHeaderData_GetNumObjectEvents(fieldSystem);
     const ObjectEvent *objEventList = MapHeaderData_GetObjectEvents(fieldSystem);
 
@@ -822,6 +826,12 @@ static void ov5_021D1878(FieldSystem *fieldSystem)
     {
         int v0 = 80;
 
+#ifdef SDK_PORT
+        if (MapHeader_IsOnMainMatrix(fieldSystem->location->mapHeaderID)) {
+            v0 = 192;
+        }
+#endif
+
         if (FieldMap_InDistortionWorld(fieldSystem) == TRUE) {
             v0 = 112;
         }
@@ -870,6 +880,17 @@ static void ov5_021D1878(FieldSystem *fieldSystem)
         PlayerAvatar_InitMapFeatures(fieldSystem->playerAvatar, v4);
     }
 
+#ifdef SDK_PORT
+    MapHeaderData_PreloadNeighborObjects(fieldSystem);
+    // The original header objects already exist (or were restored from save).
+    // Only instantiate the extra neighboring events during field setup.
+    MapHeaderData *headerData = fieldSystem->mapHeaderData;
+    if (headerData->numObjectEvents > headerData->originalObjectEventCount) {
+        sub_02062068(fieldSystem->mapObjMan, fieldSystem->location->mapHeaderID,
+            headerData->numObjectEvents - headerData->originalObjectEventCount,
+            headerData->objectEvents + headerData->originalObjectEventCount);
+    }
+#endif
     sub_02061C48(fieldSystem->mapObjMan);
     CommPlayerMan_ForcePos();
     sub_02062C3C(fieldSystem->mapObjMan);

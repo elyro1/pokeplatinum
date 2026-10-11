@@ -498,8 +498,15 @@ static void LandDataManager_LazyLoad(const u8 index, AreaDataManager *const area
     loader->mapLoadTasksState.mapModelTaskRunning++;
     loader->mapModelLoadSysTask = LandDataManager_LazyLoadMapModel(landDataMan->landDataNARC, landDataHeader.mapModelSize, &loader->loadSlots[index]->mapRenderObj, &loader->loadSlots[index]->mapModelFile, AreaDataManager_GetMapTexture(areaDataMan), &loader->loadSlots[index]->valid, &loader->mapLoadTasksState.mapModelTaskRunning);
 
+#ifdef SDK_PORT
+    // Publish collision data with the model instead of several frames later.
+    BDHC_Load(landDataMan->landDataNARC, landDataHeader.bdhcSize, loader->loadSlots[index]->bdhc, loader->loadSlots[index]->bdhcFile);
+    loader->mapLoadTasksState.bdhcTaskRunning = FALSE;
+    loader->bdhcLoadSysTask = NULL;
+#else
     loader->mapLoadTasksState.bdhcTaskRunning++;
     loader->bdhcLoadSysTask = BDHC_LazyLoad(landDataMan->landDataNARC, landDataHeader.bdhcSize, loader->loadSlots[index]->bdhc, &loader->mapLoadTasksState.bdhcTaskRunning, &loader->loadSlots[index]->bdhcFile, &loader->mapLoadTasksState.mapModelTaskRunning);
+#endif
 }
 
 static void LandDataManager_LazyLoadWithoutAttributes(const u8 index, AreaDataManager *const areaDataMan, const MapMatrix *mapMatrix, const int mapMatrixWidth, const int mapMatrixHeight, LandDataManager *landDataMan, MapLazyLoader *loader)
@@ -1957,6 +1964,14 @@ static void LandDataManager_LazyLoadMapModelTask(SysTask *sysTask, void *sysTask
 
 SysTask *LandDataManager_LazyLoadMapModel(NARC *landDataNARC, const int mapModelDataSize, NNSG3dRenderObj *mapRenderObj, NNSG3dResFileHeader **mapModelFile, NNSG3dResTex *mapTexture, BOOL *loadedMapValid, BOOL *loadTaskRunning)
 {
+#ifdef SDK_PORT
+    // Desktop files do not need the DS cartridge's 0xE000-byte/frame budget.
+    // Finish the read before BDHC advances this shared NARC file cursor.
+    LandDataManager_LoadMapModel(landDataNARC, mapModelDataSize, mapRenderObj, mapModelFile, mapTexture);
+    *loadedMapValid = TRUE;
+    *loadTaskRunning = FALSE;
+    return NULL;
+#else
     MapModelLoaderTaskContext *ctx = Heap_AllocAtEnd(HEAP_ID_FIELD1, sizeof(MapModelLoaderTaskContext));
 
     ctx->landDataNARC = landDataNARC;
@@ -1971,6 +1986,7 @@ SysTask *LandDataManager_LazyLoadMapModel(NARC *landDataNARC, const int mapModel
     ctx->killLoadTask = FALSE;
 
     return SysTask_Start(LandDataManager_LazyLoadMapModelTask, ctx, 1);
+#endif
 }
 
 NNSG3dResMdl *LandDataManager_LoadMapModel(NARC *landDataNARC, const int mapModelFileSize, NNSG3dRenderObj *mapRenderObj, NNSG3dResFileHeader **mapModelFile, NNSG3dResTex *mapTexture)

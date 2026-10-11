@@ -3,6 +3,8 @@
 #include <nitro.h>
 #include <string.h>
 
+#include "constants/field/map.h"
+#include "constants/field/map_matrix.h"
 #include "constants/heap.h"
 #include "constants/versions.h"
 #include "generated/map_headers.h"
@@ -12,8 +14,10 @@
 
 #include "heap.h"
 #include "map_header.h"
+#include "map_matrix.h"
 #include "map_object.h"
 #include "narc.h"
+#include "script_manager.h"
 
 static void MapHeaderData_LoadEvents(MapHeaderData *data, enum MapHeaderID mapHeaderID);
 static void MapHeaderData_ParseEvents(MapHeaderData *data);
@@ -37,6 +41,9 @@ void MapHeaderData_Load(FieldSystem *fieldSystem, enum MapHeaderID mapHeaderID)
 
     MapHeaderData_LoadEvents(fieldSystem->mapHeaderData, mapHeaderID);
     MapHeaderData_ParseEvents(fieldSystem->mapHeaderData);
+#ifdef SDK_PORT
+    fieldSystem->mapHeaderData->originalObjectEventCount = fieldSystem->mapHeaderData->numObjectEvents;
+#endif
     MapHeaderData_LoadWildEncounters(&fieldSystem->mapHeaderData->wildEncounters, mapHeaderID);
     MapHeaderData_LoadInitScripts(fieldSystem->mapHeaderData, mapHeaderID);
 }
@@ -58,6 +65,123 @@ void sub_0203A418(FieldSystem *fieldSystem)
         sub_02062068(fieldSystem->mapObjMan, fieldSystem->location->mapHeaderID, numObjectEvents, fieldSystem->mapHeaderData->objectEvents);
     }
 }
+
+#ifdef SDK_PORT
+// Cover the widest field view (448 pixels) plus movement and sprite margins.
+// Use the whole current zone so no objects need to be created while walking
+// within it. The existing scriptless-object handoff preserves NPC movement
+// when entering or leaving the zone that owns the NPC.
+static BOOL MapHeaderData_IsObjectNearZone(const FieldSystem *fieldSystem, const ObjectEvent *objectEvent)
+{
+    int width = MapMatrix_GetWidth(fieldSystem->mapMatrix);
+    int height = MapMatrix_GetHeight(fieldSystem->mapMatrix);
+    int minX = (objectEvent->x > 24 ? objectEvent->x - 24 : 0) / MAP_TILES_COUNT_X;
+    int minZ = (objectEvent->z > 16 ? objectEvent->z - 16 : 0) / MAP_TILES_COUNT_Z;
+    int maxX = (objectEvent->x + 24) / MAP_TILES_COUNT_X;
+    int maxZ = (objectEvent->z + 16) / MAP_TILES_COUNT_Z;
+
+    for (int z = minZ; z <= maxZ && z < height; z++) {
+        for (int x = minX; x <= maxX && x < width; x++) {
+            if (MapMatrix_GetMapHeaderIDAtCoords(fieldSystem->mapMatrix, x, z) == fieldSystem->location->mapHeaderID) {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem)
+{
+    if (!MapHeader_IsOnMainMatrix(fieldSystem->location->mapHeaderID) || MapMatrix_GetMatrixID(fieldSystem->mapMatrix) != 0) {
+        return;
+    }
+
+    MapHeaderData *data = fieldSystem->mapHeaderData;
+    int width = MapMatrix_GetWidth(fieldSystem->mapMatrix);
+    int height = MapMatrix_GetHeight(fieldSystem->mapMatrix);
+    u16 neighbors[MAP_MATRIX_MAX_SIZE];
+    int neighborCount = 0;
+
+    // Deduplicate adjacent headers: a route can span many matrix cells.
+    for (int z = 0; z < height; z++) {
+        for (int x = 0; x < width; x++) {
+            if (MapMatrix_GetMapHeaderIDAtCoords(fieldSystem->mapMatrix, x, z) != fieldSystem->location->mapHeaderID) {
+                continue;
+            }
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    int nx = x + dx, nz = z + dz;
+                    if (nx < 0 || nz < 0 || nx >= width || nz >= height) {
+                        continue;
+                    }
+                    u16 header = MapMatrix_GetMapHeaderIDAtCoords(fieldSystem->mapMatrix, nx, nz);
+                    if (header == MAP_HEADER_EVERYWHERE || header == fieldSystem->location->mapHeaderID) {
+                        continue;
+                    }
+                    int i;
+                    for (i = 0; i < neighborCount && neighbors[i] != header; i++) { }
+                    if (i == neighborCount) {
+                        neighbors[neighborCount++] = header;
+                    }
+                }
+            }
+        }
+    }
+
+    GF_ASSERT(data->originalObjectEventCount <= NELEMS(data->streamedObjectEvents));
+    if (data->originalObjectEventCount != 0 && data->objectEvents != data->streamedObjectEvents) {
+        memcpy(data->streamedObjectEvents, data->objectEvents, data->originalObjectEventCount * sizeof(ObjectEvent));
+    }
+    data->numObjectEvents = data->originalObjectEventCount;
+    data->objectEvents = data->streamedObjectEvents;
+
+    MapHeaderData *neighbor = Heap_AllocAtEnd(HEAP_ID_FIELD2, sizeof(MapHeaderData));
+    for (int i = 0; i < neighborCount; i++) {
+        MapHeaderData_LoadEvents(neighbor, neighbors[i]);
+        MapHeaderData_ParseEvents(neighbor);
+        for (int j = 0; j < neighbor->numObjectEvents; j++) {
+            ObjectEvent event = neighbor->objectEvents[j];
+            if (event.script == 0xFFFF || FieldSystem_CheckFlag(fieldSystem, event.hiddenFlag) || !MapHeaderData_IsObjectNearZone(fieldSystem, &event)) {
+                continue;
+            }
+            BOOL duplicate = FALSE;
+            for (int k = 0; k < data->numObjectEvents; k++) {
+                const ObjectEvent *existing = &data->objectEvents[k];
+                if (existing->localID == event.localID && existing->script == 0xFFFF && existing->hiddenFlag == neighbors[i]) {
+                    duplicate = TRUE;
+                    break;
+                }
+            }
+            if (duplicate) {
+                continue;
+            }
+            GF_ASSERT(data->numObjectEvents < NELEMS(data->streamedObjectEvents));
+            if (data->numObjectEvents >= NELEMS(data->streamedObjectEvents)) {
+                continue;
+            }
+            event.script = 0xFFFF;
+            event.hiddenFlag = neighbors[i];
+            data->streamedObjectEvents[data->numObjectEvents++] = event;
+        }
+    }
+    Heap_Free(neighbor);
+}
+
+BOOL MapHeaderData_IsStreamedObject(const FieldSystem *fieldSystem, const ObjectEvent *objectEvent)
+{
+    const MapHeaderData *data = fieldSystem->mapHeaderData;
+    if (objectEvent->script != 0xFFFF) {
+        return FALSE;
+    }
+    for (int i = data->originalObjectEventCount; i < data->numObjectEvents; i++) {
+        if (data->objectEvents[i].localID == objectEvent->localID && data->objectEvents[i].hiddenFlag == objectEvent->hiddenFlag) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+#endif
 
 const BgEvent *MapHeaderData_GetBgEvents(const FieldSystem *fieldSystem)
 {

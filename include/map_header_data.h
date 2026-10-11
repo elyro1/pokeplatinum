@@ -64,12 +64,20 @@ typedef struct MapHeaderData {
     u32 tmpEventsBuf[512];
     u32 initScripts[64];
     WildEncounters wildEncounters;
+#ifdef SDK_PORT
+    u32 originalObjectEventCount;
+    ObjectEvent streamedObjectEvents[128];
+#endif
 } MapHeaderData;
 
 void MapHeaderData_Init(FieldSystem *fieldSystem, enum HeapID heapID);
 void MapHeaderData_Free(FieldSystem *fieldSystem);
 void MapHeaderData_Load(FieldSystem *fieldSystem, enum MapHeaderID mapHeaderID);
 void sub_0203A418(FieldSystem *fieldSystem);
+#ifdef SDK_PORT
+void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem);
+BOOL MapHeaderData_IsStreamedObject(const FieldSystem *fieldSystem, const ObjectEvent *objectEvent);
+#endif
 const BgEvent *MapHeaderData_GetBgEvents(const FieldSystem *fieldSystem);
 int MapHeaderData_GetNumBgEvents(const FieldSystem *fieldSystem);
 const WarpEvent *MapHeaderData_GetWarpEventByIndex(const FieldSystem *fieldSystem, int index);

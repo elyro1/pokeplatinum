@@ -20,6 +20,7 @@
 
 #include "berry_patch_graphics.h"
 #include "heap.h"
+#include "map_header.h"
 #include "map_header_data.h"
 #include "map_object_move.h"
 #include "narc.h"
@@ -92,6 +93,9 @@ typedef struct MapObject {
     u8 unk_E8[16];
     u8 movementData[16];
     u8 unk_108[32];
+#ifdef SDK_PORT
+    BOOL streamedNeighbor;
+#endif
 } MapObject;
 
 typedef struct {
@@ -154,6 +158,11 @@ static const UnkStruct_ov5_021FB0F0 *sub_02063244(u32 param0);
 
 MapObjectManager *MapObjectMan_New(FieldSystem *fieldSystem, int maxObjs, int taskBasePriority)
 {
+#ifdef SDK_PORT
+    if (maxObjs == 64 && MapHeader_IsOnMainMatrix(fieldSystem->location->mapHeaderID)) {
+        maxObjs = 160;
+    }
+#endif
     MapObjectManager *mapObjMan = MapObjectMan_Alloc(maxObjs);
     MapObjectMan_SetFieldSystem(mapObjMan, fieldSystem);
     MapObjectMan_SetMaxObjects(mapObjMan, maxObjs);
@@ -225,6 +234,10 @@ MapObject *MapObjectMan_AddMapObjectFromHeader(const MapObjectManager *mapObjMan
 
     int localID = ObjectEvent_GetLocalID(v2);
 
+#ifdef SDK_PORT
+    BOOL streamedNeighbor = MapHeaderData_IsStreamedObject(MapObjectMan_FieldSystem(mapObjMan), v2);
+#endif
+
     if (ObjectEvent_HasNoScript(v2) == FALSE) {
         mapObj = sub_02062154(mapObjMan, localID, mapHeaderID);
 
@@ -234,10 +247,20 @@ MapObject *MapObjectMan_AddMapObjectFromHeader(const MapObjectManager *mapObjMan
             return mapObj;
         }
     } else {
+#ifdef SDK_PORT
+        mapObj = sub_02062154(mapObjMan, localID, ObjectEvent_GetHiddenFlagNoScript(v2));
+        if (mapObj == NULL) {
+            mapObj = sub_020624CC(mapObjMan, localID, ObjectEvent_GetHiddenFlagNoScript(v2));
+        }
+#else
         mapObj = sub_020624CC(mapObjMan, localID, ObjectEvent_GetHiddenFlagNoScript(v2));
+#endif
 
         if (mapObj != NULL) {
             sub_02062714(mapObj, mapHeaderID, v2);
+#ifdef SDK_PORT
+            mapObj->streamedNeighbor = streamedNeighbor;
+#endif
             return mapObj;
         }
     }
@@ -250,6 +273,9 @@ MapObject *MapObjectMan_AddMapObjectFromHeader(const MapObjectManager *mapObjMan
 
     sub_020621E8(mapObj, v2, MapObjectMan_FieldSystem(mapObjMan));
     sub_0206234C(mapObj, mapObjMan);
+#ifdef SDK_PORT
+    mapObj->streamedNeighbor = streamedNeighbor;
+#endif
     MapObject_SetMapHeaderID(mapObj, mapHeaderID);
     sub_02062660(mapObj);
     sub_02062670(mapObj);
@@ -427,6 +453,13 @@ void MapObjectMan_SaveAll(FieldSystem *fieldSystem, const MapObjectManager *mapO
     MapObject *mapObj;
 
     while (MapObjectMan_FindObjectWithStatus(mapObjMan, &mapObj, &v0, MAP_OBJ_STATUS_0)) {
+#ifdef SDK_PORT
+        // Extra neighboring objects are reconstructed when the field loads;
+        // keep the original 64-entry save layout and prioritize actual objects.
+        if (mapObj->streamedNeighbor) {
+            continue;
+        }
+#endif
         MapObject_Save(fieldSystem, mapObj, mapObjSave);
         mapObjSave++;
         param3--;
@@ -774,6 +807,19 @@ static int sub_0206244C(const MapObject *mapObj, int param1, int objEventCount, 
     int localID;
     int flag;
 
+#ifdef SDK_PORT
+    if (mapObj->streamedNeighbor && sub_02062E94(mapObj) && sub_02062C18(mapObj) == param1) {
+        // The destination's transition script may hide a previously visible
+        // neighbor. Do not retain that proxy when its real event is hidden.
+        for (int i = 0; i < objEventCount; i++) {
+            if (objectEvent[i].script != 0xFFFF && objectEvent[i].localID == MapObject_GetLocalID(mapObj)
+                && FieldSystem_CheckFlag(MapObjectMan_FieldSystem(MapObject_MapObjectManager(mapObj)), objectEvent[i].hiddenFlag)) {
+                return 0;
+            }
+        }
+    }
+#endif
+
     while (objEventCount) {
         localID = ObjectEvent_GetLocalID(objectEvent);
 
@@ -957,6 +1003,9 @@ static void sub_020626D0(MapObject *mapObj, const ObjectEvent *objectEvent, enum
     MapObject_SetMapHeaderID(mapObj, mapHeaderID);
     MapObject_SetScript(mapObj, ObjectEvent_GetScript(objectEvent));
     MapObject_SetFlag(mapObj, ObjectEvent_GetHiddenFlag(objectEvent));
+#ifdef SDK_PORT
+    mapObj->streamedNeighbor = FALSE;
+#endif
 }
 
 static void sub_02062714(MapObject *mapObj, enum MapHeaderID mapHeaderID, const ObjectEvent *objectEvent)
