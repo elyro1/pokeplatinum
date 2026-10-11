@@ -3,6 +3,7 @@ url = https://github.com/elyro1/libntr.git
 revision = lib_single_screen_mod
 depth = 1
 directory = libntr
+diff_files = libntr_patch/audio-cycle-type.patch
 
 [provide]
 dependency_names = NitroSDK
