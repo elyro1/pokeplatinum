@@ -187,6 +187,8 @@ static void StartMenu_Evolve(FieldTask *fieldTask);
 static BOOL StartMenu_SelectRetire(FieldTask *fieldTask);
 static void StartMenu_ProcessGivenMail(FieldSystem *fieldSystem, StartMenu *menu, u8 mode);
 #ifdef SDK_PORT
+static void StartMenu_ConfirmQuit(FieldTask *fieldTask);
+static void StartMenu_ProcessQuitConfirmation(FieldTask *fieldTask);
 static BOOL StartMenu_CanOpenPoketch(FieldSystem *fieldSystem);
 static BOOL StartMenu_SelectPoketch(FieldTask *fieldTask);
 static void StartMenu_Poketch(FieldTask *fieldTask);
@@ -450,6 +452,9 @@ static BOOL StartMenu_Main(FieldTask *fieldTask)
         }
         break;
 #ifdef SDK_PORT
+    case START_MENU_STATE_QUIT_CONFIRM:
+        StartMenu_ProcessQuitConfirmation(fieldTask);
+        break;
     case START_MENU_STATE_POKETCH_WAIT:
     case START_MENU_STATE_POKETCH_OPEN:
     case START_MENU_STATE_POKETCH_RUN:
@@ -754,7 +759,8 @@ static BOOL StartMenu_Select(FieldTask *fieldTask)
     default:
 #ifdef SDK_PORT
         if (menu->input == START_MENU_OPTION_EXIT) {
-            exit(0);
+            StartMenu_ConfirmQuit(fieldTask);
+            return TRUE;
         }
 #endif
         if ((menu_selection_t)sStartMenuActions[menu->input].callback == MENU_CANCEL) {
@@ -895,6 +901,62 @@ static void StartMenu_SetCursorPos(StartMenu *menu, Sprite *sprite, u32 pos)
 }
 
 #ifdef SDK_PORT
+static void StartMenu_ConfirmQuit(FieldTask *fieldTask)
+{
+    static const WindowTemplate yesNoWindow = {
+        .bgLayer = BG_LAYER_MAIN_3,
+        .tilemapLeft = 25,
+        .tilemapTop = 12,
+        .width = 6,
+        .height = 4,
+        .palette = 12,
+        .baseTile = BASE_TILE_YES_NO_MENU,
+    };
+    FieldSystem *fieldSystem = FieldTask_GetFieldSystem(fieldTask);
+    StartMenu *menu = FieldTask_GetEnv(fieldTask);
+
+    StartMenu_Close(menu);
+    Window_EraseStandardFrame(&menu->primaryWindow, TRUE);
+    Window_Remove(&menu->primaryWindow);
+    StartMenu_EraseBallCount(fieldTask);
+
+    Window_Add(fieldSystem->bgConfig, &menu->primaryWindow, BG_LAYER_MAIN_3, 2, 19, 27, 4, 12, BASE_TILE_MESSAGE_WINDOW);
+    Window_DrawStandardFrame(&menu->primaryWindow, TRUE, BASE_TILE_STANDARD_WINDOW_FRAME, 11);
+    Window_FillTilemap(&menu->primaryWindow, 15);
+
+    MessageLoader *loader = MessageLoader_Init(MSG_LOADER_LOAD_ON_DEMAND, NARC_INDEX_MSGDATA__PL_MSG, TEXT_BANK_START_MENU, HEAP_ID_FIELD2);
+    String *prompt = MessageLoader_GetNewString(loader, StartMenu_Text_QuitConfirmation);
+    Text_AddPrinterWithParams(&menu->primaryWindow, FONT_MESSAGE, prompt, 0, 0, TEXT_SPEED_INSTANT, NULL);
+    String_Free(prompt);
+    MessageLoader_Free(loader);
+    Window_ScheduleCopyToVRAM(&menu->primaryWindow);
+
+    menu->quitConfirmMenu = Menu_MakeYesNoChoiceWithCursorAt(fieldSystem->bgConfig, &yesNoWindow, BASE_TILE_STANDARD_WINDOW_FRAME, 11, 1, HEAP_ID_FIELD2);
+    menu->state = START_MENU_STATE_QUIT_CONFIRM;
+}
+
+static void StartMenu_ProcessQuitConfirmation(FieldTask *fieldTask)
+{
+    StartMenu *menu = FieldTask_GetEnv(fieldTask);
+    menu_selection_t choice = Menu_ProcessInputAndHandleExit(menu->quitConfirmMenu, HEAP_ID_FIELD2);
+
+    if (choice == MENU_NOTHING_CHOSEN) {
+        return;
+    }
+
+    menu->quitConfirmMenu = NULL;
+    Window_EraseStandardFrame(&menu->primaryWindow, TRUE);
+    Window_Remove(&menu->primaryWindow);
+
+    if (choice == MENU_YES) {
+        exit(0);
+    }
+
+    StartMenu_InitMenu(fieldTask);
+    StartMenu_PrintBallCount(fieldTask);
+    menu->state = START_MENU_STATE_SELECT;
+}
+
 static BOOL StartMenu_CanOpenPoketch(FieldSystem *fieldSystem)
 {
     return fieldSystem->mapLoadType == MAP_LOAD_TYPE_OVERWORLD

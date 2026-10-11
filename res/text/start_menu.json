@@ -52,6 +52,10 @@
     {
       "id": "StartMenu_Text_Poketch",
       "en_US": "POKéTCH"
+    },
+    {
+      "id": "StartMenu_Text_QuitConfirmation",
+      "en_US": "Quit the game?"
     }
   ]
 }

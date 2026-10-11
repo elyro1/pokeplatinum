@@ -37,6 +37,7 @@ typedef struct StartMenu {
     void *taskData;
     void *additionalTaskContext;
 #ifdef SDK_PORT
+    Menu *quitConfirmMenu;
     u8 rowPitch;
     GXDispSelect poketchPreviousDisplay;
     BOOL poketchCloseRequested;
@@ -61,6 +62,7 @@ enum StartMenuState {
     START_MENU_STATE_REINIT_WAIT_FOR_FADE,
     START_MENU_STATE_SAVED,
 #ifdef SDK_PORT
+    START_MENU_STATE_QUIT_CONFIRM,
     START_MENU_STATE_POKETCH_WAIT,
     START_MENU_STATE_POKETCH_OPEN,
     START_MENU_STATE_POKETCH_RUN,
