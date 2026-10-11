@@ -393,7 +393,7 @@ static void ov62_02231C78(UnkStruct_ov62_022323B8 *param0, UnkStruct_0208C06C *p
             Window_Init(v2);
             Window_Add(param1->unk_14.unk_10, v2, 2, Unk_ov62_02248A28[v0][0], Unk_ov62_02248A28[v0][1], Unk_ov62_02248A28[v0][2], Unk_ov62_02248A28[v0][3], 14, v1);
             Window_FillTilemap(v2, 0x00);
-            Text_AddPrinterWithParamsAndColor(v2, FONT_SYSTEM, v3, ov62_0223429C(v2, v3), 0, (0xff), ((u32)(((15 & (0xff)) << 16) | ((13 & (0xff)) << 8) | ((0 & (0xff)) << 0))), NULL);
+            Text_AddPrinterWithParamsAndColor(v2, FONT_SYSTEM, v3, ov62_0223429C(v2, v3), 0, TEXT_SPEED_NO_TRANSFER, TEXT_COLOR(15, 13, 0), NULL);
             Window_ScheduleCopyToVRAM(v2);
             v1 += (Unk_ov62_02248A28[v0][2] * Unk_ov62_02248A28[v0][3]);
             String_Free(v3);
@@ -2863,7 +2863,7 @@ void ov62_022348FC(UnkStruct_0208C06C *param0)
 
         break;
     case 1:
-        if (TouchScreen_Tapped()) {
+        if (TouchScreen_Tapped() || (WiFiTowerApp_UsesButtons(param0) && JOY_NEW(PAD_BUTTON_A | PAD_BUTTON_B))) {
             ov62_02231B8C(param0);
             param0->unk_14.unk_4F0.unk_10++;
         }
@@ -2924,4 +2924,54 @@ static void ov62_022349E4(String *param0, enum HeapID heapID)
 
     MessageLoader_GetString(v0, 332, param0);
     MessageLoader_Free(v0);
+}
+
+// Recorder controls are available without a touch screen on the native ports.
+int WiFiTowerApp_HandleButtonMenu(UnkStruct_0208C06C *appData, const TouchScreenRect *regions, int count, int cancelIndex)
+{
+#ifndef SDK_BUILD_ARM
+    if (appData->unk_00 == 0) {
+        int *selection = &appData->buttonMenuSelection;
+        if (*selection < 0 || *selection >= count) {
+            *selection = 0;
+        }
+        if (JOY_REPEAT(PAD_KEY_UP | PAD_KEY_LEFT)) {
+            *selection = (*selection + count - 1) % count;
+            appData->showRecorderDetails = FALSE;
+            Sound_PlayEffect(SEQ_SE_PL_BREC57_sseq);
+        } else if (JOY_REPEAT(PAD_KEY_DOWN | PAD_KEY_RIGHT)) {
+            *selection = (*selection + 1) % count;
+            appData->showRecorderDetails = FALSE;
+            Sound_PlayEffect(SEQ_SE_PL_BREC57_sseq);
+        }
+        if (JOY_NEW(PAD_BUTTON_X)) {
+            appData->showRecorderDetails ^= 1;
+        }
+        appData->recorderShowSubScreen = !appData->showRecorderDetails;
+        ov62_02234358(appData, appData->unk_6F4, regions[*selection].rect.left - 8, (regions[*selection].rect.top + regions[*selection].rect.bottom) / 2);
+        sub_0208B9E0(appData->unk_6F4, TRUE);
+        sub_0208BA08(appData->unk_6F4, 8, 8);
+        if (JOY_NEW(PAD_BUTTON_B)) {
+            return cancelIndex;
+        }
+        if (JOY_NEW(PAD_BUTTON_A)) {
+            if (appData->showRecorderDetails) {
+                appData->showRecorderDetails = FALSE;
+                appData->recorderShowSubScreen = TRUE;
+                return -1;
+            }
+            return *selection;
+        }
+    }
+#endif
+    return -1;
+}
+
+BOOL WiFiTowerApp_UsesButtons(const UnkStruct_0208C06C *appData)
+{
+#ifndef SDK_BUILD_ARM
+    return appData->unk_00 == 0;
+#else
+    return FALSE;
+#endif
 }

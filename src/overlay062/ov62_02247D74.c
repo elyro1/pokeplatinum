@@ -19,6 +19,7 @@
 #include "string_template.h"
 #include "text.h"
 #include "touch_screen.h"
+#include "system.h"
 #include "unk_02030A80.h"
 
 typedef struct {
@@ -222,12 +223,13 @@ static BOOL ov62_02248114(UnkStruct_0208C06C *param0)
 
         PaletteData_BlendMulti(param0->unk_14.unk_14, PLTTBUF_SUB_OBJ, 0xC, v0->unk_08, param0->unk_14.unk_44);
         break;
-    case 2:
-        if (TouchScreen_LocationPressed(&Unk_ov62_02249788[0])) {
+    case 2: {
+        int option = WiFiTowerApp_HandleButtonMenu(param0, Unk_ov62_02249788, NELEMS(Unk_ov62_02249788), 1);
+        if (option == 0 || TouchScreen_LocationPressed(&Unk_ov62_02249788[0])) {
             ov62_02234520(param0);
             ov62_02247DD8(param0, 283, 0);
             param0->unk_08++;
-        } else if (TouchScreen_LocationPressed(&Unk_ov62_02249788[1])) {
+        } else if (option == 1 || TouchScreen_LocationPressed(&Unk_ov62_02249788[1])) {
             ov62_02234520(param0);
             v0->unk_0C = 1;
             ov62_02247DB4(param0);
@@ -235,19 +237,22 @@ static BOOL ov62_02248114(UnkStruct_0208C06C *param0)
         }
 
         break;
-    case 3:
-        if (TouchScreen_LocationPressed(&Unk_ov62_02249788[0])) {
+    }
+    case 3: {
+        int option = WiFiTowerApp_HandleButtonMenu(param0, Unk_ov62_02249788, NELEMS(Unk_ov62_02249788), 1);
+        if (option == 0 || TouchScreen_LocationPressed(&Unk_ov62_02249788[0])) {
             ov62_02234520(param0);
             ov62_022342BC(param0);
             v0->unk_0C = 0;
             param0->unk_08++;
-        } else if (TouchScreen_LocationPressed(&Unk_ov62_02249788[1])) {
+        } else if (option == 1 || TouchScreen_LocationPressed(&Unk_ov62_02249788[1])) {
             ov62_02234520(param0);
             ov62_02247DB4(param0);
             v0->unk_0C = 1;
             param0->unk_08++;
         }
         break;
+    }
     case 4:
         ov62_02247F7C(param0);
         param0->unk_08++;
@@ -276,7 +281,7 @@ static BOOL ov62_02248114(UnkStruct_0208C06C *param0)
         }
         break;
     default:
-        if (!TouchScreen_Tapped()) {
+        if (!TouchScreen_Tapped() && !(WiFiTowerApp_UsesButtons(param0) && JOY_NEW(PAD_BUTTON_A | PAD_BUTTON_B))) {
             break;
         }
 

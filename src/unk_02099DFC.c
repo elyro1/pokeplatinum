@@ -1,6 +1,8 @@
 #include <nitro.h>
 #include <string.h>
 
+#include "main_menu/application_template.h"
+
 #include "bg_window.h"
 #include "font.h"
 #include "gx_layers.h"
@@ -15,10 +17,12 @@
 #include "sound.h"
 #include "sound_playback.h"
 #include "string_gf.h"
+#include "string_template.h"
 #include "system.h"
 #include "text.h"
 
 FS_EXTERN_OVERLAY(game_opening);
+FS_EXTERN_OVERLAY(main_menu);
 
 typedef struct {
     enum HeapID heapID;
@@ -32,6 +36,9 @@ typedef struct {
     Menu *unk_2C;
     SaveData *saveData;
     void *unk_34;
+#ifdef SDK_PORT
+    int selectedSlot;
+#endif
 } UnkStruct_02099DFC;
 
 void EnqueueApplication(FSOverlayID param0, const ApplicationManagerTemplate *param1);
@@ -45,6 +52,9 @@ static void sub_0209A098(UnkStruct_02099DFC *param0);
 static void sub_0209A0E0(UnkStruct_02099DFC *param0);
 static BOOL sub_0209A0F4(UnkStruct_02099DFC *param0);
 static BOOL sub_0209A200(UnkStruct_02099DFC *param0, u32 param1, int param2, int param3);
+#ifdef SDK_PORT
+static void TitleScreenClearSaveFileApp_CreateSlotMenu(UnkStruct_02099DFC *param0);
+#endif
 
 extern const ApplicationManagerTemplate gTitleScreenAppTemplate;
 
@@ -86,6 +96,9 @@ int sub_02099DFC(ApplicationManager *appMan, int *param1)
 
     v0->heapID = HEAP_ID_88;
     v0->unk_04 = 0;
+#ifdef SDK_PORT
+    v0->unk_04 = 7;
+#endif
     v0->saveData = ((ApplicationArgs *)ApplicationManager_Args(appMan))->saveData;
 
     return 1;
@@ -150,7 +163,11 @@ int sub_02099F54(ApplicationManager *appMan, int *param1)
 
     ApplicationManager_FreeData(appMan);
     Heap_Destroy(heapID);
+#ifdef SDK_PORT
+    EnqueueApplication(FS_OVERLAY_ID(main_menu), &gMainMenuAppTemplate);
+#else
     OS_ResetSystem(0);
+#endif
 
     return 1;
 }
@@ -251,18 +268,35 @@ static BOOL sub_0209A0F4(UnkStruct_02099DFC *param0)
     BOOL v0 = 0;
 
     switch (param0->unk_04) {
+#ifdef SDK_PORT
+    case 7:
+        if (sub_0209A200(param0, 3, 1, 4)) {
+            TitleScreenClearSaveFileApp_CreateSlotMenu(param0);
+            param0->unk_04 = 8;
+        }
+        break;
+    case 8: {
+        menu_selection_t result = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
+        if (result == MENU_CANCEL) {
+            param0->unk_04 = 6;
+        } else if (result != MENU_NOTHING_CHOSEN) {
+            param0->selectedSlot = result;
+            param0->unk_04 = 0;
+        }
+    } break;
+#endif
     case 0:
+#ifdef SDK_PORT
+        if (sub_0209A200(param0, 8, 1, 4) == TRUE) {
+#else
         if (sub_0209A200(param0, 0, 1, 4) == TRUE) {
+#endif
             param0->unk_2C = Menu_MakeYesNoChoiceWithCursorAt(param0->unk_14, &Unk_020F89EC, 512 - (18 + 12) - 9, 3, 1, param0->heapID);
             param0->unk_04 = 1;
         }
         break;
     case 1: {
-        #ifdef SDK_BUILD_ARM
-        u32 v1 = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
-        #else
-        u64 v1 = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
-        #endif
+        menu_selection_t v1 = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
 
         switch (v1) {
         case 0:
@@ -280,11 +314,7 @@ static BOOL sub_0209A0F4(UnkStruct_02099DFC *param0)
         }
         break;
     case 3: {
-        #ifdef SDK_BUILD_ARM
-        u32 v2 = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
-        #else
-        u64 v2 = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
-        #endif
+        menu_selection_t v2 = Menu_ProcessInputAndHandleExit(param0->unk_2C, param0->heapID);
 
         switch (v2) {
         case 0:
@@ -302,6 +332,10 @@ static BOOL sub_0209A0F4(UnkStruct_02099DFC *param0)
         }
         break;
     case 5:
+#ifdef SDK_PORT
+        // Switch the backend only once deletion has been confirmed twice.
+        SaveData_SelectSlot(param0->saveData, param0->selectedSlot);
+#endif
         SaveData_Erase(param0->saveData);
         DestroyWaitDial(param0->unk_34);
         param0->unk_04 = 6;
@@ -315,6 +349,39 @@ static BOOL sub_0209A0F4(UnkStruct_02099DFC *param0)
     return v0;
 }
 
+#ifdef SDK_PORT
+static void TitleScreenClearSaveFileApp_CreateSlotMenu(UnkStruct_02099DFC *appData)
+{
+    const WindowTemplate windowTemplate = {
+        .bgLayer = BG_LAYER_MAIN_0,
+        .tilemapLeft = 19,
+        .tilemapTop = 9,
+        .width = 12,
+        .height = 8,
+        .palette = 1,
+        .baseTile = 0x100,
+    };
+    StringList *choices = StringList_New(4, appData->heapID);
+    for (int slot = 0; slot < 3; slot++) {
+        StringList_AddFromMessageBank(choices, appData->unk_18, 4 + slot, slot);
+    }
+    StringList_AddFromMessageBank(choices, appData->unk_18, 7, MENU_CANCEL);
+
+    // The generic exit handler owns and frees this window and the choices.
+    Window *window = Heap_Alloc(appData->heapID, sizeof(Window));
+    Window_AddFromTemplate(appData->unk_14, window, &windowTemplate);
+    Window_DrawStandardFrame(window, TRUE, 512 - (18 + 12) - 9, 3);
+    MenuTemplate template = {
+        .choices = choices,
+        .window = window,
+        .fontID = FONT_SYSTEM,
+        .xSize = 1,
+        .ySize = 4,
+    };
+    appData->unk_2C = Menu_NewAndCopyToVRAM(&template, 8, 0, 0, appData->heapID, PAD_BUTTON_B);
+}
+#endif
+
 static BOOL sub_0209A200(UnkStruct_02099DFC *param0, u32 param1, int param2, int param3)
 {
     BOOL v0 = 0;
@@ -326,6 +393,17 @@ static BOOL sub_0209A200(UnkStruct_02099DFC *param0, u32 param1, int param2, int
 
         param0->unk_10 = String_Init(0x400, param0->heapID);
         MessageLoader_GetString(param0->unk_18, param1, param0->unk_10);
+#ifdef SDK_PORT
+        if (param1 == 8) {
+            StringTemplate *template = StringTemplate_Default(param0->heapID);
+            String *format = String_Init(0x400, param0->heapID);
+            String_Copy(format, param0->unk_10);
+            StringTemplate_SetNumber(template, 0, param0->selectedSlot + 1, 1, PADDING_MODE_NONE, CHARSET_MODE_EN);
+            StringTemplate_Format(template, param0->unk_10, format);
+            String_Free(format);
+            StringTemplate_Free(template);
+        }
+#endif
         param0->unk_0C = Text_AddPrinterWithParams(&param0->unk_1C, FONT_MESSAGE, param0->unk_10, 0, 0, param3, NULL);
 
         if (param3 == 0) {

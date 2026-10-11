@@ -38,6 +38,10 @@
 #include "unk_0208C010.h"
 #include "vram_transfer.h"
 
+#ifndef SDK_BUILD_ARM
+#include <simulator/sim.h>
+#endif
+
 static void ov62_0222F670(BgConfig *param0);
 static void ov62_0222F848(UnkStruct_0208C06C *param0);
 
@@ -465,12 +469,25 @@ void ov62_0222F8E4(void *param0)
     PaletteData_CommitFadedBuffers(v0->unk_14.unk_14);
     Bg_RunScheduledUpdates(v0->unk_14.unk_10);
 
+#ifndef SDK_BUILD_ARM
+    if (v0->unk_00 == 0 && SIM_GetConfigPtr()->screenLayout == SIM_CONFIG_SCREEN_LAYOUT_TOP_ONLY) {
+        // Presentation only: preserve the application's logical screen swaps.
+        BOOL showSub = v0->recorderShowSubScreen;
+        if (SIM_GetConfigPtr()->swapScreens) {
+            showSub = !showSub;
+        }
+        GX_SetDispSelect(showSub ? GX_DISP_SELECT_SUB_MAIN : GX_DISP_SELECT_MAIN_SUB);
+    }
+#endif
     OS_SetIrqCheckFlag(OS_IE_V_BLANK);
 }
 
 BOOL ov62_0222F910(UnkStruct_0208C06C *param0, int *param1)
 {
     BOOL v0 = 0;
+#ifndef SDK_BUILD_ARM
+    param0->recorderShowSubScreen = (*param1 == 3);
+#endif
 
     switch (*param1) {
     case 0:
@@ -573,6 +590,13 @@ void ov62_0222FB44(UnkStruct_0208C06C *param0, int param1, BOOL param2, int *par
 
 void ov62_0222FB60(UnkStruct_0208C06C *param0, int param1)
 {
+#ifndef SDK_BUILD_ARM
+    param0->buttonMenuSelection = 0;
+    param0->showRecorderDetails = FALSE;
+    if (param0->unk_00 == 0 && param0->unk_6F4 != NULL) {
+        sub_0208B9E0(param0->unk_6F4, 0);
+    }
+#endif
     param0->unk_04 = param1;
     param0->unk_08 = 0;
     param0->unk_0C = 0;
@@ -836,6 +860,39 @@ void ov62_02230014(UnkStruct_0208C06C *param0)
 
 void ov62_02230054(UnkStruct_0208C06C *param0)
 {
+#ifndef SDK_BUILD_ARM
+    if (param0->unk_00 == 0 && param0->unk_818 != NULL) {
+        int selection = param0->unk_534.unk_1B0;
+        int direction = JOY_REPEAT(PAD_KEY_UP) ? -1 : JOY_REPEAT(PAD_KEY_DOWN) ? 1
+                                                                               : 0;
+        if (direction) {
+            for (int i = 0; i < 5; i++) {
+                selection = (selection + direction + 5) % 5;
+                if (param0->unk_818[selection].unk_00) {
+                    break;
+                }
+            }
+            param0->unk_534.unk_1B0 = selection;
+            Sound_PlayEffect(SEQ_SE_PL_BREC57_sseq);
+        }
+        s16 x, y;
+        ov62_02230E74(param0->unk_534.unk_C8[selection].unk_00, &x, &y);
+        ov62_02234358(param0, param0->unk_6F0, x + 16, y);
+        sub_0208B9E0(param0->unk_6F0, TRUE);
+        sub_0208BA08(param0->unk_6F0, 8, 8);
+        if (JOY_NEW(PAD_BUTTON_B)) {
+            for (int i = 0; i < 5; i++) {
+                if (param0->unk_818[i].unk_00 && (param0->unk_818[i].unk_10 == 2 || param0->unk_818[i].unk_10 == 3)) {
+                    ov62_0222FE1C(i, TOUCH_BUTTON_PRESSED, param0);
+                    return;
+                }
+            }
+        } else if (JOY_NEW(PAD_BUTTON_A)) {
+            ov62_0222FE1C(selection, TOUCH_BUTTON_PRESSED, param0);
+            return;
+        }
+    }
+#endif
     TouchScreenActions_HandleAction(param0->unk_14.unk_18);
 }
 

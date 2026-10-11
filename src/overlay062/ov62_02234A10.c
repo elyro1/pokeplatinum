@@ -69,6 +69,20 @@ static void ov62_02234A90(UnkStruct_0208C06C *param0)
 
 static BOOL ov62_02234AB4(UnkStruct_0208C06C *param0)
 {
+#ifndef SDK_BUILD_ARM
+    if (param0->unk_00 == 0) {
+        // Enter the menu directly, retaining its normal fade and setup.
+        if (ov62_022300BC(param0) == 0) {
+            StartScreenFade(FADE_BOTH_SCREENS, FADE_TYPE_BRIGHTNESS_IN, FADE_TYPE_BRIGHTNESS_IN, COLOR_BLACK, 6, 1, HEAP_ID_102);
+            PaletteData_BlendMulti(param0->unk_14.unk_14, PLTTBUF_MAIN_OBJ, 0xFFFE, 16, ov62_022316D0(param0));
+            PaletteData_BlendMulti(param0->unk_14.unk_14, PLTTBUF_MAIN_BG, 0xBFFF, 16, ov62_022316D0(param0));
+            PaletteData_BlendMulti(param0->unk_14.unk_14, PLTTBUF_SUB_OBJ, 0x3FFE, 16, ov62_022316D0(param0));
+            PaletteData_BlendMulti(param0->unk_14.unk_14, PLTTBUF_SUB_BG, 0xFFFF, 16, ov62_022316D0(param0));
+        }
+        ov62_0222FB60(param0, 1);
+        return 0;
+    }
+#endif
     switch (param0->unk_08) {
     case 0:
         if (ov62_022300BC(param0) == 1) {

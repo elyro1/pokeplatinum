@@ -24,6 +24,7 @@
 #include "sprite_system.h"
 #include "system_vars.h"
 #include "touch_screen.h"
+#include "system.h"
 #include "unk_02012744.h"
 #include "unk_02030A80.h"
 #include "unk_0208B284.h"
@@ -674,6 +675,11 @@ static BOOL ov62_02237AC0(UnkStruct_0208C06C *param0)
 
         v3 = TouchScreen_GetTapState(&v1, &v2);
 
+        if (WiFiTowerApp_UsesButtons(param0) && JOY_NEW(PAD_BUTTON_A | PAD_BUTTON_B)) {
+            Sound_PlayEffect(SEQ_SE_PL_BREC57_sseq);
+            ov62_0222FB60(param0, 2);
+            return 0;
+        }
         if (v3) {
             if ((v1 > 10 * 8) && (v1 < 22 * 8) && (v2 > 19 * 8) && (v2 < 22 * 8)) {
                 Sound_PlayEffect(SEQ_SE_PL_BREC57_sseq);

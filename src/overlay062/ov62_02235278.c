@@ -22,6 +22,7 @@
 #include "sys_task.h"
 #include "sys_task_manager.h"
 #include "touch_screen.h"
+#include "system.h"
 #include "unk_02012744.h"
 #include "unk_0208B284.h"
 
@@ -43,6 +44,13 @@ static BOOL ov62_02235278(UnkStruct_0208C06C *param0)
 
     if (param0->unk_00 == 0) {
         int v0 = ov62_022352DC();
+#ifndef SDK_BUILD_ARM
+        if (JOY_NEW(PAD_BUTTON_L)) {
+            v0 = 1;
+        } else if (JOY_NEW(PAD_BUTTON_R)) {
+            v0 = 2;
+        }
+#endif
 
         switch (v0) {
         case 1:

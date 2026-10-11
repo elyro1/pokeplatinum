@@ -52,6 +52,11 @@ typedef struct {
     UnkStruct_ov62_02233828 unk_8B4;
     UnkStruct_0208C06C_sub2 unk_41D8;
     SysTask *unk_41E8;
+#ifndef SDK_BUILD_ARM
+    int buttonMenuSelection;
+    BOOL showRecorderDetails;
+    BOOL recorderShowSubScreen;
+#endif
 } UnkStruct_0208C06C;
 
 #endif // POKEPLATINUM_STRUCT_0208C06C_H

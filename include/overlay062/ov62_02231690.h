@@ -18,6 +18,7 @@
 #include "narc.h"
 #include "sprite_system.h"
 #include "string_gf.h"
+#include "touch_screen.h"
 
 StringTemplate *ov62_02231690(enum HeapID heapID);
 int ov62_022316A0(UnkStruct_0208C06C *param0);
@@ -102,5 +103,8 @@ void ov62_022348B8(UnkStruct_0208C06C *param0, int param1, int param2, int param
 void ov62_022348FC(UnkStruct_0208C06C *param0);
 BOOL ov62_02234970(UnkStruct_0208C06C *param0, u64 param1);
 void ov62_022349A8(UnkStruct_0208C06C *param0, String *param1);
+
+BOOL WiFiTowerApp_UsesButtons(const UnkStruct_0208C06C *appData);
+int WiFiTowerApp_HandleButtonMenu(UnkStruct_0208C06C *appData, const TouchScreenRect *regions, int count, int cancelIndex);
 
 #endif // POKEPLATINUM_OV62_02231690_H

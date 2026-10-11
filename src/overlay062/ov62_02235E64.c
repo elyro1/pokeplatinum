@@ -24,6 +24,7 @@
 #include "string_gf.h"
 #include "text.h"
 #include "touch_screen.h"
+#include "system.h"
 #include "touch_screen_actions.h"
 #include "unk_02012744.h"
 #include "unk_0202F1D4.h"
@@ -212,6 +213,11 @@ static BOOL ov62_02236174(UnkStruct_0208C06C *param0)
 {
     UnkStruct_ov62_02235E64 *v0 = param0->unk_860;
 
+    int option = WiFiTowerApp_HandleButtonMenu(param0, Unk_ov62_02248C1C, NELEMS(Unk_ov62_02248C1C), 2);
+    if (option >= 0) {
+        ov62_02236AB0(option, TOUCH_BUTTON_PRESSED, param0);
+        return 0;
+    }
     TouchScreenActions_HandleAction(v0->unk_174[0]);
     return 0;
 }
@@ -378,8 +384,9 @@ static BOOL ov62_022363CC(UnkStruct_0208C06C *param0)
 
         PaletteData_BlendMulti(param0->unk_14.unk_14, PLTTBUF_SUB_OBJ, 0xC, v0->unk_08, param0->unk_14.unk_44);
         break;
-    case 4:
-        if (TouchScreen_LocationPressed(&Unk_ov62_02248C14[0])) {
+    case 4: {
+        int option = WiFiTowerApp_HandleButtonMenu(param0, Unk_ov62_02248C14, NELEMS(Unk_ov62_02248C14), 1);
+        if (option == 0 || TouchScreen_LocationPressed(&Unk_ov62_02248C14[0])) {
             v0->unk_198 = 1;
             ov62_02234520(param0);
 
@@ -390,7 +397,7 @@ static BOOL ov62_022363CC(UnkStruct_0208C06C *param0)
             }
 
             param0->unk_08++;
-        } else if (TouchScreen_LocationPressed(&Unk_ov62_02248C14[1])) {
+        } else if (option == 1 || TouchScreen_LocationPressed(&Unk_ov62_02248C14[1])) {
             v0->unk_198 = 2;
             ov62_02234520(param0);
 
@@ -398,6 +405,7 @@ static BOOL ov62_022363CC(UnkStruct_0208C06C *param0)
         }
 
         break;
+    }
     case 5:
         SaveData_Save(param0->saveData);
         param0->unk_08++;
