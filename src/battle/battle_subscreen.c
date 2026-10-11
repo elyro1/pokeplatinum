@@ -1547,7 +1547,7 @@ static BOOL BattleSubscreen_IsMainBattleMenu(int menuConfigIndex)
 
 static BOOL BattleSubscreen_IsMainYesNoMenu(int menuConfigIndex)
 {
-    return (menuConfigIndex >= 13 && menuConfigIndex <= 15) || menuConfigIndex == 17;
+    return menuConfigIndex >= 13 && menuConfigIndex <= 17;
 }
 
 static void BattleSubscreen_DrawActionMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
@@ -2021,25 +2021,7 @@ static void BattleSubscreen_DrawStopMenu(BattleSubscreen *btlSubscreen, int unus
 
 static void BattleSubscreen_DrawUseNextMonMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
-    GiveUpMoveData *giveUpMoveData = &btlSubscreen->activeMenuData.giveUpMoveData;
-    MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
-    StringTemplate *template = BattleSystem_GetStringTemplate(btlSubscreen->battleSys);
-    String *formatMsg1 = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_UseNextPokemon);
-    String *formatMsg2 = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Flee);
-    String *useNextMonMsg = String_Init(100, HEAP_ID_BATTLE);
-    String *fleeMsg = String_Init(100, HEAP_ID_BATTLE);
-
-    StringTemplate_SetMoveName(template, 0, giveUpMoveData->move);
-    StringTemplate_Format(template, useNextMonMsg, formatMsg1);
-    StringTemplate_Format(template, fleeMsg, formatMsg2);
-
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[0], useNextMonMsg, FONT_SUBSCREEN, TEXT_COLOR(1, 2, 3), 2, 20023, 128, 68, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[1], fleeMsg, FONT_SUBSCREEN, TEXT_COLOR(10, 11, 12), 2, 20023, 128, 140, 1, NULL);
-
-    String_Free(formatMsg1);
-    String_Free(formatMsg2);
-    String_Free(useNextMonMsg);
-    String_Free(fleeMsg);
+    BattleSubscreen_DrawYesNoMenu(btlSubscreen, unused1, unused2);
 }
 
 static void BattleSubscreen_DrawSwitchMonMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
