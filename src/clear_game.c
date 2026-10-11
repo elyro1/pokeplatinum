@@ -18,6 +18,7 @@
 #include "bg_window.h"
 #include "field_message.h"
 #include "field_overworld_state.h"
+#include "field_system.h"
 #include "field_task.h"
 #include "game_options.h"
 #include "game_records.h"
@@ -160,8 +161,15 @@ static BOOL FieldTask_DoClearGameSequence(FieldTask *task)
         if (!FieldSystem_IsRunningApplication(fieldSystem)) {
             Heap_Free(clearGameStruct);
             Heap_Destroy(HEAP_ID_FIELD1);
+#ifdef SDK_PORT
+            FieldSystem_RequestReturnToTitle(fieldSystem);
+            // Do not complete this task: that would resume the Hall of Fame
+            // script before the field application's exit callback runs.
+            return FALSE;
+#else
             OS_ResetSystem(RESET_CLEAN);
             return TRUE;
+#endif
         }
         break;
     }

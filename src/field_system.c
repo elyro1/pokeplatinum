@@ -32,6 +32,7 @@
 #include "map_header_data.h"
 #include "map_matrix.h"
 #include "overlay_manager.h"
+#include "play_time_manager.h"
 #include "player_move.h"
 #include "pokedex_memory.h"
 #include "pokeradar.h"
@@ -40,6 +41,8 @@
 #include "unk_0209C370.h"
 
 #ifdef SDK_PORT
+#include "map_object.h"
+#include "player_avatar.h"
 #include "port/debug_field.h"
 #endif
 
@@ -188,6 +191,13 @@ static void TeardownFieldSystem(ApplicationManager *appMan)
     FieldSystem *fieldSystem = ApplicationManager_Data(appMan);
 #ifdef SDK_PORT
     DEBUG_SetFieldSystem(NULL);
+    if (fieldSystem->processManager->kill) {
+        // Closing the field map only suspends object movement. Remove the
+        // objects' global SysTasks before releasing their backing heap.
+        PlayerAvatar_Free(fieldSystem->playerAvatar);
+        MapObjectMan_DeleteAll(fieldSystem->mapObjMan);
+        MapObjectMan_Delete(fieldSystem->mapObjMan);
+    }
 #endif
 
     MapMatrix_Free(fieldSystem->mapMatrix);
@@ -215,7 +225,17 @@ static void ExecuteAndCleanupIfDone(ApplicationManager **appManPtr)
 static BOOL HandleInputsEventsAndProcesses(FieldSystem *fieldSystem)
 {
     HandleFieldInput(fieldSystem);
-    if (FieldTask_Run(fieldSystem) == TRUE && fieldSystem->unk_04 != NULL) {
+    BOOL taskFinished = FieldTask_Run(fieldSystem);
+#ifdef SDK_PORT
+    if (fieldSystem->processManager->kill) {
+        // The caller has already closed every field application. Abandon the
+        // suspended task stack without running its callbacks; its allocations
+        // belong to FIELD2/FIELD3 and are reclaimed by TeardownFieldSystem.
+        fieldSystem->task = NULL;
+        return TRUE;
+    }
+#endif
+    if (taskFinished == TRUE && fieldSystem->unk_04 != NULL) {
         FieldSystem_SendPoketchEvent(fieldSystem, POKETCH_EVENT_SLEEP, 0);
     }
 
@@ -349,6 +369,17 @@ void FieldSystem_ResumeProcessing(void)
     sFieldSystem->processManager->pause = FALSE;
     CommSys_EnableSendMovementData();
 }
+
+#ifdef SDK_PORT
+void FieldSystem_RequestReturnToTitle(FieldSystem *fieldSystem)
+{
+    GF_ASSERT(!FieldSystem_HasParentProcess(fieldSystem));
+    GF_ASSERT(!FieldSystem_HasChildProcess(fieldSystem));
+    fieldSystem->processManager->pause = TRUE;
+    fieldSystem->processManager->kill = TRUE;
+    PlayTime_FlagNotStarted();
+}
+#endif
 
 struct PoketchSystem *FieldSystem_GetPoketchSystem(void)
 {

@@ -16,6 +16,10 @@ BOOL FieldSystem_HasChildProcess(FieldSystem *fieldSystem);
 void FieldSystem_StartChildProcess(FieldSystem *fieldSystem, const ApplicationManagerTemplate *appTemplate, void *appArgs);
 void FieldSystem_PauseProcessing(void);
 void FieldSystem_ResumeProcessing(void);
+#ifdef SDK_PORT
+// Request teardown after all field applications have finished.
+void FieldSystem_RequestReturnToTitle(FieldSystem *fieldSystem);
+#endif
 PoketchSystem *FieldSystem_GetPoketchSystem(void);
 BgConfig *FieldSystem_GetBgConfig(void *fieldSystem);
 SaveData *FieldSystem_GetSaveData(void *fieldSystem);
