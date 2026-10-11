@@ -126,14 +126,15 @@ def read_land(source):
     return model, block, mdl, scale, shapes
 
 
-def repack_land(source, additions, bounds, model_limit=0xF000):
+def repack_land(source, additions, bounds, model_limit=0xF000, encode_extra=None):
     model, block, mdl, scale, shapes = read_land(source)
     sizes = list(struct.unpack_from("<4I", source))
     start = 16 + sizes[0] + sizes[1]
     # Repack only the display-list tail; dictionaries/materials/nodes stay put.
     result = bytearray(model[:min(s[2] for s in shapes)])
     for (_, header, _, dl, _), extra in zip(shapes, additions):
-        extended_dl = dl + b"".join(encode_quad(q, scale) for q in extra)
+        extended_dl = dl + (encode_extra(extra, scale) if encode_extra else
+                            b"".join(encode_quad(q, scale) for q in extra))
         if extra:
             # Added commands use normals, colors and texture coordinates.
             struct.pack_into("<I", result, header + 4, u32(model, header + 4) | 7)

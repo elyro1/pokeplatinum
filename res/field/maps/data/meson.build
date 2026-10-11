@@ -23,10 +23,6 @@ map_data_files = copy_gen.process(files(
     'map_data_023.bin',
     'map_data_024.bin',
     'map_data_026.bin',
-    'map_data_027.bin',
-    'map_data_028.bin',
-    'map_data_029.bin',
-    'map_data_030.bin',
     'map_data_032.bin',
     'map_data_033.bin',
     'map_data_034.bin',
@@ -732,6 +728,24 @@ if build_target != 'arm'
     )
 endif
 map_data_files = [map_data_files, copy_gen.process(route_207_source)]
+
+# Close all four cycling-road side profiles; ARM retains the original BINs.
+foreach member : [27, 28, 29, 30]
+    basename = 'map_data_0@0@.bin'.format(member)
+    route_206_source = files(basename)
+    if build_target != 'arm'
+        route_206_source = custom_target('route_206_@0@_widescreen'.format(member),
+            input: route_206_source,
+            output: basename,
+            depend_files: files('../../../../tools/scripts/map_scenery.py'),
+            command: [
+                find_program('../../../../tools/scripts/extend_route_206.py', native: true),
+                member.to_string(), '@INPUT@', '@OUTPUT@',
+            ],
+        )
+    endif
+    map_data_files = [map_data_files, copy_gen.process(route_206_source)]
+endforeach
 
 map_data_narc = custom_target('land_data.narc',
     output: [
