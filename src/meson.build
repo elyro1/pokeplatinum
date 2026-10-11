@@ -1029,4 +1029,10 @@ pokeplatinum_c += files(
     'port/gui_mapjump.cpp',
     'port/gui_mapjump_utils.c'
 )
+
+if(build_target == 'linux')
+pokeplatinum_c += files(
+    'port/sim_icon.cpp'
+)
+endif
 endif
