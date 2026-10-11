@@ -43,12 +43,9 @@ BOOL BerryPatchGraphics_IsBerryPatch(int graphicsID)
 
 int BerryPatchGraphics_GetCurrentGraphicsResourceID(const MapObject *mapObject)
 {
-    BerryPatchData *patchData = sub_02062A78((MapObject *)mapObject);
-
-    if (patchData->growthStage == BERRY_GROWTH_STAGE_NONE) {
-        return 0xffff;
-    }
-
+    // Resource ownership follows the initialized graphics. Streamed scriptless
+    // patches can have an uninitialized movement growth stage while their
+    // billboard already displays the saved berry tree.
     if (sub_02062DFC(mapObject) == 1) {
         BerryPatchGraphics *graphicsData = sub_02062AF0((MapObject *)mapObject);
 
