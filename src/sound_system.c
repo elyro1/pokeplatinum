@@ -25,6 +25,20 @@ static SoundSystem sSoundSystem;
 static int sSoundSystemState;
 static NNSSndCaptureOutputEffectType sOutputEffectType;
 
+#ifdef SDK_PORT
+static void SoundSystem_InitFastForwardPlayers(void)
+{
+    NNS_SndPlayerSetFastForward(PLAYER_FIELD, FALSE);
+    NNS_SndPlayerSetFastForward(PLAYER_BGM, FALSE);
+    NNS_SndPlayerSetFastForward(PLAYER_PV, TRUE);
+    NNS_SndPlayerSetFastForward(PLAYER_ME, TRUE);
+    NNS_SndPlayerSetFastForward(PLAYER_SE_1, TRUE);
+    NNS_SndPlayerSetFastForward(PLAYER_SE_2, TRUE);
+    NNS_SndPlayerSetFastForward(PLAYER_SE_3, TRUE);
+    NNS_SndPlayerSetFastForward(PLAYER_SE_4, TRUE);
+}
+#endif
+
 void SoundSystem_Init(ChatotCry *chatotCry, Options *options)
 {
     SoundSystem *soundSys = SoundSystem_Get();
@@ -38,6 +52,10 @@ void SoundSystem_Init(ChatotCry *chatotCry, Options *options)
 
     NNS_SndArcInit(&soundSys->arc, "data/sound/pl_sound_data.sdat", soundSys->heap, 0);
     NNS_SndArcPlayerSetup(soundSys->heap);
+#ifdef SDK_PORT
+    // Field music and other BGM use distinct logical players in the archive.
+    SoundSystem_InitFastForwardPlayers();
+#endif
 
     SoundSystem_InitSoundHandles(soundSys);
     SoundSystem_LoadPersistentGroup(soundSys);

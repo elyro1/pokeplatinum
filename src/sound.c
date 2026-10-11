@@ -2,6 +2,9 @@
 
 #include <nitro.h>
 #include <string.h>
+#ifdef SDK_PORT
+#include <simulator/sim_audio.h>
+#endif
 
 #include "constants/species.h"
 
@@ -795,6 +798,9 @@ void Sound_FreeWaveOutChannel(enum WaveOutChannel channel)
 
 BOOL Sound_PlayWaveOut(WaveOutParam *param, enum WaveOutChannel channel)
 {
+#ifdef SDK_PORT
+    SIM_Audio_SetChannelFastForward(channel, TRUE);
+#endif
     BOOL success = NNS_SndWaveOutStart(
         *param->handle,
         param->format,
