@@ -325,12 +325,21 @@ if build_target != 'arm'
     )
     main_matrix_source = custom_target('route_207_matrix_widescreen',
         input: [main_matrix_source, files('../maps/data/map_data_175.bin')],
-        output: 'map_matrix_000.json',
+        output: 'map_matrix_000_route_207.json',
         command: [
             find_program('../../../tools/scripts/extend_route_207.py', native: true),
             '--matrix', '@INPUT1@', '@INPUT0@', '@OUTPUT@',
         ],
     )
+    main_matrix_source = custom_target('route_214_remove_trees',
+        input: [main_matrix_source, files('../maps/data/map_data_175.bin', '../maps/data/map_data_176.bin')],
+        output: 'map_matrix_000.json',
+        command: [
+            find_program('../../../tools/scripts/remove_route_214_trees.py', native: true),
+            '@INPUT0@', '@OUTPUT@', '@INPUT1@', '@INPUT2@',
+        ],
+    )
+
 endif
 
 map_matrix_narc = custom_target('map_matrix.narc',

@@ -144,7 +144,6 @@ map_data_files = copy_gen.process(files(
     'map_data_151.bin',
     'map_data_152.bin',
     'map_data_153.bin',
-    'map_data_154.bin',
     'map_data_155.bin',
     'map_data_156.bin',
     'map_data_157.bin',
@@ -746,6 +745,20 @@ foreach member : [27, 28, 29, 30]
     endif
     map_data_files = [map_data_files, copy_gen.process(route_206_source)]
 endforeach
+
+route_214_source = files('map_data_154.bin')
+if build_target != 'arm'
+    route_214_source = custom_target('route_214_cliff_side',
+        input: route_214_source,
+        output: 'map_data_154.bin',
+        depend_files: files('../../../../tools/scripts/map_scenery.py'),
+        command: [
+            find_program('../../../../tools/scripts/remove_route_214_trees.py', native: true),
+            '--land', '@INPUT@', '@OUTPUT@',
+        ],
+    )
+endif
+map_data_files = [map_data_files, copy_gen.process(route_214_source)]
 
 map_data_narc = custom_target('land_data.narc',
     output: [
