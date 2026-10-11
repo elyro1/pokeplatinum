@@ -148,7 +148,7 @@ CanalaveCity_SetRivalBridgePositionZ711:
 CanalaveCity_RivalBridgeEnter:
     SetObjectEventMovementType LOCALID_RIVAL_BRIDGE, MOVEMENT_TYPE_LOOK_EAST
     ClearFlag FLAG_HIDE_CANALAVE_CITY_RIVAL_BRIDGE
-    AddObjectFromEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_EAST
+    AddObjectFromEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_EAST, 32
     ApplyMovement LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalNoticePlayer
     WaitMovement
     Common_SetRivalBGM
@@ -181,9 +181,9 @@ CanalaveCity_PostRivalBattle:
     BufferRivalName 0
     Message CanalaveCity_Text_TrainAtIronIsland
     CloseMessage
-    ApplyMovement LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalBridgeLeave
+    ApplyMovementSafeExit LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalBridgeLeave
     WaitMovement
-    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_WEST
+    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_WEST, 32
     SetVar VAR_CANALAVE_CITY_STATE, 1
     ReleaseAll
     End
@@ -225,7 +225,7 @@ CanalaveCity_OnFrame_RivalOutsideGym:
     ApplyMovement LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalWalkToLibrary
     ApplyMovement LOCALID_PLAYER, CanalaveCity_Movement_PlayerWatchRivalWalkToLibrary
     WaitMovement
-    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_NORTH
+    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_NORTH, 32
     SetVar VAR_CANALAVE_CITY_STATE, 3
     SetVar VAR_CANALAVE_LIBRARY_STATE, 1
     ReleaseAll
@@ -251,7 +251,7 @@ CanalaveCity_OnFrame_AfterExplosion:
     Message CanalaveCity_Text_ThatTremorUnnatural
     CloseMessage
     ClearFlag FLAG_HIDE_CANALAVE_CITY_SAILOR
-    AddObjectFromEdge LOCALID_SAILOR, MOVEMENT_ACTION_WALK_FAST_WEST
+    AddObjectFromEdge LOCALID_SAILOR, MOVEMENT_ACTION_WALK_FAST_WEST, 32
     LockObject LOCALID_SAILOR
     ApplyMovement LOCALID_SAILOR, CanalaveCity_Movement_SailorToWalkProfRowan
     WaitMovement
@@ -259,7 +259,7 @@ CanalaveCity_OnFrame_AfterExplosion:
     CloseMessage
     ApplyMovement LOCALID_SAILOR, CanalaveCity_Movement_SailorLeave
     WaitMovement
-    RemoveObjectAtEdge LOCALID_SAILOR, MOVEMENT_ACTION_WALK_FAST_SOUTH
+    RemoveObjectAtEdge LOCALID_SAILOR, MOVEMENT_ACTION_WALK_FAST_SOUTH, 32
     ApplyMovement LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalWalkOnSpotNorth
     WaitMovement
     BufferRivalName 0
@@ -267,7 +267,7 @@ CanalaveCity_OnFrame_AfterExplosion:
     CloseMessage
     ApplyMovement LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalLeaveAfterExplosion
     WaitMovement
-    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_EAST
+    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_EAST, 32
     ApplyMovement LOCALID_PROF_ROWAN, CanalaveCity_Movement_ProfRowanWalkOnSpotNorth
     WaitMovement
     BufferRivalName 0
@@ -655,7 +655,7 @@ CanalaveCity_OnFrame_AfterDarkrai:
     CloseMessage
     ApplyMovement LOCALID_SAILOR_ELDRITCH, CanalaveCity_Movement_SailorEldritchLeave
     WaitMovement
-    RemoveObjectAtEdge LOCALID_SAILOR_ELDRITCH, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
+    RemoveObjectAtEdge LOCALID_SAILOR_ELDRITCH, MOVEMENT_ACTION_WALK_NORMAL_SOUTH, 32
     SetObjectEventPos LOCALID_SAILOR_ELDRITCH, 45, 750
     SetObjectEventDir LOCALID_SAILOR_ELDRITCH, DIR_WEST
     SetObjectEventMovementType LOCALID_SAILOR_ELDRITCH, MOVEMENT_TYPE_LOOK_WEST

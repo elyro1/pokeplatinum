@@ -47,12 +47,12 @@ OreburghMineB2F_Unused2:
     GoTo OreburghMineB2F_RemoveRoark
 
 OreburghMineB2F_RoarkLeave:
-    ApplyMovement LOCALID_ROARK, OreburghMineB2F_Movement_RoarkLeave
+    ApplyMovementSafeExit LOCALID_ROARK, OreburghMineB2F_Movement_RoarkLeave
     WaitMovement
     GoTo OreburghMineB2F_RemoveRoark
 
 OreburghMineB2F_RemoveRoark:
-    RemoveObjectAtEdge LOCALID_ROARK, MOVEMENT_ACTION_WALK_NORMAL_EAST
+    RemoveObjectAtEdge LOCALID_ROARK, MOVEMENT_ACTION_WALK_NORMAL_NORTH, 32
     SetFlag FLAG_ROARK_RETURNED_TO_OREBURGH_GYM
     SetFlag FLAG_HIDE_OREBURGH_CITY_RIVAL
     ReleaseAll
@@ -66,7 +66,10 @@ OreburghMineB2F_Movement_Unused:
 
     .balign 4, 0
 OreburghMineB2F_Movement_RoarkLeave:
-    WalkNormalEast 10
+    WalkNormalEast 9
+    WalkNormalNorth 4
+    WalkNormalEast
+    WalkNormalNorth 6
     EndMovement
 
 OreburghMineB2F_Movement_Unused2:

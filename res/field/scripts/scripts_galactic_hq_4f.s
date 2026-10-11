@@ -50,12 +50,23 @@ GalacticHQ4F_Cyrus:
     WaitMovement
     Message GalacticHQ4F_Text_TakeWarpPanel
     CloseMessage
-    ApplyMovement LOCALID_CYRUS, GalacticHQ4F_Movement_CyrusLeave
-    WaitMovement
+    GetPlayerMapPos VAR_0x8004, VAR_0x8005
+    CallIfEq VAR_0x8004, 8, GalacticHQ4F_CyrusLeaveX8
+    CallIfEq VAR_0x8004, 9, GalacticHQ4F_CyrusLeaveX9
     RemoveObject LOCALID_CYRUS
     SetVar VAR_GALACTIC_HQ_4F_STATE, 1
     ReleaseAll
     End
+
+GalacticHQ4F_CyrusLeaveX8:
+    ApplyMovementWidescreen LOCALID_CYRUS, GalacticHQ4F_Movement_CyrusLeaveNative, GalacticHQ4F_Movement_CyrusLeave
+    WaitMovement
+    Return
+
+GalacticHQ4F_CyrusLeaveX9:
+    ApplyMovementWidescreen LOCALID_CYRUS, GalacticHQ4F_Movement_CyrusLeaveNative, GalacticHQ4F_Movement_CyrusLeaveX9
+    WaitMovement
+    Return
 
 GalacticHQ4F_GiveMasterBall:
     Common_GiveItemQuantity
@@ -98,7 +109,18 @@ GalacticHQ4F_Movement_CyrusWalkNorthEast:
 
     .balign 4, 0
 GalacticHQ4F_Movement_CyrusLeave:
-    WalkNormalEast 7
+    WalkNormalNorth 2
+    WalkNormalEast 10
+    WalkNormalNorth 2
+    WarpOut
+    EndMovement
+
+    .balign 4, 0
+GalacticHQ4F_Movement_CyrusLeaveX9:
+    WalkNormalNorth 2
+    WalkNormalEast 9
+    WalkNormalNorth 2
+    WarpOut
     EndMovement
 
 GalacticHQ4F_Door:
@@ -198,3 +220,8 @@ GalacticHQ4F_ReportEnd:
     End
 
     .balign 4, 0
+
+    .balign 4, 0
+GalacticHQ4F_Movement_CyrusLeaveNative:
+    WalkNormalEast 7
+    EndMovement

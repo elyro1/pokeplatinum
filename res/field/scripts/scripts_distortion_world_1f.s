@@ -71,8 +71,9 @@ DistortionWorld1F_OnFrame_FirstEntry:
     WaitMovement
     Message DistortionWorld1F_Text_WeHaveToHurry
     CloseMessage
-    ApplyMovement DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL, DistortionWorld1F_Movement_CynthiaLeave
+    ApplyMovementWidescreen DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL, DistortionWorld1F_Movement_CynthiaLeave, DistortionWorld1F_Movement_CynthiaLeaveWide
     WaitMovement
+    WalkObjectToEdge DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL, MOVEMENT_ACTION_WALK_NORMAL_WEST, 32
     DeleteDistortionWorldMapObject DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL
     SetVar VAR_DISTORTION_WORLD_PROGRESS, DIST_WORLD_PROGRESS_ENTERED_1F
     ReleaseAll
@@ -165,4 +166,16 @@ DistortionWorld1F_Movement_CynthiaLeave:
     WalkNormalWest 2
     WalkNormalSouth
     WalkNormalWest 6
+    EndMovement
+
+    .balign 4, 0
+DistortionWorld1F_Movement_CynthiaLeaveWide:
+    WalkNormalWest 3
+    WalkNormalSouth 3
+    WalkNormalWest 2
+    WalkNormalSouth
+    WalkNormalWest 10
+    WalkNormalSouth 3
+    JumpDistortionWorldSouth
+    WalkNormalSouth 3
     EndMovement

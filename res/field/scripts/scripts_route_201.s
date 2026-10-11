@@ -120,7 +120,7 @@ Route201_GoIntoTallGrass:
     WaitMovement
     PlayMusic SEQ_OPENING_sseq_1
     ClearFlag FLAG_HIDE_ROUTE_201_PROF_ROWAN
-    AddObjectFromEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_EAST
+    AddObjectFromEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
     LockObject LOCALID_PROF_ROWAN
     ApplyMovement LOCALID_PROF_ROWAN, Route201_Movement_ProfRowanEnter
     WaitMovement
@@ -206,9 +206,10 @@ Route201_WeStillLovePokemon:
     WaitMovement
     WaitTime 25, VAR_RESULT
     ClearFlag FLAG_HIDE_ROUTE_201_COUNTERPART
-    AddObjectFromEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST
+    AddObjectFromEdgeVisible LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
     LockObject LOCALID_COUNTERPART
     Common_SetCounterpartBGM
+    WaitMovement
     ApplyMovement LOCALID_COUNTERPART, Route201_Movement_CounterpartEnter
     WaitMovement
     GetPlayerGender VAR_RESULT
@@ -299,7 +300,7 @@ Route201_Briefcase:
     ApplyMovement LOCALID_PLAYER, Route201_Movement_PlayerWatchProfRowanLeave
     WaitMovement
     SetFlag FLAG_HIDE_ROUTE_201_PROF_ROWAN
-    RemoveObjectAtEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_EAST
+    RemoveObjectAtEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
     GetPlayerGender VAR_RESULT
     GoToIfEq VAR_RESULT, GENDER_MALE, Route201_DawnLeave
     GoTo Route201_LucasLeave
@@ -332,7 +333,7 @@ Route201_CounterpartLeave:
     ApplyMovementSafeExit LOCALID_COUNTERPART, Route201_Movement_CounterpartLeave
     WaitMovement
     SetFlag FLAG_HIDE_ROUTE_201_COUNTERPART
-    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
     BufferRivalName 0
     Message Route201_Text_ProfRowansReallyNice
     CloseMessage

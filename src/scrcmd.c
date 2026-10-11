@@ -342,8 +342,11 @@ static BOOL ScrCmd_ReleaseObject(ScriptContext *ctx);
 static BOOL ScrCmd_AddObject(ScriptContext *ctx);
 static BOOL ScrCmd_RemoveObject(ScriptContext *ctx);
 static BOOL ScrCmd_AddObjectFromEdge(ScriptContext *ctx);
+static BOOL ScrCmd_AddObjectFromEdgeVisible(ScriptContext *ctx);
+static BOOL ScrCmd_WalkObjectToEdge(ScriptContext *ctx);
 static BOOL ScrCmd_RemoveObjectAtEdge(ScriptContext *ctx);
 static BOOL ScrCmd_ApplyMovementSafeExit(ScriptContext *ctx);
+static BOOL ScrCmd_ApplyMovementWidescreen(ScriptContext *ctx);
 static BOOL ScrCmd_AddFreeCamera(ScriptContext *ctx);
 static BOOL ScrCmd_RestoreCamera(ScriptContext *ctx);
 static BOOL ScrCmd_AddCameraOverrideObject(ScriptContext *ctx);
@@ -2047,6 +2050,28 @@ static BOOL ScrCmd_SetMenuYOriginSide(ScriptContext *ctx)
     return TRUE;
 }
 
+static BOOL ScrCmd_ApplyMovementWidescreen(ScriptContext *ctx)
+{
+    u16 localID = ScriptContext_GetVar(ctx);
+    s32 offset = ScriptContext_ReadWord(ctx);
+    const MapObjectAnimCmd *native = (const MapObjectAnimCmd *)(ctx->scriptPtr + offset);
+    offset = ScriptContext_ReadWord(ctx);
+    const MapObjectAnimCmd *wide = (const MapObjectAnimCmd *)(ctx->scriptPtr + offset);
+    const MapObjectAnimCmd *commands = native;
+#ifdef SDK_PORT
+    if (ctx->fieldSystem->npcSceneViewWidth > HW_LCD_WIDTH && ctx->fieldSystem->npcSceneNativeViewLocks == 0) {
+        commands = wide;
+    }
+#endif
+    MapObject *object = GetLocalMapObjByIndex(ctx->fieldSystem, localID);
+    GF_ASSERT(object != NULL);
+    SysTask *task = MapObject_StartAnimation(object, commands);
+    u8 *movementCount = FieldSystem_GetScriptMemberPtr(ctx->fieldSystem, SCRIPT_MANAGER_MOVEMENT_COUNT);
+    (*movementCount)++;
+    sub_02040F28(ctx->fieldSystem, task, NULL);
+    return FALSE;
+}
+
 static BOOL ApplyScriptMovement(ScriptContext *ctx, BOOL safeExit)
 {
     u16 localID = ScriptContext_GetVar(ctx);
@@ -2409,6 +2434,48 @@ static BOOL ScrCmd_RemoveObject(ScriptContext *ctx)
         MapObject_SetFlagAndDeleteObject(mapObj);
     }
 
+    return FALSE;
+}
+
+#ifdef SDK_PORT
+static BOOL ScriptContext_WaitForNpcVisible(ScriptContext *ctx)
+{
+    MapObject *object = GetLocalMapObjByIndex(ctx->fieldSystem, ctx->data[0]);
+    return ScriptedNpcScene_ObjectVisible(ctx->fieldSystem, object);
+}
+#endif
+
+static BOOL ScrCmd_AddObjectFromEdgeVisible(ScriptContext *ctx)
+{
+    FieldSystem *fieldSystem = ctx->fieldSystem;
+    u16 localID = ScriptContext_GetVar(ctx);
+    u16 action = ScriptContext_ReadHalfWord(ctx);
+    u16 maxTiles = ScriptContext_ReadHalfWord(ctx);
+    MapObject *object = MapObjectMan_AddMapObjectFromLocalID(fieldSystem->mapObjMan, localID, MapHeaderData_GetNumObjectEvents(fieldSystem), fieldSystem->location->mapHeaderID, MapHeaderData_GetObjectEvents(fieldSystem));
+    GF_ASSERT(object != NULL);
+#ifdef SDK_PORT
+    if (ScriptedNpcScene_Start(fieldSystem, object, action, maxTiles, FALSE)) {
+        ctx->data[0] = localID;
+        ScriptContext_Pause(ctx, ScriptContext_WaitForNpcVisible);
+        return TRUE;
+    }
+#endif
+    return FALSE;
+}
+
+static BOOL ScrCmd_WalkObjectToEdge(ScriptContext *ctx)
+{
+    u16 localID = ScriptContext_GetVar(ctx);
+    u16 action = ScriptContext_ReadHalfWord(ctx);
+    u16 maxTiles = ScriptContext_ReadHalfWord(ctx);
+#ifdef SDK_PORT
+    MapObject *object = GetLocalMapObjByIndex(ctx->fieldSystem, localID);
+    GF_ASSERT(object != NULL);
+    if (ScriptedNpcScene_StartRetainedExit(ctx->fieldSystem, object, action, maxTiles)) {
+        ScriptContext_Pause(ctx, ScriptContext_WaitForMovement);
+        return TRUE;
+    }
+#endif
     return FALSE;
 }
 

@@ -17,9 +17,10 @@ DistortionWorldB1F_OnFrame_FirstEntry:
     WaitMovement
     Message DistortionWorldB1F_Text_WillWeSeeGiratina
     CloseMessage
-    ApplyMovement DIST_WORLD_MAP_OBJECT_B1F_CYNTHIA_ELEVATOR, DistortionWorldB1F_Movement_CynthiaLeave
+    ApplyMovementWidescreen DIST_WORLD_MAP_OBJECT_B1F_CYNTHIA_ELEVATOR, DistortionWorldB1F_Movement_CynthiaLeave, DistortionWorldB1F_Movement_CynthiaLeaveWide
     ApplyMovement LOCALID_PLAYER, DistortionWorldB1F_Movement_PlayerWatchCynthiaLeave
     WaitMovement
+    WalkObjectToEdge DIST_WORLD_MAP_OBJECT_B1F_CYNTHIA_ELEVATOR, MOVEMENT_ACTION_WALK_NORMAL_WEST, 32
     DeleteDistortionWorldMapObject DIST_WORLD_MAP_OBJECT_B1F_CYNTHIA_ELEVATOR
     SetVar VAR_DISTORTION_WORLD_PROGRESS, DIST_WORLD_PROGRESS_ENTERED_B1F
     ReleaseAll
@@ -85,4 +86,16 @@ DistortionWorldB1F_Movement_MespritMoveNorth:
     WalkNormalNorth
     WalkFastNorth
     WalkFasterNorth 8
+    EndMovement
+
+    .balign 4, 0
+DistortionWorldB1F_Movement_CynthiaLeaveWide:
+    WalkNormalWest
+    WalkNormalSouth 2
+    WalkOnSpotNormalWest
+    Delay16
+    JumpDistortionWorldWest 2
+    JumpDistortionWorldSouth
+    JumpDistortionWorldWest 4
+    Delay16
     EndMovement

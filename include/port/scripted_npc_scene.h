@@ -13,4 +13,9 @@ BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 act
 // Counts as ApplyMovement; the script still owns the eventual removal.
 BOOL ScriptedNpcScene_StartDeparture(FieldSystem *fieldSystem, MapObject *object, const MapObjectAnimCmd *commands);
 
+// Keep special-map object lifetime under the original script's control.
+BOOL ScriptedNpcScene_StartRetainedExit(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles);
+
+BOOL ScriptedNpcScene_ObjectVisible(FieldSystem *fieldSystem, MapObject *object);
+
 #endif

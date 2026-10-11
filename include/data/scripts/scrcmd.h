@@ -853,6 +853,11 @@ ScriptCommand(SCRCMD_ADDOBJECTFROMEDGE,                                    ScrCm
 ScriptCommand(SCRCMD_REMOVEOBJECTATEDGE,                                  ScrCmd_RemoveObjectAtEdge)
 ScriptCommand(SCRCMD_APPLYMOVEMENTSAFEEXIT,                               ScrCmd_ApplyMovementSafeExit)
 
+ScriptCommand(SCRCMD_ADDOBJECTFROMEDGEVISIBLE,                             ScrCmd_AddObjectFromEdgeVisible)
+ScriptCommand(SCRCMD_WALKOBJECTTOEDGE,                                    ScrCmd_WalkObjectToEdge)
+
+ScriptCommand(SCRCMD_APPLYMOVEMENTWIDESCREEN,                             ScrCmd_ApplyMovementWidescreen)
+
 // clang-format on
 
 #endif // POKEPLATINUM_DATA_SCRIPTS_SCRCMD_H

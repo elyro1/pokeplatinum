@@ -22,9 +22,9 @@ MtCoronet1FSouth_CoordEvent_Cyrus:
     Message MtCoronet1FSouth_Text_ButWhatBecameOfThatWorld
     CloseMessage
     ApplyMovement LOCALID_PLAYER, MtCoronet1FSouth_Movement_PlayerMoveAsideAndWatchCyrusLeave
-    ApplyMovement LOCALID_CYRUS, MtCoronet1FSouth_Movement_CyrusLeave
+    ApplyMovementSafeExit LOCALID_CYRUS, MtCoronet1FSouth_Movement_CyrusLeave
     WaitMovement
-    RemoveObjectAtEdge LOCALID_CYRUS, MOVEMENT_ACTION_WALK_NORMAL_WEST
+    RemoveObjectAtEdge LOCALID_CYRUS, MOVEMENT_ACTION_WALK_NORMAL_WEST, 32
     SetVar VAR_MT_CORONET_1F_SOUTH_STATE, 1
     ReleaseAll
     End

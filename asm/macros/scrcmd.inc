@@ -666,6 +666,13 @@
     .long \movementOffset-.-4
     .endm
 
+    .macro ApplyMovementWidescreen localID, nativeOffset, wideOffset
+    .short SCRCMD_APPLYMOVEMENTWIDESCREEN
+    .short \localID
+    .long \nativeOffset-.-4
+    .long \wideOffset-.-4
+    .endm
+
     .macro WaitMovement
     .short SCRCMD_WAITMOVEMENT
     .endm
@@ -708,6 +715,22 @@
     // These helpers block until extra travel finishes. action must be a walk.
     .macro AddObjectFromEdge localID, action, maxTiles=12
     .short SCRCMD_ADDOBJECTFROMEDGE
+    .short \localID
+    .short \action
+    .short \maxTiles
+    .endm
+
+    // Returns at first visibility; WaitMovement still owns the full approach.
+    .macro AddObjectFromEdgeVisible localID, action, maxTiles=32
+    .short SCRCMD_ADDOBJECTFROMEDGEVISIBLE
+    .short \localID
+    .short \action
+    .short \maxTiles
+    .endm
+
+    // Retains the actor, including Distortion World's special object records.
+    .macro WalkObjectToEdge localID, action, maxTiles=32
+    .short SCRCMD_WALKOBJECTTOEDGE
     .short \localID
     .short \action
     .short \maxTiles

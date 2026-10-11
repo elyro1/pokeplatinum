@@ -374,7 +374,7 @@ PastoriaCity_CoordEvent_RivalBattle:
     SetObjectEventPos LOCALID_RIVAL, 595, 819
     SetObjectEventMovementType LOCALID_RIVAL, MOVEMENT_TYPE_LOOK_WEST
     SetObjectEventDir LOCALID_RIVAL, DIR_WEST
-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH, 32
     ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalEnterForBattle
     WaitMovement
     Common_SetRivalBGM
@@ -411,9 +411,9 @@ PastoriaCity_RivalPostBattle:
     BufferPlayerName 1
     Message PastoriaCity_Text_YouDidGetTougher
     CloseMessage
-    ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterBattle
+    ApplyMovementSafeExit LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterBattle
     WaitMovement
-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH, 32
     SetVar VAR_PASTORIA_CITY_STATE, 2
     ReleaseAll
     End
@@ -460,7 +460,7 @@ PastoriaCity_OnFrame_ExitGym:
     SetObjectEventPos LOCALID_RIVAL, 595, 819
     SetObjectEventMovementType LOCALID_RIVAL, MOVEMENT_TYPE_LOOK_SOUTH
     SetObjectEventDir LOCALID_RIVAL, DIR_SOUTH
-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH, 32
     LockObject LOCALID_RIVAL
     ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalEnterAfterGym
     ApplyMovement LOCALID_PLAYER, PastoriaCity_Movement_PlayerFaceRivalAfterGym
@@ -508,12 +508,12 @@ PastoriaCity_OnFrame_ExitGym:
     CloseMessage
     ApplyMovement LOCALID_PLAYER, PastoriaCity_Movement_PlayerWatchCrasherWakeLeave
     ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalMoveAwayForCrasherWake
-    ApplyMovement LOCALID_CRASHER_WAKE, PastoriaCity_Movement_CrasherWakeLeave
+    ApplyMovementSafeExit LOCALID_CRASHER_WAKE, PastoriaCity_Movement_CrasherWakeLeave
     WaitMovement
     BufferRivalName 0
     Message PastoriaCity_Text_HeyMasterWait
     CloseMessage
-    ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterGym
+    ApplyMovementSafeExit LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterGym
     WaitMovement
     Call PastoriaCity_SetCrasherWakePositionAfterGym
     ClearFlag FLAG_HIDE_PASTORIA_CITY_CRASHER_WAKE
@@ -677,7 +677,7 @@ PastoriaCity_GruntMPushedTheButton:
     Return
 
 PastoriaCity_MoveGruntMEast:
-    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST
+    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST, 32
     ClearFlag FLAG_HIDE_PASTORIA_CITY_GRUNT_M
     SetObjectEventPos LOCALID_GRUNT_M, 637, 812
     SetObjectEventMovementType LOCALID_GRUNT_M, MOVEMENT_TYPE_LOOK_EAST
@@ -953,7 +953,7 @@ PastoriaCity_FaceBoardEnd:
 
 PastoriaCity_CroagunkScene:
     ClearFlag FLAG_HIDE_PASTORIA_CITY_CROAGUNK
-    AddObjectFromEdge LOCALID_CROAGUNK, MOVEMENT_ACTION_WALK_NORMAL_NORTH
+    AddObjectFromEdge LOCALID_CROAGUNK, MOVEMENT_ACTION_WALK_NORMAL_NORTH, 32
     ApplyMovement LOCALID_PLAYER, PastoriaCity_Movement_PlayerWalkOnSpotSouth
     ApplyMovement LOCALID_CROAGUNK, PastoriaCity_Movement_CroagunkEnter
     WaitMovement

@@ -6,6 +6,7 @@
 #include "field/field_system.h"
 #include "overlay005/ov5_021ECC20.h"
 #include "overlay005/map_object_anim_cmd.h"
+#include "overlay005/land_data.h"
 #include "overlay005/object_event_gfx_data.h"
 
 #include "heap.h"
@@ -19,7 +20,7 @@
 // Only ordinary 32x32 billboards are supported by this prototype.
 // This volume includes their billboard offset, shadow and reflection, plus
 // an eight-pixel guard band in clip space. Larger/special models use 4:3.
-#define NPC_SCENE_MAX_TILES     12
+#define NPC_SCENE_MAX_TILES     32
 #define NPC_SCENE_MARGIN_PIXELS 8
 
 typedef struct {
@@ -135,9 +136,11 @@ static BOOL NpcScene_SafeStep(NpcSceneTask *scene, const VecFx32 *source, int di
     FieldSystem *fieldSystem = scene->fieldSystem;
     int x = source->x / MAP_OBJECT_TILE_SIZE;
     int z = source->z / MAP_OBJECT_TILE_SIZE;
+    int offsetX = LandDataManager_GetOffsetTileX(fieldSystem->landDataMan);
+    int offsetZ = LandDataManager_GetOffsetTileZ(fieldSystem->landDataMan);
     int nextX = x + MapObject_GetDxFromDir(dir);
     int nextZ = z + MapObject_GetDzFromDir(dir);
-    if (nextX < 0 || nextZ < 0 || nextX >= MapMatrix_GetWidth(fieldSystem->mapMatrix) * 32 || nextZ >= MapMatrix_GetHeight(fieldSystem->mapMatrix) * 32) {
+    if (nextX < offsetX || nextZ < offsetZ || nextX >= offsetX + MapMatrix_GetWidth(fieldSystem->mapMatrix) * 32 || nextZ >= offsetZ + MapMatrix_GetHeight(fieldSystem->mapMatrix) * 32) {
         return FALSE;
     }
     u16 attributes;
@@ -152,7 +155,7 @@ static BOOL NpcScene_SafeStep(NpcSceneTask *scene, const VecFx32 *source, int di
     MapObject_SetX(object, x);
     MapObject_SetZ(object, z);
     MapObject_SetCurrTileBehavior(object, TerrainCollisionManager_GetTileBehavior(fieldSystem, x, z));
-    u32 collision = sub_02063E18(object, source, nextX, MapObject_GetY(object), nextZ, dir);
+    u32 collision = sub_02063E18(object, source, nextX, source->y / (8 * FX32_ONE), nextZ, dir);
     MapObject_SetX(object, originalX);
     MapObject_SetZ(object, originalZ);
     MapObject_SetCurrTileBehavior(object, originalBehavior);
@@ -174,23 +177,28 @@ typedef struct {
     u8 depth;
 } NpcExitNode;
 
-// A straight exit is preferred. If it is blocked, find a short walkable detour
-// within the remaining tile budget. Never reverse the authored exit direction.
-static BOOL NpcScene_FindExitDetour(NpcSceneTask *scene)
+// Prefer the authored direction, but allow turns around walls and back onto
+// a road. Entrances plan outward from the anchor and validate the return route
+// in both directions before moving the object to its invisible starting tile.
+static BOOL NpcScene_FindRoute(NpcSceneTask *scene, BOOL entrance)
 {
     enum {
         SIDE = NPC_SCENE_MAX_TILES * 2 + 1,
-        NODE_COUNT = SIDE * SIDE
+        VISITED_COUNT = SIDE * SIDE,
+        NODE_COUNT = 2 * NPC_SCENE_MAX_TILES * (NPC_SCENE_MAX_TILES + 1) + 1
     };
-    u8 visited[NODE_COUNT] = { 0 };
+    u8 *visited = Heap_Alloc(HEAP_ID_FIELD1, VISITED_COUNT);
+    GF_ASSERT(visited != NULL);
+    memset(visited, 0, VISITED_COUNT);
     NpcExitNode *nodes = Heap_Alloc(HEAP_ID_FIELD1, sizeof(*nodes) * NODE_COUNT);
     GF_ASSERT(nodes != NULL);
     VecFx32 origin = *MapObject_GetPos(scene->object);
     VecFx32 renderOffset;
     ov5_021ECDA0(scene->object, &renderOffset);
     VEC_Subtract(&renderOffset, &origin, &renderOffset);
-    int dirs[3] = { scene->dir, DIR_NORTH, DIR_SOUTH };
-    if (scene->dir == DIR_NORTH || scene->dir == DIR_SOUTH) {
+    int preferred = entrance ? Direction_GetOpposite(scene->dir) : scene->dir;
+    int dirs[4] = { preferred, DIR_NORTH, DIR_SOUTH, Direction_GetOpposite(preferred) };
+    if (preferred == DIR_NORTH || preferred == DIR_SOUTH) {
         dirs[1] = DIR_WEST;
         dirs[2] = DIR_EAST;
     }
@@ -202,14 +210,17 @@ static BOOL NpcScene_FindExitDetour(NpcSceneTask *scene)
         if (nodes[head].depth >= scene->remaining || nodes[head].depth >= NPC_SCENE_MAX_TILES) {
             continue;
         }
-        for (int i = 0; i < 3; i++) {
-            VecFx32 dest;
-            dest = nodes[head].pos;
+        for (int i = 0; i < 4; i++) {
+            VecFx32 dest = nodes[head].pos;
             VecFx32_StepDirection(dirs[i], &dest, MAP_OBJECT_TILE_SIZE);
             int dx = (dest.x - origin.x) / MAP_OBJECT_TILE_SIZE;
             int dz = (dest.z - origin.z) / MAP_OBJECT_TILE_SIZE;
             int index = (dz + NPC_SCENE_MAX_TILES) * SIDE + dx + NPC_SCENE_MAX_TILES;
             if (visited[index] || !NpcScene_SafeStep(scene, &nodes[head].pos, dirs[i], &dest)) {
+                continue;
+            }
+            VecFx32 reverse;
+            if (entrance && !NpcScene_SafeStep(scene, &dest, Direction_GetOpposite(dirs[i]), &reverse)) {
                 continue;
             }
             visited[index] = TRUE;
@@ -220,16 +231,18 @@ static BOOL NpcScene_FindExitDetour(NpcSceneTask *scene)
             VEC_Add(&dest, &renderOffset, &renderPos);
             int forward = dx * MapObject_GetDxFromDir(scene->dir) + dz * MapObject_GetDzFromDir(scene->dir);
             int sideways = dx * MapObject_GetDzFromDir(scene->dir) - dz * MapObject_GetDxFromDir(scene->dir);
-            // A blocker early in an authored departure can be farther than
-            // twelve tiles from the screen edge. Route around it back to the
-            // departure row, then resume checked walking toward the edge.
-            BOOL departureWaypoint = scene->keepObject && scene->minimumSteps > 0 && forward >= 2 && sideways == 0;
-            if (forward > 0 && (!NpcScene_PositionVisible(scene->fieldSystem, &renderPos) || departureWaypoint)) {
+            BOOL departureWaypoint = !entrance && scene->minimumSteps > 0 && forward >= 2 && sideways == 0;
+            if (!NpcScene_PositionVisible(scene->fieldSystem, &renderPos) || departureWaypoint) {
                 scene->pathCount = nodes[next].depth;
                 scene->pathIndex = 0;
                 for (int step = scene->pathCount - 1; step >= 0; step--) {
-                    scene->path[step] = nodes[next].dir;
+                    scene->path[entrance ? scene->pathCount - 1 - step : step] = entrance ? Direction_GetOpposite(nodes[next].dir) : nodes[next].dir;
                     next = nodes[next].parent;
+                }
+                if (entrance) {
+                    scene->remaining = scene->pathCount;
+                    MapObject_SetPosDirFromVec(scene->object, &dest, scene->path[0]);
+                    sub_02062B68(scene->object);
                 }
                 found = TRUE;
                 break;
@@ -237,6 +250,7 @@ static BOOL NpcScene_FindExitDetour(NpcSceneTask *scene)
         }
     }
     Heap_Free(nodes);
+    Heap_Free(visited);
     return found;
 }
 
@@ -316,11 +330,13 @@ static void NpcScene_Update(SysTask *task, void *param)
         scene->animation = MapObject_StartAnimation(scene->object, scene->commands);
         return;
     }
-    if (scene->keepObject) {
+    if (scene->prefix != NULL) {
         scene->commands[0] = scene->prefix[scene->prefixCount];
         scene->commands[0].count = 1;
     }
     if (!scene->exiting && scene->remaining == 0) {
+        MapObject_SetPosDirFromVec(scene->object, &scene->anchor, scene->dir);
+        sub_02062B68(scene->object);
         NpcScene_Finish(task, scene);
         return;
     }
@@ -335,7 +351,7 @@ static void NpcScene_Update(SysTask *task, void *param)
     VecFx32 dest;
     int dir = scene->pathIndex < scene->pathCount ? scene->path[scene->pathIndex] : scene->dir;
     if (!NpcScene_SafeStep(scene, MapObject_GetPos(scene->object), dir, &dest)) {
-        if (!scene->exiting || !NpcScene_FindExitDetour(scene)) {
+        if (!scene->exiting || !NpcScene_FindRoute(scene, FALSE)) {
             NpcScene_UseNativeView(scene);
             return;
         }
@@ -345,7 +361,7 @@ static void NpcScene_Update(SysTask *task, void *param)
     scene->animation = MapObject_StartAnimation(scene->object, scene->commands);
 }
 
-static BOOL NpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles, BOOL exiting, const MapObjectAnimCmd *departure, int prefixCount)
+static BOOL NpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles, BOOL exiting, const MapObjectAnimCmd *departure, int prefixCount, BOOL retain)
 {
     if (fieldSystem->npcSceneViewWidth == HW_LCD_WIDTH && fieldSystem->npcSceneNativeViewLocks == 0) {
         return FALSE; // Preserve native-width movement and timing exactly.
@@ -357,6 +373,7 @@ static BOOL NpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 acti
     scene->object = object;
     scene->dir = NpcScene_WalkDirection(action);
     scene->exiting = exiting;
+    scene->keepObject = retain;
     scene->anchor = *MapObject_GetPos(object);
     scene->remaining = maxTiles < NPC_SCENE_MAX_TILES ? maxTiles : NPC_SCENE_MAX_TILES;
     if (departure != NULL) {
@@ -371,35 +388,39 @@ static BOOL NpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 acti
     scene->commands[1].movementAction = MOVEMENT_ACTION_END;
     if (scene->dir == DIR_NONE || !NpcScene_OrdinaryBillboard(object) || fieldSystem->npcSceneViewWidth == 0 || fieldSystem->npcSceneNativeViewLocks != 0) {
         NpcScene_UseNativeView(scene);
-    } else if (!exiting) {
+    } else if (!exiting && NpcScene_ObjectVisible(scene)) {
+        // Keep a straight approach where possible to preserve its choreography.
         VecFx32 anchor = *MapObject_GetPos(object);
         VecFx32 spawn = anchor;
         VecFx32 renderOffset;
         ov5_021ECDA0(object, &renderOffset);
         VEC_Subtract(&renderOffset, &anchor, &renderOffset);
         int steps = 0;
+        BOOL straight = FALSE;
         while (TRUE) {
             VecFx32 renderPos;
             VEC_Add(&spawn, &renderOffset, &renderPos);
             if (!NpcScene_PositionVisible(fieldSystem, &renderPos)) {
+                straight = TRUE;
                 break;
             }
             VecFx32 next, reverse;
             int opposite = Direction_GetOpposite(scene->dir);
             if (steps == scene->remaining || !NpcScene_SafeStep(scene, &spawn, opposite, &next) || !NpcScene_SafeStep(scene, &next, scene->dir, &reverse)) {
-                NpcScene_UseNativeView(scene);
                 break;
             }
             spawn = next;
             steps++;
         }
-        if (!scene->nativeView) {
+        if (straight) {
             scene->remaining = steps;
-            if (steps != 0) {
-                MapObject_SetPosDirFromVec(object, &spawn, scene->dir);
-                sub_02062B68(object);
-            }
+            MapObject_SetPosDirFromVec(object, &spawn, scene->dir);
+            sub_02062B68(object);
+        } else if (!NpcScene_FindRoute(scene, TRUE)) {
+            NpcScene_UseNativeView(scene);
         }
+    } else if (!exiting) {
+        scene->remaining = 0;
     }
     if (!scene->nativeView && !NpcScene_ObjectVisible(scene) && exiting && !scene->keepObject) {
         Heap_Free(scene);
@@ -417,7 +438,7 @@ static BOOL NpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 acti
 
 BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles, BOOL exiting)
 {
-    return NpcScene_Start(fieldSystem, object, action, maxTiles, exiting, NULL, 0);
+    return NpcScene_Start(fieldSystem, object, action, maxTiles, exiting, NULL, 0, FALSE);
 }
 
 BOOL ScriptedNpcScene_StartDeparture(FieldSystem *fieldSystem, MapObject *object, const MapObjectAnimCmd *commands)
@@ -432,8 +453,23 @@ BOOL ScriptedNpcScene_StartDeparture(FieldSystem *fieldSystem, MapObject *object
             if (i == 0 || commands[i - 1].count == 0 || NpcScene_WalkDirection(commands[i - 1].movementAction) == DIR_NONE) {
                 return FALSE;
             }
-            return NpcScene_Start(fieldSystem, object, commands[i - 1].movementAction, NPC_SCENE_MAX_TILES, TRUE, commands, i - 1);
+            return NpcScene_Start(fieldSystem, object, commands[i - 1].movementAction, NPC_SCENE_MAX_TILES, TRUE, commands, i - 1, TRUE);
         }
     }
     return FALSE;
+}
+
+BOOL ScriptedNpcScene_StartRetainedExit(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles)
+{
+    return NpcScene_Start(fieldSystem, object, action, maxTiles, TRUE, NULL, 0, TRUE);
+}
+
+BOOL ScriptedNpcScene_ObjectVisible(FieldSystem *fieldSystem, MapObject *object)
+{
+    if (fieldSystem->npcSceneNativeViewLocks != 0) {
+        return TRUE;
+    }
+    VecFx32 pos;
+    ov5_021ECDA0(object, &pos);
+    return NpcScene_PositionVisible(fieldSystem, &pos);
 }
