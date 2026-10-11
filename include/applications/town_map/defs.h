@@ -123,6 +123,7 @@ typedef struct TownMapGraphicsManager {
     Sprite *cursorSprite;
     Sprite *playerSprite;
     SysTask *sysTask;
+    BOOL showingDetailsOnTop;
 } TownMapGraphicsManager;
 
 typedef struct TownMapAppData TownMapAppData;

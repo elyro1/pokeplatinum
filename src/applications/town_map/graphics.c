@@ -4,6 +4,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifndef SDK_BUILD_ARM
+#include <simulator/sim.h>
+#endif
+
 #include "generated/genders.h"
 #include "generated/hidden_locations.h"
 #include "generated/map_headers.h"
@@ -98,6 +102,7 @@ static void SwitchBottomScreen(TownMapAppData *appData, BOOL isShowingZoomedInMa
 static void Task_SwitchBottomScreenToZoomedMap(SysTask *sysTask, void *appData);
 static void Task_SwitchBottomScreenToZoomButton(SysTask *sysTask, void *appData);
 static BOOL CanFlyToHoveredLocation(TownMapAppData *appData);
+static BOOL HasLocationDescription(TownMapAppData *appData, TownMapBlock *mapBlock);
 
 BOOL TownMap_CreateGraphicsMan(TownMapAppData *appData)
 {
@@ -111,6 +116,12 @@ BOOL TownMap_CreateGraphicsMan(TownMapAppData *appData)
 BOOL TownMap_FreeGraphics(TownMapAppData *appData)
 {
     TownMapGraphicsManager *graphicsMan = appData->graphicsMan;
+
+#ifndef SDK_BUILD_ARM
+    if (graphicsMan->showingDetailsOnTop) {
+        GX_SetDispSelect(GX_DISP_SELECT_MAIN_SUB);
+    }
+#endif
 
     ClearBGLayers(appData);
 
@@ -206,6 +217,17 @@ BOOL TownMap_HandleInput_Item(TownMapAppData *appData)
 {
     TownMapGraphicsManager *graphicsMan = appData->graphicsMan;
 
+#ifndef SDK_BUILD_ARM
+    if (graphicsMan->showingDetailsOnTop) {
+        if (JOY_NEW(PAD_BUTTON_B)) {
+            graphicsMan->showingDetailsOnTop = FALSE;
+            Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
+        }
+
+        return FALSE;
+    }
+#endif
+
     if (graphicsMan->zoomedInMapTransitionStage <= 1 && JOY_NEW(PAD_BUTTON_B)) {
         Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
         return TRUE;
@@ -214,6 +236,25 @@ BOOL TownMap_HandleInput_Item(TownMapAppData *appData)
     if (graphicsMan->zoomedInMapTransitionStage > 1) {
         return FALSE;
     }
+
+#ifndef SDK_BUILD_ARM
+    if (SIM_GetConfigPtr()->screenLayout == SIM_CONFIG_SCREEN_LAYOUT_TOP_ONLY
+        && JOY_NEW(PAD_BUTTON_A)
+        && graphicsMan->queuedMovement == 0
+        && HasLocationDescription(appData, graphicsMan->hoveredBlock)) {
+        if (!graphicsMan->showingZoomedInMap) {
+            Bg_FillTilemapRect(appData->bgConfig, BG_LAYER_SUB_0, 0, 0, 0, 32, 32, TILEMAP_FILL_VAL_INCLUDES_PALETTE);
+            Bg_FillTilemapRect(appData->bgConfig, BG_LAYER_SUB_1, 0, 0, 0, 32, 32, TILEMAP_FILL_VAL_INCLUDES_PALETTE);
+            PrintBottomScreenHeader(appData, &graphicsMan->windows[TOWN_MAP_WINDOW_BOTTOM_SCREEN_HEADER]);
+            graphicsMan->showingZoomedInMap = TRUE;
+        }
+
+        UpdateBottomScreenText(appData);
+        graphicsMan->showingDetailsOnTop = TRUE;
+        Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
+        return FALSE;
+    }
+#endif
 
     HandleInput(appData, gSystem.heldKeys);
 
@@ -260,6 +301,10 @@ BOOL TownMap_HandleInput_WallMap(TownMapAppData *appData)
 BOOL TownMap_UpdateBottomScreen(TownMapAppData *appData)
 {
     TownMapGraphicsManager *graphicsMan = appData->graphicsMan;
+
+    if (graphicsMan->showingDetailsOnTop) {
+        return FALSE;
+    }
 
     if (graphicsMan->zoomedInMapMvtDone & TRUE) {
         if (graphicsMan->unk_15_0 >= 2) {
@@ -530,6 +575,18 @@ static void PrintLocationName(TownMapAppData *appData, Window *window, enum MapH
     }
 
     Window_CopyToVRAM(window);
+}
+
+static BOOL HasLocationDescription(TownMapAppData *appData, TownMapBlock *mapBlock)
+{
+    if (mapBlock == NULL) {
+        return FALSE;
+    }
+
+    TownMapLocationDescCheckResults *checks = &appData->context->descCheckResults[mapBlock->index];
+
+    return (mapBlock->areaDescString != 0xFFFF && (!checks->areaDescHasCheck || checks->areaDescCheckResult))
+        || (mapBlock->landmarkDescString != 0xFFFF && (!checks->landmarkDescHasCheck || checks->landmarkCheckResult));
 }
 
 static void PrintLocationDescription(TownMapAppData *appData, Window *window, TownMapBlock *mapBlock)
