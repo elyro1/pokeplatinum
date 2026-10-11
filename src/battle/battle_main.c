@@ -90,6 +90,10 @@
 
 #include "res/text/bank/battle_strings.h"
 
+#ifdef SDK_PORT
+#include "port/sim_config_prj.h"
+#endif
+
 FS_EXTERN_OVERLAY(overlay10);
 FS_EXTERN_OVERLAY(overlay11);
 FS_EXTERN_OVERLAY(battle_anim);
@@ -1556,6 +1560,16 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
     int maxBattlers = BattleSystem_GetMaxBattlers(battleSys);
     int flags = 0;
     int redHPSoundFlag = BattleSystem_GetRedHPSoundFlag(battleSys);
+    int redHPSoundDelay = 4;
+
+#ifdef SDK_PORT
+    SIM_Config_prj_type *config = SIM_Config_prj_GetConfig();
+
+    if (config->enable60fps && config->enable60fpsSpeedFix) {
+        // The gap between beeps is counted in game frames, unlike audio playback.
+        redHPSoundDelay *= 2;
+    }
+#endif
 
     if (BattleSystem_GetBattleType(battleSys) & (BATTLE_TYPE_SAFARI | BATTLE_TYPE_PAL_PARK)) {
         return;
@@ -1588,7 +1602,7 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
     if (flags && BattleSystem_GetRedHPSoundFlag(battleSys) == FALSE) {
         Sound_PlayEffect(SEQ_SE_DP_HINSI_sseq);
         BattleSystem_SetRedHPSoundFlag(battleSys, 1);
-        BattleSystem_SetRedHPSoundEffectDelay(battleSys, 4);
+        BattleSystem_SetRedHPSoundEffectDelay(battleSys, redHPSoundDelay);
     } else if (flags == 0 && BattleSystem_GetRedHPSoundFlag(battleSys)) {
         Sound_StopEffect(SEQ_SE_DP_HINSI_sseq, 0);
         BattleSystem_SetRedHPSoundFlag(battleSys, 0);
@@ -1600,7 +1614,7 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
         if (Sound_IsEffectPlaying(SEQ_SE_DP_HINSI_sseq) == FALSE) {
             if (--delay == 0) {
                 Sound_PlayEffect(SEQ_SE_DP_HINSI_sseq);
-                BattleSystem_SetRedHPSoundEffectDelay(battleSys, 4);
+                BattleSystem_SetRedHPSoundEffectDelay(battleSys, redHPSoundDelay);
             } else {
                 BattleSystem_SetRedHPSoundEffectDelay(battleSys, delay);
             }
