@@ -1397,6 +1397,8 @@ static BOOL CutIn_InitSpritesFly(HMCutIn *cutIn)
 
 static BOOL HMCutIn_UnloadMonSprite(HMCutIn *cutIn)
 {
+    Sprite_Delete(cutIn->pokemonSprite);
+    cutIn->pokemonSprite = NULL;
     CutIn_UnloadPokemonSpriteResources(cutIn);
     cutIn->state++;
     return FALSE;
