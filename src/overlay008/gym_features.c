@@ -3882,16 +3882,19 @@ static void HearthomeGym_InitFog(HearthomeGymSystem *gymSystem)
 
     fog->fogMan = fogMan;
     fog->fogSlope = GX_FOGSLOPE_0x0020;
-    fog->fogR = 1;
-    fog->fogG = 1;
-    fog->fogB = 1;
+    fog->fogR = 0;
+    fog->fogG = 0;
+    fog->fogB = 0;
     fog->fogAlpha = 1;
 
-    char fogDensity = 109;
+    // Hide puzzle markings outside the fog-free flashlight beams. Keep this
+    // local to the gym: route weather uses the same renderer and fog manager.
+    char fogDensity = 127;
     if (TrainerInfo_HasBadge(SaveData_GetTrainerInfo(gymSystem->fieldSystem->saveData), BADGE_ID_RELIC) == TRUE) {
         fogDensity = 91;
-    } else if (gymSystem->fieldSystem->location->mapHeaderID == MAP_HEADER_HEARTHOME_CITY_GYM_TRAINER_ROOM_2) {
-        fogDensity = 119;
+        fog->fogR = 1;
+        fog->fogG = 1;
+        fog->fogB = 1;
     }
 
     memset(fog->fogDensity, fogDensity, sizeof(fog->fogDensity));
