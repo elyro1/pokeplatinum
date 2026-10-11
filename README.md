@@ -1,80 +1,161 @@
-# Pokémon Platinum PC Port
+# Pokémon Platinum PC Port — Single-Screen Mod
 
-This is an experimental PC port of Pokemon Platinum based on the [pret](https://github.com/pret/pokeplatinum) decompilation project. It is powered by the [libntr](https://github.com/cybervisi0n/libntr) suite, a collection of libraries that replace the NitroSDK to allow for easy porting of Nintendo DS titles.
+This is a mod for the native PC port of Pokémon Platinum, built on top of **[pret's Pokémon Platinum decompilation](https://github.com/pret/pokeplatinum)** and **[cybervisi0n's Pokémon Platinum PC port](https://github.com/cybervisi0n/pokeplatinum)**.
 
-Feel free to join us on [Discord](https://discord.gg/ZgtPszuBeN) for discussion or support.
+The focus here is a widescreen, single-screen experience, with adapted interfaces, expanded overworld rendering, and quality-of-life improvements.
 
-It should be possible to play the game from start to finish, but there could be crashes and graphical bugs. 
+**You must provide your own dumped US Pokémon Platinum ROM (CPUE01).** Game assets are extracted from that ROM on first launch.
 
-Generative AI/LLM shortcuts were **not** used in the creation of this project and the libntr libraries. **Pull requests or code suggestions using AI will be rejected.**
+## Features
 
-Project goals:
-* Create a native port of pokeplatinum for 64-bit PC platforms
-* * Long term: Create native ports for homebrew on various game consoles
-* Facilitate modding by allowing both a PC port and DS ROM to be compiled and debugged from the same source tree
-* Support all WiFi and multiplayer features
+- **Single-screen presentation:** all screens reworked to make the game playable with just the top screen
+- **Widescreen rendering:** broader overworld views, adjusted world
+- **Three save slots:** select a slot from the main menu
+- **Pokétch in the in-game menu:** open it after acquiring it, switch apps with L/R, and return to the game with B or X.
+- **Quit from the in-game menu:** a confirmation prompt lets you cancel before closing the game.
+- **QoL Repels:** when a Repel wears off, you can use another without reopening the Bag. If that type has run out, an available alternative is offered.
+- **Stability and visual fixes:**
 
-## Setup Guide
-To run the [pre-built binaries found in the releases tab](https://github.com/cybervisi0n/pokeplatinum/releases), **you MUST dump and provide your own US ROM of Pokémon Platinum (CPUE01).** On first launch, you will be prompted to select your .nds ROM file as seen in the images below:
+## How to run
 
-![ROM extraction dialog](images/RomExtraction.png)
+Use a build from this fork's [Releases](https://github.com/elyro1/pokeplatinum/releases) or [GitHub Actions artifacts](https://github.com/elyro1/pokeplatinum/actions), then follow **[cybervisi0n's setup guide](https://github.com/cybervisi0n/pokeplatinum#setup-guide)**. The launch and first-run ROM extraction steps are the same.
 
-* After this has been completed once, you can launch the game simply by running main.exe.
-* Access in-game settings and debug tools by pressing TAB
+## Default keybindings
 
-### Playing in other languages
-Currently, this project only supports the USA version of the game, however, it is possible to change the language of the majority of the in-game text by replacing some files. 
-Once a ROM has been loaded, its contents will be extracted in the same directory as main.exe. Replace the following files with copies from another language:
+These are the defaults for a fresh configuration. Existing settings retain your previous bindings. Open **Tab → Input** to remap keyboard and controller buttons.
 
- * msgdata/msg.narc
- * msgdata/pl_msg.narc
- * msgdata/scenario/scr_msg.narc
+| Key | DS button / action |
+| --- | --- |
+| Arrow keys | D-pad: move / navigate |
+| Z | A: confirm / interact |
+| X | B: cancel / run where available |
+| C | X: open / close the in-game menu |
+| V | Y: use a registered item |
+| Q | L; previous Pokétch app while the Pokétch is open |
+| E | R; next Pokétch app while the Pokétch is open |
+| Enter | Start |
+| Right Shift | Select |
+| Tab | Toggle PC settings / debug tools |
+| Left Shift (hold) | Fast-forward (5× by default) |
+| F11 | Toggle fullscreen |
+| Left mouse button | Touch input where supported by the displayed interface |
 
-## Building on Linux
-### Dockerized build (Recommended)
-This only requires Docker to be installed and setup on your system. The drun.sh script is used to build the docker image and run build commands in it. Build with:
-* ./drun.sh make linux
+Inside the Pokétch, **X** or **C** on the keyboard closes it (DS B or X).
 
-The container image will automatically be built the first time this script is run.
+### Settings
 
-### Non-container build
-Required Packages (arch linux):
-* nasm
-* enet
-* arm-none-eabi-gcc (required by the base pret project)
-* ninja
-* flex
-* bison
+The default layout shows one screen, and 60 FPS plus the speed corrections are enabled by default. Existing configuration files may override these defaults.
 
-To build: 
-* make linux
+Press **Tab** to access:
 
-Alternatively:
-* meson setup build
-* cd build
-* meson configure -Dbuild_target=linux
-* meson compile
+- **libntr → Config:** screen layout, fullscreen, internal resolution, volume, frame pacing, and fast-forward speed (1×–10×).
+- **libntr → Input:** keyboard and controller mappings.
+- **libntr → Application → Config:** 60 FPS and 60 FPS Speed Fix options.
+- **libntr → Application tools:** cheats, Pokémon and item generation, and map jumping while a game is loaded.
 
-You can also build a ROM from the same source tree, just run:
-* make
+Settings are stored locally in `sim_config.ini` and `sim_config_prj.ini`. If performance is poor, lower the internal resolution scale in the PC settings.
 
-## Building on Windows
-From a freshly cloned repo, run the "Install_MSys2.ps1" script in powershell. This will create a portable MSys2 build environment with all dependencies installed in the repo. This only has to be done once per repo.
+## Saves
 
-To build, run "Launch_MSys2.ps1" and it will launch a MSys2 bash shell. From here, run "make win64" to build.
+The three slots use `save1.bin`, `save2.bin`, and `save3.bin` in the game folder. Save through the normal in-game Save action before quitting.
 
-## NX Build Target (working, but poor performance)
-This build target requires DevKitA64, this is already installed in the build container.
-* ./drun.sh make nx
+An older upstream `save.bin` is copied into slot 1 when `save1.bin` does not already exist. The original file is retained. Back up your save files before updating builds or deleting a slot.
 
-## Notes
-Target executable will be in ./build_(platform)/pokeplatinum directory.
-ROM will be built in /build directory
+## Building from source
 
-firmware.bin does not contain any real DS firmware, it only contains an offset address and enough space to keep the WiFi config.
+Clone **this fork**:
 
-You can update your SDKs using "meson subprojects update"
+```bash
+git clone https://github.com/elyro1/pokeplatinum.git
+cd pokeplatinum
+```
 
-### Tracy Profiling
-To enable, run ./meson.sh configure -Dtracy_enable=true {build_folder} from the repo root. This works on Win64, Linux, and NX build targets.
+The Makefile fetches Meson and the compiler tools as needed, and Meson fetches the SDK subprojects. The initial build requires network access. You still need your own ROM to run the PC port.
 
+### Linux with Docker
+
+Install Docker and ensure your user can run it, then run:
+
+```bash
+./drun.sh make linux
+```
+
+The script builds the container image on first use. Output is written to `build_linux/pokeplatinum`, including `main` and `pokeplatinum.AppImage`.
+
+### Linux without Docker
+
+Use a 64-bit Linux environment. The build requires GCC/G++, Make, Python 3, Git, Ninja, NASM, Flex, Bison, pkg-config, the ARM GNU toolchain, libpng, SDL2, ENet, and SoundTouch development packages. Some build tools also require 32-bit compatibility libraries; AppImage packaging requires FUSE.
+
+For Debian / Ubuntu, the core dependencies are:
+
+```bash
+sudo dpkg --add-architecture i386
+sudo apt update
+sudo apt install build-essential python3 git ninja-build nasm flex bison \
+    pkg-config gcc-arm-none-eabi libpng-dev libsdl2-dev libenet-dev \
+    libsoundtouch-dev libc6:i386 wget ca-certificates fuse file
+make linux
+```
+
+Refer to [the build container](tools/docker/Dockerfile) for the full container environment and [INSTALL.md](INSTALL.md) for additional setup information inherited from pret. Its ROM-build instructions are separate from the PC targets here.
+
+### Windows
+
+From a fresh clone, run the included setup script in PowerShell:
+
+```powershell
+.\Install_MSys2.ps1
+```
+
+This creates a portable MSYS2 environment and installs dependencies. Then launch its shell:
+
+```powershell
+.\Launch_MSys2.ps1
+```
+
+In that shell, build with:
+
+```bash
+make win64
+```
+
+The game and its required DLLs are placed in `build_win64/pokeplatinum`.
+
+### Other build targets
+
+The inherited Nintendo Switch target requires DevKitA64 (included in the Docker environment):
+
+```bash
+./drun.sh make nx
+```
+
+This target is experimental and has poor performance; the changes in this fork primarily target PC play.
+
+The source tree also retains the Nintendo DS ROM target:
+
+```bash
+make
+```
+
+That output is `build/pokeplatinum.us.nds`. PC-specific features do not necessarily apply to the DS build. See [INSTALL.md](INSTALL.md) for ROM revisions and debugger setup.
+
+### Development notes
+
+- To update SDK subprojects, run `make update`.
+- To enable Tracy profiling for a Linux build, run:
+
+  ```bash
+  ./drun.sh ./subprojects/meson-1.12.0/meson.py configure -Dtracy_enable=true build_linux
+  ```
+
+  Profiling is also available for the Win64 and NX build targets.
+- `firmware.bin` is a placeholder for Wi-Fi configuration storage, not a dump of real DS firmware.
+
+## Credits and upstream projects
+
+- **[pret/pokeplatinum](https://github.com/pret/pokeplatinum):** Pokémon Platinum decompilation, documentation, and the original source tree.
+- **[cybervisi0n/pokeplatinum](https://github.com/cybervisi0n/pokeplatinum):** the native PC port on which this fork is built.
+- **[cybervisi0n/libntr](https://github.com/cybervisi0n/libntr):** the NitroSDK replacement libraries powering the port.
+- **[elyro1/libntr](https://github.com/elyro1/libntr/tree/lib_single_screen_mod):** the modified library branch used by this fork.
+
+Please report issues specific to this fork in [this repository's issue tracker](https://github.com/elyro1/pokeplatinum/issues). The original PC port's community is available on its [Discord](https://discord.gg/ZgtPszuBeN).
