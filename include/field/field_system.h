@@ -124,6 +124,9 @@ typedef struct FieldSystem_t {
     u8 *battleSubscreenCursorOn;
     u32 unk_C0;
     UnkStruct_ov66_0222DCE0_sub1 unk_C4;
+#ifdef SDK_PORT
+    BOOL encounterEffectBorders;
+#endif
 } FieldSystem;
 
 #endif // POKEPLATINUM_FIELD_SYSTEM_H

@@ -1556,6 +1556,7 @@ typedef struct ForgetMoveData {
     u16 move;
     u8 slot;
     u8 unused_0F;
+    BattleMenuSceneVisibility sceneVisibility;
 } ForgetMoveData;
 
 void BattleDisplay_InitTaskForgetMove(BattleSystem *battleSys, BattlerData *battlerData, ForgetMoveMessage *message)
@@ -5631,11 +5632,16 @@ static void Task_ForgetMove(SysTask *task, void *data)
 
     switch (forgetMoveData->state) {
     case 0:
+        sub_02015738(BattleSystem_GetPaletteAnimator(forgetMoveData->battleSys), 1);
+        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 0, 16, 0);
+        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(forgetMoveData->battleSys), 0, 16, 0, 0);
         PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 0, 16, 0);
         forgetMoveData->state++;
         break;
     case 1:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(forgetMoveData->battleSys)) {
+            BattleDisplay_HideBattleScene(forgetMoveData->battleSys, &forgetMoveData->sceneVisibility);
+            BattleSystem_HideBattleScreen(forgetMoveData->battleSys);
             BattleSystem_EnterSubMenu(forgetMoveData->battleSys);
 
             forgetMoveData->battlePartyCtx = Heap_Alloc(HEAP_ID_BATTLE, sizeof(BattlePartyContext));
@@ -5658,12 +5664,17 @@ static void Task_ForgetMove(SysTask *task, void *data)
     case 2:
         if (forgetMoveData->battlePartyCtx->battlePartyExited) {
             BattleSystem_ExitSubMenu(forgetMoveData->battleSys);
+            BattleSystem_SetupBattleScreen(forgetMoveData->battleSys);
+            BattleDisplay_RestoreBattleScene(forgetMoveData->battleSys, &forgetMoveData->sceneVisibility);
+            PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
+            PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(forgetMoveData->battleSys), 16, 0, 0, 0);
             PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 16, 0, 0);
             forgetMoveData->state++;
         }
         break;
     case 3:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(forgetMoveData->battleSys)) {
+            sub_02015738(BattleSystem_GetPaletteAnimator(forgetMoveData->battleSys), 0);
             if (forgetMoveData->battlePartyCtx->selectedMoveSlot == 4) {
                 BattleController_EmitPartyMenuResult(forgetMoveData->battleSys, forgetMoveData->battler, 0xFF);
             } else {

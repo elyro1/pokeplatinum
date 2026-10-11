@@ -686,7 +686,7 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
 
 #ifdef SDK_PORT
     // The field remains alive behind Poketch; only widen it while it is on top.
-    u32 viewWidth = SIM_SetFieldWidescreen(GX_GetDispSelect() == GX_DISP_SELECT_MAIN_SUB);
+    u32 viewWidth = SIM_SetFieldWidescreen(GX_GetDispSelect() == GX_DISP_SELECT_MAIN_SUB && !fieldSystem->encounterEffectBorders);
     Camera_ComputeProjectionMatrix(fieldSystem->camera->projection, fieldSystem->camera);
     if (viewWidth > 256) {
         MtxFx44 v2 = *NNS_G3dGlbGetProjectionMtx();

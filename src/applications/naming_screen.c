@@ -1132,7 +1132,8 @@ static BOOL NamingScreen_Init(ApplicationManager *appMan, int *state)
             HEAP_ID_NAMING_SCREEN_APP);
         NamingScreen_ToggleEngineLayers(TRUE);
 
-        gSystem.whichScreenIs3D = DS_SCREEN_SUB;
+        // Keep the nickname keyboard and name preview on the main display.
+        gSystem.whichScreenIs3D = namingScreen->type == NAMING_SCREEN_TYPE_POKEMON ? DS_SCREEN_MAIN : DS_SCREEN_SUB;
         GXLayers_SwapDisplay();
 
         NARC_dtor(narc);
@@ -1221,6 +1222,10 @@ static BOOL NamingScreen_Main(ApplicationManager *appMan, int *state)
                 TEXT_SPEED_FAST,
                 NULL);
             Window_CopyToVRAM(&namingScreen->windows[NMS_WINDOW_PROMPT]);
+            // Naming is finished. Show the PC-transfer message, which uses
+            // engine B, on the main display before returning to battle.
+            gSystem.whichScreenIs3D = DS_SCREEN_SUB;
+            GXLayers_SwapDisplay();
             namingScreen->state.main = NMS_STATE_WAIT_BATTLE_MESSAGE;
             break;
         case NMS_STATE_WAIT_BATTLE_MESSAGE:

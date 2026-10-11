@@ -5924,7 +5924,7 @@
       "id": "BattleStrings_Text_GiveANicknameToTheCaughtPokemonYesNo",
       "en_US": [
         "Give a nickname to the\n",
-        "caught {STRVAR_1 1, 0, 0}?{YESNO 0}"
+        "caught {STRVAR_1 1, 0, 0}?"
       ]
     },
     {
@@ -7984,7 +7984,7 @@
       "id": "BattleStrings_Text_MakeItForgetAnotherMoveYesNo",
       "en_US": [
         "Make it forget\n",
-        "another move?{YESNO 0}"
+        "another move?"
       ]
     },
     {
@@ -7999,7 +7999,7 @@
       "id": "BattleStrings_Text_WhichMoveShouldBeForgotten2",
       "en_US": [
         "Which move should\n",
-        "be forgotten?{YESNO 0}"
+        "be forgotten?"
       ]
     },
     {
@@ -8010,7 +8010,7 @@
       "id": "BattleStrings_Text_ShouldPokemonGiveUpOnLearningMove",
       "en_US": [
         "Should this Pokémon give up on\n",
-        "learning this new move?{YESNO 0}"
+        "learning this new move?"
       ]
     },
     {

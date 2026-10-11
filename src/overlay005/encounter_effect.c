@@ -1,5 +1,9 @@
 #include "overlay005/encounter_effect.h"
 
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
+
 #include "nitro/fx/fx.h"
 #include <nitro.h>
 #include <string.h>
@@ -177,6 +181,12 @@ static UnkStruct_ov5_02202120 *Unk_ov5_02202120 = NULL;
 
 void EncounterEffect_Start(enum EncEffectCutIn effect, FieldSystem *fieldSystem, BOOL *done)
 {
+#ifdef SDK_PORT
+    fieldSystem->encounterEffectBorders = effect >= ENCEFF_CUTIN_LEADER_ROARK && effect <= ENCEFF_CUTIN_LEADER_VOLKNER;
+    if (fieldSystem->encounterEffectBorders) {
+        SIM_SetFieldWidescreen(FALSE);
+    }
+#endif
     SysTask *effectTask = SysTask_StartAndAllocateParam(sEncounterEffectTaskFuncs[effect], sizeof(EncounterEffect), 5, HEAP_ID_FIELD1);
     EncounterEffect *encEffect = SysTask_GetParam(effectTask);
     encEffect->fieldSystem = fieldSystem;
@@ -192,6 +202,9 @@ void EncounterEffect_Start(enum EncEffectCutIn effect, FieldSystem *fieldSystem,
 
 void EncounterEffect_Finish(EncounterEffect *encEffect, SysTask *effectTask)
 {
+#ifdef SDK_PORT
+    encEffect->fieldSystem->encounterEffectBorders = FALSE;
+#endif
     NARC_dtor(encEffect->narc);
     Heap_FreeExplicit(HEAP_ID_FIELD1, encEffect->param);
     SysTask_FinishAndFreeParam(effectTask);

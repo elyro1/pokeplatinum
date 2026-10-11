@@ -63,7 +63,7 @@ static void BattleSubscreen_OpenPalParkMenu(BattleSubscreen *btlSubscreen, int u
 static void BattleSubscreen_DrawPalParkMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
 static BOOL BattleSubscreen_IsMainActionMenu(int menuConfigIndex);
 static BOOL BattleSubscreen_IsMainMoveMenu(int menuConfigIndex);
-static BOOL BattleSubscreen_IsMainSwitchMenu(int menuConfigIndex);
+static BOOL BattleSubscreen_IsMainYesNoMenu(int menuConfigIndex);
 static BOOL BattleSubscreen_IsMainBattleMenu(int menuConfigIndex);
 static void BattleSubscreen_InitMainMenuWindow(BattleSubscreen *btlSubscreen, Window *unk_04);
 static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *unk_04, int moveType);
@@ -73,8 +73,8 @@ static void BattleSubscreen_DrawMainActionMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_ClearMainActionMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_ClearMainMoveMenu(BattleSubscreen *btlSubscreen);
-static void BattleSubscreen_DrawMainSwitchMenu(BattleSubscreen *btlSubscreen);
-static void BattleSubscreen_ClearMainSwitchMenu(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_DrawMainYesNoMenu(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_ClearMainYesNoMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawStopMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
 static int BattleSubscreen_ProcessActionInput(BattleSubscreen *btlSubscreen, int selectedAction, int unused);
 static int BattleSubscreen_ProcessMoveInput(BattleSubscreen *btlSubscreen, int selectedMove, int unused);
@@ -374,9 +374,15 @@ static const TouchScreenRect sYesNoMenuTouchRects[] = {
     { 0xFF, 0x0, 0x0, 0x0 }
 };
 
-static const TouchScreenRect sMainSwitchMenuTouchRects[] = {
+static const TouchScreenRect sMainYesNoMenuTouchRects[] = {
     { 96, 112, 176, 232 },
     { 112, 128, 176, 232 },
+    { 0xFF, 0, 0, 0 }
+};
+
+static const TouchScreenRect sMainGiveUpMoveTouchRects[] = {
+    { 96, 112, 16, 232 },
+    { 112, 128, 16, 232 },
     { 0xFF, 0, 0, 0 }
 };
 
@@ -1345,8 +1351,8 @@ int BattleSystem_MenuInput(BattleSubscreen *btlSubscreen)
             }
         } else if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
             buttonIndex = TouchScreen_CheckRectanglePressed(sMainMoveSelectMenuTouchRects);
-        } else if (BattleSubscreen_IsMainSwitchMenu(btlSubscreen->activeMenuConfigIndex)) {
-            buttonIndex = TouchScreen_CheckRectanglePressed(sMainSwitchMenuTouchRects);
+        } else if (BattleSubscreen_IsMainYesNoMenu(btlSubscreen->activeMenuConfigIndex)) {
+            buttonIndex = TouchScreen_CheckRectanglePressed(btlSubscreen->activeMenuConfigIndex == 15 ? sMainGiveUpMoveTouchRects : sMainYesNoMenuTouchRects);
         } else {
             buttonIndex = TouchScreen_CheckRectanglePressed(battleMenuConfig->touchScreenRects);
         }
@@ -1532,12 +1538,12 @@ static BOOL BattleSubscreen_IsMainMoveMenu(int menuConfigIndex)
 
 static BOOL BattleSubscreen_IsMainBattleMenu(int menuConfigIndex)
 {
-    return BattleSubscreen_IsMainActionMenu(menuConfigIndex) || BattleSubscreen_IsMainMoveMenu(menuConfigIndex) || BattleSubscreen_IsMainSwitchMenu(menuConfigIndex);
+    return BattleSubscreen_IsMainActionMenu(menuConfigIndex) || BattleSubscreen_IsMainMoveMenu(menuConfigIndex) || BattleSubscreen_IsMainYesNoMenu(menuConfigIndex);
 }
 
-static BOOL BattleSubscreen_IsMainSwitchMenu(int menuConfigIndex)
+static BOOL BattleSubscreen_IsMainYesNoMenu(int menuConfigIndex)
 {
-    return menuConfigIndex == 17;
+    return (menuConfigIndex >= 13 && menuConfigIndex <= 15) || menuConfigIndex == 17;
 }
 
 static void BattleSubscreen_DrawActionMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
@@ -1820,7 +1826,7 @@ static void BattleSubscreen_ClearMainMoveMenu(BattleSubscreen *btlSubscreen)
     BattleSubscreen_ClearMainActionMenu(btlSubscreen);
 }
 
-static void BattleSubscreen_DrawMainSwitchMenu(BattleSubscreen *btlSubscreen)
+static void BattleSubscreen_DrawMainYesNoMenu(BattleSubscreen *btlSubscreen)
 {
     Window window;
     MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
@@ -1829,14 +1835,31 @@ static void BattleSubscreen_DrawMainSwitchMenu(BattleSubscreen *btlSubscreen)
         MessageLoader_GetNewString(msgLoader, BattleStrings_Text_No)
     };
 
+    BOOL isGiveUpMoveMenu = btlSubscreen->activeMenuConfigIndex == 15;
+    if (isGiveUpMoveMenu) {
+        StringTemplate *template = BattleSystem_GetStringTemplate(btlSubscreen->battleSys);
+        StringTemplate_SetMoveName(template, 0, btlSubscreen->activeMenuData.giveUpMoveData.move);
+        const int messageIDs[2] = { BattleStrings_Text_GiveUpOnMove, BattleStrings_Text_DontGiveUpOnMove };
+        for (int i = 0; i < 2; i++) {
+            String_Free(options[i]);
+            String *format = MessageLoader_GetNewString(msgLoader, messageIDs[i]);
+            options[i] = String_Init(100, HEAP_ID_BATTLE);
+            StringTemplate_Format(template, options[i], format);
+            String_Free(format);
+        }
+    }
+
     // Use the dialogue palette and separate tiles to preserve the full prompt.
+    // Healthboxes normally share priority 0 with this background, where OBJ
+    // wins the tie. Put them behind the popup until the choice is dismissed.
+    BattleSystem_SetHealthboxPriority(btlSubscreen->battleSys, 1);
     Window_Init(&window);
-    Window_Add(BattleSystem_GetBgConfig(btlSubscreen->battleSys), &window, BG_LAYER_MAIN_1, 22, 12, 7, 4, 11, MAIN_MENU_BASE_TILE);
+    Window_Add(BattleSystem_GetBgConfig(btlSubscreen->battleSys), &window, BG_LAYER_MAIN_1, isGiveUpMoveMenu ? 2 : 22, 12, isGiveUpMoveMenu ? 27 : 7, 4, 11, MAIN_MENU_BASE_TILE);
     Window_FillTilemap(&window, 15);
     Window_DrawMessageBox(&window, 1, 10);
 
     for (int i = 0; i < 2; i++) {
-        BattleSubscreen_DrawMainMenuText(&window, options[i], 8, i * 16, 48, TEXT_COLOR(1, 2, 15));
+        BattleSubscreen_DrawMainMenuText(&window, options[i], 8, i * 16, isGiveUpMoveMenu ? 208 : 48, TEXT_COLOR(1, 2, 15));
         if (i == btlSubscreen->cursor.y) {
             BattleSubscreen_DrawMainMenuCursor(&window, 0, i * 16 + 3);
         }
@@ -1847,11 +1870,13 @@ static void BattleSubscreen_DrawMainSwitchMenu(BattleSubscreen *btlSubscreen)
     Window_Remove(&window);
 }
 
-static void BattleSubscreen_ClearMainSwitchMenu(BattleSubscreen *btlSubscreen)
+static void BattleSubscreen_ClearMainYesNoMenu(BattleSubscreen *btlSubscreen)
 {
     BgConfig *bgConfig = BattleSystem_GetBgConfig(btlSubscreen->battleSys);
-    Bg_FillTilemapRect(bgConfig, BG_LAYER_MAIN_1, 0, 20, 11, 12, 6, 0);
+    BOOL isGiveUpMoveMenu = btlSubscreen->activeMenuConfigIndex == 15;
+    Bg_FillTilemapRect(bgConfig, BG_LAYER_MAIN_1, 0, isGiveUpMoveMenu ? 0 : 20, 11, isGiveUpMoveMenu ? 32 : 12, 6, 0);
     Bg_CopyTilemapBufferToVRAM(bgConfig, BG_LAYER_MAIN_1);
+    BattleSystem_SetHealthboxPriority(btlSubscreen->battleSys, 0);
 }
 
 static void BattleSubscreen_OpenFirstBattleMenu(BattleSubscreen *btlSubscreen, int unsed1, int unused2)
@@ -1948,51 +1973,19 @@ static void BattleSubscreen_DrawMoveSelectMenu(BattleSubscreen *btlSubscreen, in
 
 static void BattleSubscreen_DrawYesNoMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
-    MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
-    String *yesMsg = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Yes);
-    String *noMsg = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_No);
-
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[0], yesMsg, FONT_SUBSCREEN, TEXT_COLOR(1, 2, 3), 2, 20023, 128, 68, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[1], noMsg, FONT_SUBSCREEN, TEXT_COLOR(10, 11, 12), 2, 20023, 128, 140, 1, NULL);
-
-    String_Free(yesMsg);
-    String_Free(noMsg);
+    btlSubscreen->cursor.x = 0;
+    btlSubscreen->cursor.y = 0;
+    BattleSubscreen_DrawMainYesNoMenu(btlSubscreen);
 }
 
 static void BattleSubscreen_DrawForgetMoveMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
-    MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
-    String *forgetMoveMsg = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_ForgetAMove);
-    String *keepMovesMsg = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_KeepOldMoves);
-
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[0], forgetMoveMsg, FONT_SUBSCREEN, TEXT_COLOR(1, 2, 3), 2, 20023, 128, 68, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[1], keepMovesMsg, FONT_SUBSCREEN, TEXT_COLOR(10, 11, 12), 2, 20023, 128, 140, 1, NULL);
-
-    String_Free(forgetMoveMsg);
-    String_Free(keepMovesMsg);
+    BattleSubscreen_DrawYesNoMenu(btlSubscreen, unused1, unused2);
 }
 
 static void BattleSubscreen_DrawGiveUpMoveMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
-    MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
-    StringTemplate *template = BattleSystem_GetStringTemplate(btlSubscreen->battleSys);
-    GiveUpMoveData *giveUpMoveData = &btlSubscreen->activeMenuData.giveUpMoveData;
-    String *giveUpOnMoveFormatMsg = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_GiveUpOnMove);
-    String *dontGiveUpOnMoveFormatMsg = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_DontGiveUpOnMove);
-    String *giveUpMoveMsg = String_Init(100, HEAP_ID_BATTLE);
-    String *dontGiveUpMoveMsg = String_Init(100, HEAP_ID_BATTLE);
-
-    StringTemplate_SetMoveName(template, 0, giveUpMoveData->move);
-    StringTemplate_Format(template, giveUpMoveMsg, giveUpOnMoveFormatMsg);
-    StringTemplate_Format(template, dontGiveUpMoveMsg, dontGiveUpOnMoveFormatMsg);
-
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[0], giveUpMoveMsg, FONT_SUBSCREEN, TEXT_COLOR(1, 2, 3), 2, 20023, 128, 68, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[1], dontGiveUpMoveMsg, FONT_SUBSCREEN, TEXT_COLOR(10, 11, 12), 2, 20023, 128, 140, 1, NULL);
-
-    String_Free(giveUpOnMoveFormatMsg);
-    String_Free(dontGiveUpOnMoveFormatMsg);
-    String_Free(giveUpMoveMsg);
-    String_Free(dontGiveUpMoveMsg);
+    BattleSubscreen_DrawYesNoMenu(btlSubscreen, unused1, unused2);
 }
 
 static void BattleSubscreen_DrawStopMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
@@ -2049,7 +2042,7 @@ static void BattleSubscreen_DrawSwitchMonMenu(BattleSubscreen *btlSubscreen, int
 {
     btlSubscreen->cursor.x = 0;
     btlSubscreen->cursor.y = 0;
-    BattleSubscreen_DrawMainSwitchMenu(btlSubscreen);
+    BattleSubscreen_DrawMainYesNoMenu(btlSubscreen);
 }
 
 static void BattleSubscreen_DrawTargetSelectMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
@@ -2248,8 +2241,8 @@ static int BattleSubscreen_ProcessYesNoInput(BattleSubscreen *btlSubscreen, int 
         break;
     }
 
-    if (BattleSubscreen_IsMainSwitchMenu(btlSubscreen->activeMenuConfigIndex)) {
-        BattleSubscreen_ClearMainSwitchMenu(btlSubscreen);
+    if (BattleSubscreen_IsMainYesNoMenu(btlSubscreen->activeMenuConfigIndex)) {
+        BattleSubscreen_ClearMainYesNoMenu(btlSubscreen);
         BattleSubscreen_Cleanup(btlSubscreen, TRUE, TRUE);
         return selectedButton;
     }
@@ -4019,9 +4012,9 @@ static int BattleSystem_Cursor_YesNo(BattleSubscreen *btlSubscreen, BOOL isCurso
     const BattleMenuConfig *battleMenuConfig = &sBattleMenuConfigs[btlSubscreen->activeMenuConfigIndex];
     int buttonIndex;
 
-    if (BattleSubscreen_IsMainSwitchMenu(btlSubscreen->activeMenuConfigIndex)) {
+    if (BattleSubscreen_IsMainYesNoMenu(btlSubscreen->activeMenuConfigIndex)) {
         if (isCursorHidden) {
-            BattleSubscreen_DrawMainSwitchMenu(btlSubscreen);
+            BattleSubscreen_DrawMainYesNoMenu(btlSubscreen);
             return 0xffffffff;
         }
 
@@ -4031,7 +4024,7 @@ static int BattleSystem_Cursor_YesNo(BattleSubscreen *btlSubscreen, BOOL isCurso
         case PAD_KEY_DOWN:
         case PAD_KEY_LEFT:
         case PAD_KEY_RIGHT:
-            BattleSubscreen_DrawMainSwitchMenu(btlSubscreen);
+            BattleSubscreen_DrawMainYesNoMenu(btlSubscreen);
             break;
         case PAD_BUTTON_A:
             return sYesNoMenuButtonLayout[cursor->y][cursor->x];
