@@ -1,0 +1,29 @@
+# original-sha256: 0b62d75792347f4ba45dcf9a0e5e1331abe9afba2b6f827298da53945473b715
+--- res/field/scripts/scripts_common.s
++++ retail/scripts_common.s
+@@ -1446,23 +1445,0 @@
+-    GetNextRepel VAR_0x8004
+-    GoToIfEq VAR_0x8004, ITEM_NONE, CommonScript_NoRepelsLeft
+-    BufferItemName 1, VAR_0x8004
+-    GoToIfEq VAR_0x8004, VAR_LAST_REPEL_USED, CommonScript_OfferSameRepel
+-    Message CommonStrings_Text_RepelWoreOffUseDifferent
+-    GoTo CommonScript_ConfirmRepeatRepel
+-
+-CommonScript_OfferSameRepel:
+-    BufferItemName 0, VAR_LAST_REPEL_USED
+-    Message CommonStrings_Text_RepelWoreOffUseAnother
+-CommonScript_ConfirmRepeatRepel:
+-    ShowYesNoMenu VAR_RESULT
+-    GoToIfNe VAR_RESULT, MENU_YES, CommonScript_RepeatRepelEnd
+-    UseRepel VAR_0x8004, VAR_RESULT
+-    GoToIfEq VAR_RESULT, FALSE, CommonScript_RepeatRepelEnd
+-    PlaySE SEQ_SE_DP_CARD2_sseq
+-    BufferPlayerName 0
+-    BufferItemName 1, VAR_0x8004
+-    Message CommonStrings_Text_UsedRepel
+-    WaitABPress
+-    GoTo CommonScript_RepeatRepelEnd
+-
+-CommonScript_NoRepelsLeft:
+@@ -1471 +1447,0 @@
+-CommonScript_RepeatRepelEnd:

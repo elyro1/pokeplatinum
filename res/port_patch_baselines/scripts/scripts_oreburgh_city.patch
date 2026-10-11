@@ -1,0 +1,15 @@
+# original-sha256: 3b4ce36f1de36ef151979e3a95e1779e6ba2b77d00557dc727fbeb5cbdbe648d
+--- res/field/scripts/scripts_oreburgh_city.s
++++ retail/scripts_oreburgh_city.s
+@@ -91 +91 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
++    AddObject LOCALID_RIVAL
+@@ -100 +100 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
++    AddObject LOCALID_RIVAL
+@@ -109 +109 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
++    AddObject LOCALID_RIVAL
+@@ -118 +118 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
++    AddObject LOCALID_RIVAL

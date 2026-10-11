@@ -17,20 +17,26 @@ cells = files(
 )
 ncers = ncer_gen.process(cells)
 
+poketch_icon_sources = custom_target('poketch_menu_icon_sources',
+    input: files('icons_anim.json', 'menu.pal', '../../items/icons/poke_radar.pal'),
+    output: ['poketch_icon_anim.json', 'poketch_icon.pal'],
+    command: [find_program('python3', native: true),
+        files('../../../tools/scripts/make_poketch_menu_icon.py'),
+        '@INPUT0@', '@INPUT1@', '@INPUT2@', '@OUTPUT0@', '@OUTPUT1@'],
+)
+
 anims = files(
     'cursor_anim.json',
     'icons_anim.json',
     'underground_icons_anim.json',
-    'poketch_icon_anim.json',
 )
-nanrs = nanr_gen.process(anims)
+nanrs = nanr_gen.process([anims, poketch_icon_sources[0]])
 
 palettes = files(
     'menu.pal',
     'underground_menu.pal',
-    'poketch_icon.pal',
 )
-nclrs = nclr_gen.process(palettes,
+nclrs = nclr_gen.process([palettes, poketch_icon_sources[1]],
     extra_args: [
         '-bitdepth', '4',
     ],

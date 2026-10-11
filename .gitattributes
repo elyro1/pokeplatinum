@@ -6,6 +6,7 @@
 *.inc text eol=lf
 *.sh text eol=lf
 *.py text eol=lf
+*.patch text eol=lf
 *.sha1 text eol=lf
 *.json text eol=lf
 *.gmm text eol=lf

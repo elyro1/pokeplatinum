@@ -1,0 +1,9 @@
+# original-sha256: 8e491ae048f7c2b4135ae92fb163b9ddaa6848a2bf3f5ba999f18ad557f3f8d4
+--- res/field/scripts/scripts_route_202.s
++++ retail/scripts_route_202.s
+@@ -156 +156 @@
+-    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_WEST
++    RemoveObject LOCALID_COUNTERPART
+@@ -442 +442 @@
+-    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_WEST
++    RemoveObject LOCALID_COUNTERPART

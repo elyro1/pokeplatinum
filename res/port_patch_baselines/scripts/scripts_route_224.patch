@@ -1,0 +1,12 @@
+# original-sha256: 8ac3665594aa6f91e5ffc1ad2ce47b4df8ce54784362e909f81be42aca491d0f
+--- res/field/scripts/scripts_route_224.s
++++ retail/scripts_route_224.s
+@@ -338 +338 @@
+-    AddObjectFromEdge LOCALID_MARLEY, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_MARLEY
+@@ -347 +347 @@
+-    AddObjectFromEdge LOCALID_MARLEY, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_MARLEY
+@@ -356 +356 @@
+-    AddObjectFromEdge LOCALID_MARLEY, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_MARLEY

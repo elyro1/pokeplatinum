@@ -1,0 +1,40 @@
+# original-sha256: d9ae0f2fb4aaa322cc8a41c2f72d32fd6a14d4d397dce9b26758c715cad7b4bc
+--- res/field/scripts/scripts_galactic_hq_4f.s
++++ retail/scripts_galactic_hq_4f.s
+@@ -53,3 +53,2 @@
+-    GetPlayerMapPos VAR_0x8004, VAR_0x8005
+-    CallIfEq VAR_0x8004, 8, GalacticHQ4F_CyrusLeaveX8
+-    CallIfEq VAR_0x8004, 9, GalacticHQ4F_CyrusLeaveX9
++    ApplyMovement LOCALID_CYRUS, GalacticHQ4F_Movement_CyrusLeave
++    WaitMovement
+@@ -60,10 +58,0 @@
+-
+-GalacticHQ4F_CyrusLeaveX8:
+-    ApplyMovementWidescreen LOCALID_CYRUS, GalacticHQ4F_Movement_CyrusLeaveNative, GalacticHQ4F_Movement_CyrusLeave
+-    WaitMovement
+-    Return
+-
+-GalacticHQ4F_CyrusLeaveX9:
+-    ApplyMovementWidescreen LOCALID_CYRUS, GalacticHQ4F_Movement_CyrusLeaveNative, GalacticHQ4F_Movement_CyrusLeaveX9
+-    WaitMovement
+-    Return
+@@ -112,12 +101 @@
+-    WalkNormalNorth 2
+-    WalkNormalEast 10
+-    WalkNormalNorth 2
+-    WarpOut
+-    EndMovement
+-
+-    .balign 4, 0
+-GalacticHQ4F_Movement_CyrusLeaveX9:
+-    WalkNormalNorth 2
+-    WalkNormalEast 9
+-    WalkNormalNorth 2
+-    WarpOut
++    WalkNormalEast 7
+@@ -223,5 +200,0 @@
+-
+-    .balign 4, 0
+-GalacticHQ4F_Movement_CyrusLeaveNative:
+-    WalkNormalEast 7
+-    EndMovement

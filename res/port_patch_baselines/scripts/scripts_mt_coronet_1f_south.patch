@@ -1,0 +1,9 @@
+# original-sha256: ec0958b16720107c59b14196048fea10919897a7e7ec2cc7d8dc7138d2271b7a
+--- res/field/scripts/scripts_mt_coronet_1f_south.s
++++ retail/scripts_mt_coronet_1f_south.s
+@@ -25 +25 @@
+-    ApplyMovementSafeExit LOCALID_CYRUS, MtCoronet1FSouth_Movement_CyrusLeave
++    ApplyMovement LOCALID_CYRUS, MtCoronet1FSouth_Movement_CyrusLeave
+@@ -27 +27 @@
+-    RemoveObjectAtEdge LOCALID_CYRUS, MOVEMENT_ACTION_WALK_NORMAL_WEST, 32
++    RemoveObject LOCALID_CYRUS

@@ -1,0 +1,18 @@
+# original-sha256: 6e7802315548c41bae55f8d6e4c78106a96417da9e20d5b3f0d140fa52ee6a00
+--- res/text/battle_strings.json
++++ retail/battle_strings.json
+@@ -5725 +5725 @@
+-        "Will you switch your Pokémon?"
++        "Will you switch your Pokémon?{YESNO 0}"
+@@ -5927 +5927 @@
+-        "caught {STRVAR_1 1, 0, 0}?"
++        "caught {STRVAR_1 1, 0, 0}?{YESNO 0}"
+@@ -7987 +7987 @@
+-        "another move?"
++        "another move?{YESNO 0}"
+@@ -8002 +8002 @@
+-        "be forgotten?"
++        "be forgotten?{YESNO 0}"
+@@ -8013 +8013 @@
+-        "learning this new move?"
++        "learning this new move?{YESNO 0}"

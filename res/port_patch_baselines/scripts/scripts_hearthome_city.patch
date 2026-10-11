@@ -1,0 +1,13 @@
+# original-sha256: 5f9d85a9f0796dab2d40c87a866449768f8b3c19d8413694ec365fc373b9ea8b
+--- res/field/scripts/scripts_hearthome_city.s
++++ retail/scripts_hearthome_city.s
+@@ -488,2 +488,2 @@
+-    /* The two actors share a spawn tile; stage them one at a time. */
+-    AddObjectFromEdge LOCALID_BUNEARY, MOVEMENT_ACTION_WALK_FAST_WEST
++    AddObject LOCALID_KEIRA
++    AddObject LOCALID_BUNEARY
+@@ -494 +493,0 @@
+-    AddObjectFromEdge LOCALID_KEIRA, MOVEMENT_ACTION_WALK_FAST_WEST
+@@ -506 +505 @@
+-    RemoveObjectAtEdge LOCALID_KEIRA, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_KEIRA

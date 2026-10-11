@@ -1,0 +1,15 @@
+# original-sha256: fce9dbf8ac751bc9182edc752fbd877409814a7ac2f1261364d30898d2b572f6
+--- res/field/scripts/scripts_route_213.s
++++ retail/scripts_route_213.s
+@@ -79 +79 @@
+-    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST
++    RemoveObject LOCALID_GRUNT_M
+@@ -117 +117 @@
+-    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST
++    RemoveObject LOCALID_GRUNT_M
+@@ -120 +120 @@
+-    AddObjectFromEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_EAST
++    AddObject LOCALID_LOOKER
+@@ -138 +138 @@
+-    RemoveObjectAtEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_EAST
++    RemoveObject LOCALID_LOOKER

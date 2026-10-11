@@ -1,0 +1,9 @@
+# original-sha256: 6f947a6448ee9d0b072a5d8eed526a9a32079961777e4275c27dff62c7f15d15
+--- res/field/scripts/scripts_sandgem_town.s
++++ retail/scripts_sandgem_town.s
+@@ -188 +188 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_EAST
++    RemoveObject LOCALID_RIVAL
+@@ -573 +573 @@
+-    RemoveObjectAtEdge LOCALID_SANDGEM_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    RemoveObject LOCALID_SANDGEM_COUNTERPART

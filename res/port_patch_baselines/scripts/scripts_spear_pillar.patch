@@ -1,0 +1,15 @@
+# original-sha256: be3ac2fe74148c2684033eaeef853f9b46e027f52a1e84ba9cf70c0b3bd14dae
+--- res/field/scripts/scripts_spear_pillar.s
++++ retail/scripts_spear_pillar.s
+@@ -192 +192 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
++    RemoveObject LOCALID_RIVAL
+@@ -214 +214 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    AddObject LOCALID_RIVAL
+@@ -222 +222 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    AddObject LOCALID_RIVAL
+@@ -230 +230 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    AddObject LOCALID_RIVAL

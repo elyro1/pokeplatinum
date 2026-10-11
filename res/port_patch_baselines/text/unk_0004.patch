@@ -1,0 +1,28 @@
+# original-sha256: a5782de90a2a7a90ac4caf3d57e0c10e9f30080251bdad12d3a412f58fac1965
+--- res/text/unk_0004.json
++++ retail/unk_0004.json
+@@ -22,24 +21,0 @@
+-    },
+-    {
+-      "id": "pl_msg_00000004_00003",
+-      "en_US": "Choose a slot to delete."
+-    },
+-    {
+-      "id": "pl_msg_00000004_00004",
+-      "en_US": "Slot 1"
+-    },
+-    {
+-      "id": "pl_msg_00000004_00005",
+-      "en_US": "Slot 2"
+-    },
+-    {
+-      "id": "pl_msg_00000004_00006",
+-      "en_US": "Slot 3"
+-    },
+-    {
+-      "id": "pl_msg_00000004_00007",
+-      "en_US": "Cancel"
+-    },
+-    {
+-      "id": "pl_msg_00000004_00008",
+-      "en_US": "Delete saved data in Slot {STRVAR_1 50, 0, 0}?"

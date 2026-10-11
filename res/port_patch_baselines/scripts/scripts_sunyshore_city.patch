@@ -1,0 +1,15 @@
+# original-sha256: 9676cbf9e926591107d6224f1af4de6433fb6920191130c657cb8cded03b34e8
+--- res/field/scripts/scripts_sunyshore_city.s
++++ retail/scripts_sunyshore_city.s
+@@ -49 +49 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    AddObject LOCALID_RIVAL
+@@ -113 +113 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
++    RemoveObject LOCALID_RIVAL
+@@ -479 +479 @@
+-    RemoveObjectAtEdge LOCALID_FLINT, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_FLINT
+@@ -663 +663 @@
+-    RemoveObjectAtEdge LOCALID_FLINT, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_FLINT

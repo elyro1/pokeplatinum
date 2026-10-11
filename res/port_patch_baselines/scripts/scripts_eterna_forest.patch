@@ -1,0 +1,6 @@
+# original-sha256: ac1c5cc3fa5fa2934657e2e58e1c47dae5fbe79a4e5a059153654aa46aaeda1b
+--- res/field/scripts/scripts_eterna_forest.s
++++ retail/scripts_eterna_forest.s
+@@ -384 +384 @@
+-    RemoveObjectAtEdge LOCALID_GARDENIA, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_GARDENIA

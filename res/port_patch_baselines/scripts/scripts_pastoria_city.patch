@@ -1,0 +1,28 @@
+# original-sha256: 853f5964ce1f80d3485fac6c0b4a8cbf70a6cb4fcb14f8a1e2ed85612593b637
+--- res/field/scripts/scripts_pastoria_city.s
++++ retail/scripts_pastoria_city.s
+@@ -377 +377 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH, 32
++    AddObject LOCALID_RIVAL
+@@ -414,3 +414,3 @@
+-    ApplyMovementSafeExit LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterBattle
+-    WaitMovement
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH, 32
++    ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterBattle
++    WaitMovement
++    RemoveObject LOCALID_RIVAL
+@@ -463 +463 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH, 32
++    AddObject LOCALID_RIVAL
+@@ -511 +511 @@
+-    ApplyMovementSafeExit LOCALID_CRASHER_WAKE, PastoriaCity_Movement_CrasherWakeLeave
++    ApplyMovement LOCALID_CRASHER_WAKE, PastoriaCity_Movement_CrasherWakeLeave
+@@ -516 +516 @@
+-    ApplyMovementSafeExit LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterGym
++    ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterGym
+@@ -680 +680 @@
+-    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST, 32
++    RemoveObject LOCALID_GRUNT_M
+@@ -956 +956 @@
+-    AddObjectFromEdge LOCALID_CROAGUNK, MOVEMENT_ACTION_WALK_NORMAL_NORTH, 32
++    AddObject LOCALID_CROAGUNK

@@ -1,0 +1,9 @@
+# original-sha256: f7fec581d0975bea7a7757e83932dbd072bb7ec1f1fb0a701b20f55d1f73ffc9
+--- res/field/scripts/scripts_route_227.s
++++ retail/scripts_route_227.s
+@@ -43 +43 @@
+-    RemoveObjectAtEdge LOCALID_CRASHER_WAKE, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
++    RemoveObject LOCALID_CRASHER_WAKE
+@@ -55 +55 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
++    RemoveObject LOCALID_RIVAL

@@ -1,0 +1,15 @@
+# original-sha256: b990c2dd774ab85a946b0915d1a0243ed34a8156ddee990d0b0594a862544d64
+--- res/field/scripts/scripts_oreburgh_mine_b2f.s
++++ retail/scripts_oreburgh_mine_b2f.s
+@@ -50 +50 @@
+-    ApplyMovementSafeExit LOCALID_ROARK, OreburghMineB2F_Movement_RoarkLeave
++    ApplyMovement LOCALID_ROARK, OreburghMineB2F_Movement_RoarkLeave
+@@ -55 +55 @@
+-    RemoveObjectAtEdge LOCALID_ROARK, MOVEMENT_ACTION_WALK_NORMAL_NORTH, 32
++    RemoveObject LOCALID_ROARK
+@@ -69,4 +69 @@
+-    WalkNormalEast 9
+-    WalkNormalNorth 4
+-    WalkNormalEast
+-    WalkNormalNorth 6
++    WalkNormalEast 10

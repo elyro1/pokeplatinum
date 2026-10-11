@@ -1,0 +1,15 @@
+# original-sha256: 298b43b2bba311d1850b7b1ba375283a7dcb0d6379574f105f4d45c303767608
+--- res/text/start_menu.json
++++ retail/start_menu.json
+@@ -30 +30 @@
+-      "en_US": "Quit"
++      "en_US": "EXIT"
+@@ -51,8 +50,0 @@
+-    },
+-    {
+-      "id": "StartMenu_Text_Poketch",
+-      "en_US": "POKéTCH"
+-    },
+-    {
+-      "id": "StartMenu_Text_QuitConfirmation",
+-      "en_US": "Quit the game?"

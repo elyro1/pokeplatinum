@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Install MSys2
         run: .\Install_MSys2.ps1
@@ -28,6 +30,10 @@ jobs:
 
       - name: Build (win64)
         run: .\Launch_Msys2.ps1 "make win64"
+        shell: powershell
+
+      - name: Verify embedded resource patches
+        run: .\Launch_Msys2.ps1 "python3 tools/scripts/test_map_patches.py --build build_win64"
         shell: powershell
 
       - name: Package release artifact (win64)

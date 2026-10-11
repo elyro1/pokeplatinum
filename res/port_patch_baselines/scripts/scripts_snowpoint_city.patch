@@ -1,0 +1,12 @@
+# original-sha256: 685e9b36c3da2e36f3f4d1209104f7e3dd017e7ae2af87beca179ecfe4f63450
+--- res/field/scripts/scripts_snowpoint_city.s
++++ retail/scripts_snowpoint_city.s
+@@ -104 +104 @@
+-    AddObjectFromEdge LOCALID_CANDICE, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_CANDICE
+@@ -216 +216 @@
+-    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_WEST
++    AddObject LOCALID_CYNTHIA
+@@ -236 +236 @@
+-    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_CYNTHIA

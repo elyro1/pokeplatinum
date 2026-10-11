@@ -1,0 +1,28 @@
+# original-sha256: 21583de7ec710f930107e980e743dba4a053b14e74082da8a84202605a6e9dff
+--- res/field/scripts/scripts_canalave_city.s
++++ retail/scripts_canalave_city.s
+@@ -151 +151 @@
+-    AddObjectFromEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_EAST, 32
++    AddObject LOCALID_RIVAL_BRIDGE
+@@ -184,3 +184,3 @@
+-    ApplyMovementSafeExit LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalBridgeLeave
+-    WaitMovement
+-    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_WEST, 32
++    ApplyMovement LOCALID_RIVAL_BRIDGE, CanalaveCity_Movement_RivalBridgeLeave
++    WaitMovement
++    RemoveObject LOCALID_RIVAL_BRIDGE
+@@ -228 +228 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_NORTH, 32
++    RemoveObject LOCALID_RIVAL_BRIDGE
+@@ -254 +254 @@
+-    AddObjectFromEdge LOCALID_SAILOR, MOVEMENT_ACTION_WALK_FAST_WEST, 32
++    AddObject LOCALID_SAILOR
+@@ -262 +262 @@
+-    RemoveObjectAtEdge LOCALID_SAILOR, MOVEMENT_ACTION_WALK_FAST_SOUTH, 32
++    RemoveObject LOCALID_SAILOR
+@@ -270 +270 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL_BRIDGE, MOVEMENT_ACTION_WALK_FAST_EAST, 32
++    RemoveObject LOCALID_RIVAL_BRIDGE
+@@ -658 +658 @@
+-    RemoveObjectAtEdge LOCALID_SAILOR_ELDRITCH, MOVEMENT_ACTION_WALK_NORMAL_SOUTH, 32
++    RemoveObject LOCALID_SAILOR_ELDRITCH

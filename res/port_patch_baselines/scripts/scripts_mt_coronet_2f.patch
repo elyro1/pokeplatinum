@@ -1,0 +1,14 @@
+# original-sha256: 6ece538cac32001802c2d480b4958356cd0408a3850e7c79349db1ffee3f0a2b
+--- res/field/scripts/scripts_mt_coronet_2f.s
++++ retail/scripts_mt_coronet_2f.s
+@@ -24,2 +24 @@
+-    @ Stage on the flat corridor before the stairs into the lower passage.
+-    SetObjectEventPos LOCALID_LOOKER, 22, 33
++    SetObjectEventPos LOCALID_LOOKER, 20, 25
+@@ -29 +28 @@
+-    AddObjectFromEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_WEST, 32
++    AddObject LOCALID_LOOKER
+@@ -91,3 +89,0 @@
+-    WalkFastNorth 2
+-    WalkFastWest 2
+-    WalkFastNorth 6

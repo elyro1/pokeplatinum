@@ -1,0 +1,12 @@
+# original-sha256: 9f48654202014f72c4913c3fed4920da79d23e44ad95a129d614080203cdd9ae
+--- res/field/scripts/scripts_route_207.s
++++ retail/scripts_route_207.s
+@@ -47 +47 @@
+-    AddObjectFromEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
++    AddObject LOCALID_COUNTERPART
+@@ -101 +101 @@
+-    ApplyMovementSafeExit LOCALID_COUNTERPART, Route207_Movement_CounterpartLeave
++    ApplyMovement LOCALID_COUNTERPART, Route207_Movement_CounterpartLeave
+@@ -103 +103 @@
+-    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_WEST, 32
++    RemoveObject LOCALID_COUNTERPART

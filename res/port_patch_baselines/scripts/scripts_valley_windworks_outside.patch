@@ -1,0 +1,6 @@
+# original-sha256: 655a53e2499bf4708d05f07589466c73532bdd7c857ee99da73e26d2cbb9ca1c
+--- res/field/scripts/scripts_valley_windworks_outside.s
++++ retail/scripts_valley_windworks_outside.s
+@@ -193 +193 @@
+-    RemoveObjectAtEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_WEST
++    RemoveObject LOCALID_LOOKER

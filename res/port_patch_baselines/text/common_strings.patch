@@ -1,0 +1,25 @@
+# original-sha256: ef0f85bff1cdb93fb851a872c838cd310bd9183b2c6a6955c8779c79375d55a5
+--- res/text/common_strings.json
++++ retail/common_strings.json
+@@ -876,21 +875,0 @@
+-    },
+-    {
+-      "id": "CommonStrings_Text_RepelWoreOffUseAnother",
+-      "en_US": [
+-        "{STRVAR_1 8, 0, 0}’s effect wore off!\n",
+-        "Use another?"
+-      ]
+-    },
+-    {
+-      "id": "CommonStrings_Text_RepelWoreOffUseDifferent",
+-      "en_US": [
+-        "Repel’s effect wore off...\n",
+-        "Use a {STRVAR_1 8, 1, 0}?"
+-      ]
+-    },
+-    {
+-      "id": "CommonStrings_Text_UsedRepel",
+-      "en_US": [
+-        "{STRVAR_1 3, 0, 0} used the\n",
+-        "{STRVAR_1 8, 1, 0}."
+-      ]

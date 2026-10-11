@@ -1,0 +1,9 @@
+# original-sha256: 83cf49839576cfbec4e038223951574369a5ebf88e18b6f963b57b015491d074
+--- res/field/scripts/scripts_solaceon_town.s
++++ retail/scripts_solaceon_town.s
+@@ -116 +116 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
++    AddObject LOCALID_RIVAL
+@@ -134 +134 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    RemoveObject LOCALID_RIVAL

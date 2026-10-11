@@ -1,0 +1,9 @@
+# original-sha256: 24e6c727069caa0691cebac0fe4122f04e86f282155013597d8af5147bcc389b
+--- res/field/scripts/scripts_route_217.s
++++ retail/scripts_route_217.s
+@@ -27 +27 @@
+-    AddObjectFromEdge LOCALID_MAYLENE, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_MAYLENE
+@@ -43 +43 @@
+-    RemoveObjectAtEdge LOCALID_MAYLENE, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    RemoveObject LOCALID_MAYLENE

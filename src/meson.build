@@ -1037,19 +1037,26 @@ pokeplatinum_c += files(
 endif
 endif
 
-# Embed only map deltas in desktop executables; the player's ROM supplies bases.
+# Embed resource deltas in desktop executables; the player's ROM supplies bases.
 if build_target == 'linux' or build_target == 'win64'
     map_patches_header = custom_target('map_patches.inc',
         output: 'map_patches.inc',
-        input: [map_data_narc, map_matrix_narc[0]],
+        input: [map_data_narc, map_matrix_narc[0], text_banks, scr_seq_narc[0],
+            baseline_text_narc, baseline_scripts_narc, start_menu_narc[0]],
         command: [find_program('python3', native: true),
             files('../tools/scripts/make_map_patches.py'),
-            meson.project_build_root(), '@INPUT0@', '@INPUT1@', '@OUTPUT@'],
+            meson.project_build_root(), '@INPUT0@', '@INPUT1@', '@OUTPUT@',
+            '--text', '@INPUT2@', '--scripts', '@INPUT3@',
+            '--baseline-text', '@INPUT4@', '--baseline-scripts', '@INPUT5@'],
         depend_files: [files('../tools/scripts/make_map_patches.py'),
             files('../res/field/maps/data/map_data.order'),
             files('../res/field/matrices/map_matrices.order'),
             files('../res/field/matrices/map_matrix_000.json'),
-            files('../tools/jsoncnv/map_matrix.py'), files('../tools/jsoncnv/convert.py')],
+            files('../tools/jsoncnv/map_matrix.py'), files('../tools/jsoncnv/convert.py'),
+            files('../res/port_patch_baselines/text/original.order'),
+            files('../res/port_patch_baselines/scripts/original.order'),
+            files('../generated/text_banks.txt'), files('../res/field/scripts/scripts.order'),
+            files('../res/graphics/start_menu/start_menu.order')],
         depends: py_consts_generators,
     )
     pokeplatinum_c += [files('port/map_patches.cpp'), map_patches_header]

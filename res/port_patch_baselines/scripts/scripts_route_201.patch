@@ -1,0 +1,23 @@
+# original-sha256: be364d5d75e99dd129fdcac4d2bf2045c9a7a72f30d67a9fbacf216579bbf101
+--- res/field/scripts/scripts_route_201.s
++++ retail/scripts_route_201.s
+@@ -123 +123 @@
+-    AddObjectFromEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
++    AddObject LOCALID_PROF_ROWAN
+@@ -209 +209 @@
+-    AddObjectFromEdgeVisible LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
++    AddObject LOCALID_COUNTERPART
+@@ -212 +211,0 @@
+-    WaitMovement
+@@ -298 +297 @@
+-    ApplyMovementSafeExit LOCALID_PROF_ROWAN, Route201_Movement_ProfRowanLeave
++    ApplyMovement LOCALID_PROF_ROWAN, Route201_Movement_ProfRowanLeave
+@@ -303 +302 @@
+-    RemoveObjectAtEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
++    RemoveObject LOCALID_PROF_ROWAN
+@@ -333 +332 @@
+-    ApplyMovementSafeExit LOCALID_COUNTERPART, Route201_Movement_CounterpartLeave
++    ApplyMovement LOCALID_COUNTERPART, Route201_Movement_CounterpartLeave
+@@ -336 +335 @@
+-    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST, 32
++    RemoveObject LOCALID_COUNTERPART

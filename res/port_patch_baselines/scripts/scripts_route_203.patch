@@ -1,0 +1,6 @@
+# original-sha256: 408f583eabdd6f6bf06bb9944b07ab2ab031fd25258fc61e9fbd75f0e2d40891
+--- res/field/scripts/scripts_route_203.s
++++ retail/scripts_route_203.s
+@@ -122 +122 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_EAST
++    RemoveObject LOCALID_RIVAL

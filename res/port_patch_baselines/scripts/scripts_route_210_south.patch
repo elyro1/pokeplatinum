@@ -1,0 +1,18 @@
+# original-sha256: d39e681f7ba731cb30a0ba6036847c400fcae1fd295fc5437e3302781080a195
+--- res/field/scripts/scripts_route_210_south.s
++++ retail/scripts_route_210_south.s
+@@ -72,4 +72,4 @@
+-    RemoveObjectAtEdge LOCALID_PSYDUCK_3, MOVEMENT_ACTION_WALK_NORMAL_NORTH
+-    RemoveObjectAtEdge LOCALID_PSYDUCK_4, MOVEMENT_ACTION_WALK_NORMAL_NORTH
+-    RemoveObjectAtEdge LOCALID_PSYDUCK_2, MOVEMENT_ACTION_WALK_FAST_NORTH
+-    RemoveObjectAtEdge LOCALID_PSYDUCK_1, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    RemoveObject LOCALID_PSYDUCK_3
++    RemoveObject LOCALID_PSYDUCK_4
++    RemoveObject LOCALID_PSYDUCK_2
++    RemoveObject LOCALID_PSYDUCK_1
+@@ -94 +94 @@
+-    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_CYNTHIA
+@@ -135 +135 @@
+-    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
++    RemoveObject LOCALID_CYNTHIA

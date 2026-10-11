@@ -138,3 +138,7 @@ subdir('field')
 subdir('fonts')
 subdir('pokemon_anims')
 subdir('words')
+
+if build_target == 'linux' or build_target == 'win64'
+    subdir('port_patch_baselines')
+endif

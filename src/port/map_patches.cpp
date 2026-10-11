@@ -1,4 +1,4 @@
-// Apply embedded map deltas to the player's extracted ROM filesystem.
+// Apply embedded resource deltas to the extracted ROM filesystem.
 #include "port/map_patches.h"
 #include <algorithm>
 #include <array>
@@ -25,6 +25,7 @@ using Bytes = std::vector<uint8_t>;
 struct MapPatch {
     const char *path;
     unsigned member;
+    unsigned sourceMember;
     const char *before;
     const char *after;
     size_t outputSize;
@@ -136,6 +137,10 @@ struct Archive {
         }
     }
     Bytes pack() {
+        if (files.size() > 65535) throw std::runtime_error("Too many NARC members");
+        blocks[fat].resize(12 + files.size()*8);
+        put(blocks[fat],4,blocks[fat].size());
+        put(blocks[fat],8,files.size(),2);
         blocks[image].resize(8);
         for (size_t i=0; i<files.size(); ++i) {
             put(blocks[fat],12+i*8,blocks[image].size()-8);
@@ -180,8 +185,7 @@ void patchAll() {
         Archive current(read(path));
         bool complete=true;
         for (auto p:group.second) {
-            if (p->member>=current.files.size()) throw std::runtime_error("Missing map member");
-            complete &= sha256(current.files[p->member])==p->after;
+            complete &= p->member<current.files.size() && sha256(current.files[p->member])==p->after;
         }
         if (complete) continue;
         auto backup=std::filesystem::path(".map-patch-originals") / path;
@@ -192,14 +196,17 @@ void patchAll() {
             // Never save a modified file as the original. Development builds
             // already containing all output hashes take the fast path above.
             for (auto p:group.second)
-                if (sha256(current.files[p->member])!=p->before)
+                if (p->sourceMember>=current.files.size() || sha256(current.files[p->sourceMember])!=p->before)
                     throw std::runtime_error("Original map data unavailable. Re-extract a clean US Platinum ROM into a fresh game directory.");
         }
         Archive base(original);
         // Preserve unrelated members from the current archive (e.g. user mods).
         for (auto p:group.second) {
-            if (p->member>=base.files.size()) throw std::runtime_error("Missing original map member");
-            current.files[p->member]=applyDelta(*p,base.files[p->member]);
+            if (p->sourceMember>=base.files.size()) throw std::runtime_error("Missing original map member");
+            if (p->member>current.files.size()) throw std::runtime_error("Non-contiguous added NARC member");
+            Bytes patched=applyDelta(*p,base.files[p->sourceMember]);
+            if (p->member==current.files.size()) current.files.push_back(std::move(patched));
+            else current.files[p->member]=std::move(patched);
         }
         if (!std::filesystem::exists(backup)) {
             std::filesystem::create_directories(backup.parent_path());
@@ -225,9 +232,9 @@ extern "C" void MapPatches_Ensure(void) {
     }
     catch (const std::exception &error) {
 #ifndef MAP_PATCH_TEST
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Map patch failed",error.what(),nullptr);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Game asset patch failed",error.what(),nullptr);
 #endif
-        std::fprintf(stderr,"Map patch failed: %s\n",error.what());
+        std::fprintf(stderr,"Game asset patch failed: %s\n",error.what());
         std::exit(EXIT_FAILURE);
     }
 }

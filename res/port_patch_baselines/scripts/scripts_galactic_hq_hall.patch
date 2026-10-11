@@ -1,0 +1,6 @@
+# original-sha256: 448bc288f831d9131aad8c21e8a93425895ce663426eea3b09a1da5dc3e0cf4b
+--- res/field/scripts/scripts_galactic_hq_hall.s
++++ retail/scripts_galactic_hq_hall.s
+@@ -99 +99 @@
+-    RemoveObjectAtEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_WEST
++    RemoveObject LOCALID_LOOKER

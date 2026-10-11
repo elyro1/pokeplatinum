@@ -1,0 +1,6 @@
+# original-sha256: fa8b44dd02f27b66d66b310e13d7aa2fa4dec9538302b8d333337907fbc2cf8c
+--- res/field/scripts/scripts_stark_mountain_outside.s
++++ retail/scripts_stark_mountain_outside.s
+@@ -131 +131 @@
+-    RemoveObjectAtEdge LOCALID_BUCK, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_BUCK

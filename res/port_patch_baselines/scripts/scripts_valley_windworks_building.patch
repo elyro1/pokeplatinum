@@ -1,0 +1,12 @@
+# original-sha256: 33232410ce1df9ed9589c8bc55876e9ee9663b2639a4b64e7e0d1f895b13eee2
+--- res/field/scripts/scripts_valley_windworks_building.s
++++ retail/scripts_valley_windworks_building.s
+@@ -36 +36 @@
+-    ApplyMovementSafeExit LOCALID_GALACTIC_GRUNT_1, ValleyWindworksBuilding_Movement_GalacticGrunt1Leave
++    ApplyMovement LOCALID_GALACTIC_GRUNT_1, ValleyWindworksBuilding_Movement_GalacticGrunt1Leave
+@@ -39 +39 @@
+-    RemoveObjectAtEdge LOCALID_GALACTIC_GRUNT_1, MOVEMENT_ACTION_WALK_FAST_WEST, 32
++    RemoveObject LOCALID_GALACTIC_GRUNT_1
+@@ -138 +138 @@
+-    AddObjectFromEdge LOCALID_LITTLE_GIRL, MOVEMENT_ACTION_WALK_FAST_EAST, 32
++    AddObject LOCALID_LITTLE_GIRL

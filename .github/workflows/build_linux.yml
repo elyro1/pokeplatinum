@@ -27,6 +27,8 @@ jobs:
 
       - name: Checkout Repo
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Install Metroskrew
         run: ./drun.sh make skrew
@@ -34,8 +36,11 @@ jobs:
       - name: Build (Linux)
         run: ./drun.sh make linux
 
-      - name: Verify embedded map patches
+      - name: Verify embedded resource patches
         run: ./drun.sh python3 tools/scripts/test_map_patches.py
+
+      - name: Build AppImage
+        run: ./drun.sh ./tools/scripts/create_appimage.sh build_linux pokeplatinum
 
       - name: Package release artifact (linux)
         run: ./tools/scripts/package_artifacts_linux.sh

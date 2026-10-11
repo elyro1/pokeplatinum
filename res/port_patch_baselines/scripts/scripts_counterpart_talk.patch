@@ -1,0 +1,6 @@
+# original-sha256: 0b666f3e41dd7ef56c80cf53feb49e269dab879e6497ef02b52d97aacd7ce0fe
+--- res/field/scripts/scripts_counterpart_talk.s
++++ retail/scripts_counterpart_talk.s
+@@ -148 +148 @@
+-    RemoveObjectAtEdge LOCALID_SANDGEM_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST
++    RemoveObject LOCALID_SANDGEM_COUNTERPART

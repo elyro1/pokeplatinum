@@ -1,0 +1,32 @@
+# original-sha256: a5ffe373af16714f096ee57e3c71f367c414f4ad7be125db018d023aa6915361
+--- res/text/main_menu_options.json
++++ retail/main_menu_options.json
+@@ -87,28 +86,0 @@
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_Slot",
+-      "en_US": "Slot {STRVAR_1 50, 0, 0}"
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_SlotNewGame",
+-      "en_US": "New Game"
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_SlotPlayer",
+-      "en_US": "Player {STRVAR_1 3, 0, 0}"
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_SlotBadges",
+-      "en_US": "Badges {STRVAR_1 50, 0, 0}"
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_SlotTime",
+-      "en_US": "Time {STRVAR_1 52, 0, 0}:{STRVAR_1 51, 1, 0}"
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_SlotPokedex",
+-      "en_US": "Pokédex {STRVAR_1 52, 0, 0}"
+-    },
+-    {
+-      "id": "MainMenuOptions_Text_SlotUnavailable",
+-      "en_US": "Save unavailable"

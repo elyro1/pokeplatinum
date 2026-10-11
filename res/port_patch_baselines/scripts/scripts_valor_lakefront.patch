@@ -1,0 +1,18 @@
+# original-sha256: ddd9c7eeb72d0a927163c1cb0c9d520294e3f427a070f287938995330db8aced
+--- res/field/scripts/scripts_valor_lakefront.s
++++ retail/scripts_valor_lakefront.s
+@@ -116 +116 @@
+-    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_SLOW_NORTH
++    RemoveObject LOCALID_GRUNT_M
+@@ -188 +188 @@
+-    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
++    AddObject LOCALID_CYNTHIA
+@@ -200 +200 @@
+-    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    AddObject LOCALID_RIVAL
+@@ -222 +222 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
++    RemoveObject LOCALID_RIVAL
+@@ -359 +359 @@
+-    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    RemoveObject LOCALID_CYNTHIA

@@ -1,0 +1,21 @@
+# original-sha256: 18fd889b6d4d2eb5c0ec53bd5131d319ccd24ca929304bc6c42854cefaa4a848
+--- res/field/scripts/scripts_distortion_world_1f.s
++++ retail/scripts_distortion_world_1f.s
+@@ -74 +74 @@
+-    ApplyMovementWidescreen DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL, DistortionWorld1F_Movement_CynthiaLeave, DistortionWorld1F_Movement_CynthiaLeaveWide
++    ApplyMovement DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL, DistortionWorld1F_Movement_CynthiaLeave
+@@ -76 +75,0 @@
+-    WalkObjectToEdge DIST_WORLD_MAP_OBJECT_1F_CYNTHIA_PORTAL, MOVEMENT_ACTION_WALK_NORMAL_WEST, 32
+@@ -170,12 +168,0 @@
+-
+-    .balign 4, 0
+-DistortionWorld1F_Movement_CynthiaLeaveWide:
+-    WalkNormalWest 3
+-    WalkNormalSouth 3
+-    WalkNormalWest 2
+-    WalkNormalSouth
+-    WalkNormalWest 10
+-    WalkNormalSouth 3
+-    JumpDistortionWorldSouth
+-    WalkNormalSouth 3
+-    EndMovement

@@ -1,0 +1,9 @@
+# original-sha256: f93b15c72e067b5598c6a7c5086bbc429842343254499ee8aace31df79a686a6
+--- res/field/scripts/scripts_celestic_town.s
++++ retail/scripts_celestic_town.s
+@@ -84 +84 @@
+-    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_SOUTH
++    RemoveObject LOCALID_GRUNT_M
+@@ -90 +90 @@
+-    AddObjectFromEdge LOCALID_ELDER, MOVEMENT_ACTION_WALK_NORMAL_NORTH
++    AddObject LOCALID_ELDER

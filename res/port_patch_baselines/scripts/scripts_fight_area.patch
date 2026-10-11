@@ -1,0 +1,9 @@
+# original-sha256: 7353aeb0649d2e68e5d776ed34715d4d9f79290770d80b4fff74d6de6cd94beb
+--- res/field/scripts/scripts_fight_area.s
++++ retail/scripts_fight_area.s
+@@ -168 +168 @@
+-    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
++    RemoveObject LOCALID_RIVAL
+@@ -177 +177 @@
+-    RemoveObjectAtEdge LOCALID_BUCK, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
++    RemoveObject LOCALID_BUCK
