@@ -43,7 +43,7 @@ jobs:
         run: ./drun.sh ./tools/scripts/create_appimage.sh build_linux pokeplatinum
 
       - name: Package release artifact (linux)
-        run: ./tools/scripts/package_artifacts_linux.sh
+        run: ./drun.sh ./tools/scripts/package_artifacts_linux.sh
 
       - name: Upload release artifact (linux)
         uses: actions/upload-artifact@v6

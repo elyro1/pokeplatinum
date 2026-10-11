@@ -93,7 +93,7 @@ sudo dpkg --add-architecture i386
 sudo apt update
 sudo apt install build-essential python3 git ninja-build nasm flex bison \
     pkg-config gcc-arm-none-eabi libpng-dev libsdl2-dev libenet-dev \
-    libsoundtouch-dev libc6:i386 wget ca-certificates fuse file
+    libsoundtouch-dev libc6:i386 wget ca-certificates fuse file patchelf
 make linux
 ```
 
