@@ -2,6 +2,10 @@
 
 #include <string.h>
 
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
+
 #include "constants/graphics.h"
 #include "constants/heap.h"
 
@@ -135,6 +139,11 @@ void StartScreenFade(enum FadeMode mode, enum FadeType typeMain, enum FadeType t
     SetupScreenFadeParams(mode, &manager->screen);
     ClearHBlanks(&manager->hblanks);
 
+#ifdef SDK_PORT
+    SIM_SetScreenFadeWindows(manager->screen.existsMain && typeMain > FADE_TYPE_BRIGHTNESS_IN,
+        manager->screen.existsSub && typeSub > FADE_TYPE_BRIGHTNESS_IN);
+#endif
+
     u16 fadeColor = GetFadeColor(manager, color);
     InitScreenFade(&manager->mainScreenFade, typeMain, steps, framesPerStep, FADE_IDLE, NULL, DS_SCREEN_MAIN, &manager->hwSettings, &manager->hblanks, heapID, fadeColor);
     InitScreenFade(&manager->subScreenFade, typeSub, steps, framesPerStep, FADE_IDLE, NULL, DS_SCREEN_SUB, &manager->hwSettings, &manager->hblanks, heapID, fadeColor);
@@ -188,6 +197,9 @@ void FinishScreenFade(void)
     sScreenFadeManager.dummy_14F = 0;
 
     ZeroScreenFadeManager(&sScreenFadeManager);
+#ifdef SDK_PORT
+    SIM_SetScreenFadeWindows(FALSE, FALSE);
+#endif
 }
 
 void ResetVisibleHardwareWindows(enum DSScreen screen)
@@ -287,6 +299,9 @@ static void ResetScreenFadeManager(ScreenFadeManager *manager)
     }
 
     ZeroScreenFadeManager(manager);
+#ifdef SDK_PORT
+    SIM_SetScreenFadeWindows(FALSE, FALSE);
+#endif
 }
 
 static BOOL TryScreenFade(ScreenFadeParams *screen, ScreenFade *fadeMain, ScreenFade *fadeSub)
