@@ -652,6 +652,14 @@ static BOOL MovementAction_RunEast_Step0(MapObject *mapObj)
 
 static void MovementAction_InitWalkOnSpot(MapObject *mapObj, int dir, s16 duration, u16 param3)
 {
+#ifdef SDK_PORT
+    SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
+    if (myConfig->enable60fps && myConfig->enable60fpsSpeedFix) {
+        // Wall collisions retry after this action, so preserve their original cadence.
+        duration *= 2;
+    }
+#endif
+
     // the extra 8 bytes are needed only for matching
     WalkOnSpotMovementData *data = MapObject_InitMovementData(mapObj, sizeof(WalkOnSpotMovementData) + 8);
 
