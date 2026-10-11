@@ -1084,6 +1084,12 @@ static void ov5_021D6690(UnkStruct_ov5_021D6594 *param0, int param1, UnkStruct_o
 
     if (param1 != 0xffff) {
         if (param2->unk_00[0]) {
+#ifdef SDK_PORT
+            if (param1 == 3 || param1 == 1 || param1 == 9) {
+                const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(param2->unk_00[0]);
+                SIM_SetFieldTiledSpriteRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN), 0, FALSE);
+            }
+#endif
             SpriteTransfer_ResetCharTransfer(param2->unk_00[0]);
         }
 
@@ -1448,6 +1454,14 @@ static void ov5_021D6C64(UnkStruct_ov5_021D6594 *param0, int param1, UnkStruct_o
         param2->unk_00[0] = ov5_021D65C0(param0->unk_08.unk_10, 0, param1, param0->unk_08.unk_00[0], param0->unk_144, 1);
 
         SpriteTransfer_RequestCharAtEnd(param2->unk_00[0]);
+#ifdef SDK_PORT
+        // Snow, heavy snow and blizzard particles repeat independently of UI sprites.
+        if (param1 == 3 || param1 == 1 || param1 == 9) {
+            const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(param2->unk_00[0]);
+            SIM_SetFieldTiledSpriteRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN),
+                SpriteResource_GetTileData(param2->unk_00[0])->szByte, TRUE);
+        }
+#endif
         SpriteResource_ReleaseData(param2->unk_00[0]);
     }
 }

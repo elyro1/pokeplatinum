@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
+
 #include "constants/colors.h"
 #include "constants/distortion_world.h"
 #include "constants/field/dynamic_map_features.h"
@@ -3020,6 +3024,9 @@ static BOOL TickJumpOnFloatingPlatformMovementAnimation(DistWorldFloatingPlatfor
 
 static void InitSkyBackground(DistWorldSystem *system)
 {
+#ifdef SDK_PORT
+    SIM_SetFieldOverlayTiled(TRUE);
+#endif
     GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG1, FALSE);
 
     NNSG2dPaletteData *plttData;
@@ -3066,6 +3073,9 @@ static void InitSkyBackground(DistWorldSystem *system)
 
 static void FinishSkyBackground(DistWorldSystem *system)
 {
+#ifdef SDK_PORT
+    SIM_SetFieldOverlayTiled(FALSE);
+#endif
     G2_BlendNone();
 }
 
