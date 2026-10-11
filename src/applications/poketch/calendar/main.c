@@ -3,6 +3,7 @@
 
 #include "applications/poketch/calendar/graphics.h"
 #include "applications/poketch/poketch_button.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 
 #include "bg_window.h"
@@ -25,6 +26,9 @@ typedef struct PoketchCalendar {
     u8 state;
     u8 subState;
     u8 shouldExit;
+#ifdef SDK_PORT
+    u8 menuCell;
+#endif
     CalendarData calendar;
     CalendarGraphics *graphics;
     PoketchSystem *poketchSys;
@@ -114,6 +118,9 @@ static BOOL Init(PoketchCalendar *appData, PoketchSystem *poketchSys, BgConfig *
         appData->state = STATE_LOAD_APP;
         appData->subState = 0;
         appData->shouldExit = FALSE;
+#ifdef SDK_PORT
+        appData->menuCell = appData->firstDayPosition + todaysDate.day - 1;
+#endif
         appData->buttonManager = PoketchButtonManager_New(sHitboxes, NELEMS(sHitboxes), TouchCallback, appData, HEAP_ID_POKETCH_APP);
         appData->buttonState = BUTTON_MANAGER_STATE_NULL;
         appData->poketchSys = poketchSys;
@@ -230,6 +237,36 @@ static BOOL State_UpdateApp(PoketchCalendar *appData)
         ChangeState(appData, STATE_SHUTDOWN);
         return FALSE;
     }
+
+#ifdef SDK_PORT
+    if (appData->poketchSys->menuActive && appData->poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(appData->poketchSys)) {
+        u32 keys = PoketchSystem_GetMenuPressedKeys(appData->poketchSys);
+        int next = appData->menuCell;
+        switch (keys & (PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_KEY_UP | PAD_KEY_DOWN)) {
+        case PAD_KEY_LEFT:
+            next--;
+            break;
+        case PAD_KEY_RIGHT:
+            next++;
+            break;
+        case PAD_KEY_UP:
+            next -= 7;
+            break;
+        case PAD_KEY_DOWN:
+            next += 7;
+            break;
+        }
+        if (next >= appData->firstDayPosition && next <= appData->lastDayPosition) {
+            appData->menuCell = next;
+        }
+        const TouchScreenHitTable *box = &appData->buttonManager->hitTable[appData->menuCell];
+        PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), box->rect.left - 8, box->rect.top + 4, TRUE);
+        if (keys & PAD_BUTTON_A) {
+            appData->touchedCell = appData->menuCell;
+            appData->buttonState = BUTTON_MANAGER_STATE_TOUCH;
+        }
+    }
+#endif
 
     switch (appData->subState) {
     case 0:

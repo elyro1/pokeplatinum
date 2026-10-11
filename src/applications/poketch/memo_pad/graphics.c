@@ -60,6 +60,41 @@ BOOL MemoPadGraphics_New(MemoPadGraphics **dest, const MemoPadData *padState, Bg
     return FALSE;
 }
 
+#ifdef SDK_PORT
+static void DrawDefaultMemo(Window *window)
+{
+    // A small pixel drawing, using the same monochrome ink as the original pad.
+    static const u8 letters[7][7] = {
+        { 14, 17, 16, 16, 16, 17, 14 }, // C
+        { 16, 16, 22, 25, 17, 17, 17 }, // h
+        { 0, 0, 14, 1, 15, 17, 15 }, // a
+        { 4, 4, 31, 4, 4, 5, 2 }, // t
+        { 14, 17, 16, 23, 17, 17, 14 }, // G
+        { 30, 17, 17, 30, 16, 16, 16 }, // P
+        { 31, 4, 4, 4, 4, 4, 4 }, // T
+    };
+    static const u8 letterI[7] = { 31, 4, 4, 4, 4, 4, 31 };
+    static const u8 heart[7] = { 0x66, 0xff, 0xff, 0xff, 0x7e, 0x3c, 0x18 };
+    for (u32 y = 0; y < 7; y++) {
+        for (u32 x = 0; x < 5; x++) {
+            if (letterI[y] & (1 << (4 - x))) {
+                Window_FillRectWithColor(window, 1, 48 + x * 3, 36 + y * 3, 3, 3);
+            }
+            for (u32 letter = 0; letter < NELEMS(letters); letter++) {
+                if (letters[letter][y] & (1 << (4 - x))) {
+                    Window_FillRectWithColor(window, 1, 18 + letter * 18 + x * 3, 88 + y * 3, 3, 3);
+                }
+            }
+        }
+        for (u32 x = 0; x < 8; x++) {
+            if (heart[y] & (1 << (7 - x))) {
+                Window_FillRectWithColor(window, 1, 80 + x * 4, 32 + y * 4, 4, 4);
+            }
+        }
+    }
+}
+#endif
+
 static BOOL SetupWindow(MemoPadGraphics *graphics)
 {
     static const WindowTemplate windowTemplate = {
@@ -79,6 +114,9 @@ static BOOL SetupWindow(MemoPadGraphics *graphics)
 
         if (PoketchMemory_ReadFast(graphics->padData->appID, graphics->window->pixels, WINDOW_WIDTH_TILES * WINDOW_HEIGHT_TILES * TILE_SIZE_4BPP) == FALSE) {
             Window_FillTilemap(graphics->window, 0x4);
+#ifdef SDK_PORT
+            DrawDefaultMemo(graphics->window);
+#endif
         }
 
         return TRUE;

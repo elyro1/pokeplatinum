@@ -4,6 +4,7 @@
 #include "applications/poketch/calculator/graphics.h"
 #include "applications/poketch/calculator/value.h"
 #include "applications/poketch/poketch_button.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 
 #include "bg_window.h"
@@ -21,6 +22,10 @@ typedef struct PoketchCalculator {
     u8 shouldExit;
     u8 decimalActive;
     u8 unused;
+#ifdef SDK_PORT
+    u8 menuRow;
+    u8 menuColumn;
+#endif
     u16 pressedButton;
     enum CalculatorGraphicsTask nextGraphicsTask;
     PoketchButtonManager *buttonManager;
@@ -50,6 +55,9 @@ static void Exit(void *appData);
 static void ButtonCallback(u32 buttonID, u32 buttonState, u32 touchState, void *appData);
 
 static void Task_Main(SysTask *task, void *appData);
+#ifdef SDK_PORT
+static void UpdateMenuControls(PoketchCalculator *calculator);
+#endif
 static void ChangeState(PoketchCalculator *appData, enum CalculatorState newState);
 static BOOL State_LoadApp(PoketchCalculator *appData);
 static BOOL State_EnterOperand1(PoketchCalculator *appData);
@@ -69,7 +77,8 @@ static void NitroStaticInit(void)
 }
 
 #ifdef SDK_PORT
-void PoketchAppStaticInit_Calculator() {
+void PoketchAppStaticInit_Calculator()
+{
     NitroStaticInit();
 }
 #endif
@@ -122,6 +131,10 @@ static BOOL Init(PoketchCalculator *appData, u32 appID, BgConfig *bgConfig)
         appData->decimalActive = FALSE;
         appData->pressedButton = CALC_BUTTON_NULL;
         appData->nextGraphicsTask = -1;
+#ifdef SDK_PORT
+        appData->menuRow = 0;
+        appData->menuColumn = 0;
+#endif
 
         CalculatorValue_New(&appData->calcData.operand1, CALCULATOR_MAX_DIGITS);
         CalculatorValue_New(&appData->calcData.operand2, CALCULATOR_MAX_DIGITS);
@@ -184,6 +197,9 @@ static void Task_Main(SysTask *task, void *appData)
     if (calculator->state < NELEMS(stateFuncs)) {
         calculator->pressedButton = CALC_BUTTON_NULL;
         PoketechSystem_UpdateButtonManager(calculator->poketchSys, calculator->buttonManager);
+#ifdef SDK_PORT
+        UpdateMenuControls(calculator);
+#endif
 
         if (stateFuncs[calculator->state](calculator)) {
             Free(calculator);
@@ -193,6 +209,63 @@ static void Task_Main(SysTask *task, void *appData)
         }
     }
 }
+
+#ifdef SDK_PORT
+static void UpdateMenuControls(PoketchCalculator *calculator)
+{
+    // Retain the column when crossing a wide key, so up/down returns to the
+    // appropriate operator. Horizontal movement skips its duplicate grid cell.
+    static const u8 grid[4][5] = {
+        { 7, 8, 9, CALC_BUTTON_CLEAR, CALC_BUTTON_CLEAR },
+        { 4, 5, 6, CALC_BUTTON_PLUS, CALC_BUTTON_MINUS },
+        { 1, 2, 3, CALC_BUTTON_TIMES, CALC_BUTTON_DIVIDE },
+        { 0, 0, CALC_BUTTON_DECIMAL, CALC_BUTTON_EQUALS, CALC_BUTTON_EQUALS },
+    };
+    PoketchSystem *system = calculator->poketchSys;
+    if (!system->menuActive) {
+        return;
+    }
+
+    u32 button = grid[calculator->menuRow][calculator->menuColumn];
+    if (system->menuAEvent != BUTTON_MANAGER_STATE_NULL) {
+        // A cancelled release restores the artwork without entering a value.
+        ButtonCallback(button, system->menuAEvent, system->menuATouchEvent, calculator);
+    }
+    if (!system->menuAppInputEnabled || !PoketchSystem_IsReadyForMenu(system)) {
+        return;
+    }
+
+    if (!system->menuAHeld && system->menuAEvent == BUTTON_MANAGER_STATE_NULL) {
+        u32 direction = PoketchSystem_GetMenuPressedKeys(system) & (PAD_KEY_UP | PAD_KEY_DOWN | PAD_KEY_LEFT | PAD_KEY_RIGHT);
+        int row = calculator->menuRow;
+        int column = calculator->menuColumn;
+        switch (direction) {
+        case PAD_KEY_UP:
+            row--;
+            break;
+        case PAD_KEY_DOWN:
+            row++;
+            break;
+        case PAD_KEY_LEFT:
+        case PAD_KEY_RIGHT: {
+            int step = direction == PAD_KEY_LEFT ? -1 : 1;
+            do {
+                column += step;
+            } while (column >= 0 && column < 5 && grid[row][column] == button);
+            break;
+        }
+        }
+        if (row >= 0 && row < 4 && column >= 0 && column < 5) {
+            calculator->menuRow = row;
+            calculator->menuColumn = column;
+            button = grid[row][column];
+        }
+    }
+
+    const TouchScreenHitTable *hitbox = &calculator->buttonManager->hitTable[button];
+    PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), hitbox->rect.left, hitbox->rect.top + 8, TRUE);
+}
+#endif
 
 static void Exit(void *appData)
 {

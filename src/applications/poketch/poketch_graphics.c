@@ -740,7 +740,12 @@ void PoketchGraphics_SetMenuFocus(PoketchGraphics_TaskData *taskData, u32 x, u32
     }
     if (visible && x < 256 && y < 192) {
         static const u32 arrow[] = { 0x00000000, 0x00000100, 0x00001100, 0x00011100, 0x00111100, 0x00011100, 0x00001100, 0x00000100 };
-        Bg_LoadTiles(taskData->bgConfig, BG_LAYER_SUB_0, (void *)arrow, sizeof(arrow), 1);
+        u32 tiles[NELEMS(arrow)];
+        // Border palette entry 4 is the light neutral gray shared by all apps.
+        for (u32 i = 0; i < NELEMS(arrow); i++) {
+            tiles[i] = arrow[i] * 4;
+        }
+        Bg_LoadTiles(taskData->bgConfig, BG_LAYER_SUB_0, tiles, sizeof(tiles), 1);
         taskData->menuFocusOffset = offset;
         taskData->menuFocusPreviousTile = tilemap[offset];
         tilemap[offset] = (15 << 12) | 1;

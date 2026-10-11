@@ -6,6 +6,7 @@
 
 #include "applications/poketch/move_tester/graphics.h"
 #include "applications/poketch/poketch_button.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 
 #include "bg_window.h"
@@ -19,6 +20,9 @@ typedef struct PoketchMoveTester {
     u8 state;
     u8 subState;
     u8 shouldExit;
+#ifdef SDK_PORT
+    u8 menuRow, menuColumn;
+#endif
     u32 appID;
     MoveTesterData moveTesterData;
     PoketchMoveTesterGraphics *graphics;
@@ -165,6 +169,10 @@ static BOOL Init(PoketchMoveTester *appData, PoketchSystem *poketchSys, BgConfig
         appData->state = STATE_LOAD_APP;
         appData->subState = 0;
         appData->shouldExit = FALSE;
+#ifdef SDK_PORT
+        appData->menuRow = 2;
+        appData->menuColumn = 0;
+#endif
         appData->buttonManager = PoketchButtonManager_New(sHitTableMoveTester, NELEMS(sHitTableMoveTester), ButtonChanged, appData, HEAP_ID_POKETCH_APP);
         appData->buttonState = BUTTON_MANAGER_STATE_NULL;
         appData->poketchSys = poketchSys;
@@ -204,6 +212,43 @@ static void Task_Main(SysTask *task, void *appData)
 
     if (moveTester->state < NELEMS(stateFuncs)) {
         PoketechSystem_UpdateButtonManager(moveTester->poketchSys, moveTester->buttonManager);
+#ifdef SDK_PORT
+        if (moveTester->poketchSys->menuActive) {
+            static const u8 buttons[3][2] = { { 2, 3 }, { 4, 5 }, { 0, 1 } };
+            PoketchSystem *system = moveTester->poketchSys;
+            u32 button = buttons[moveTester->menuRow][moveTester->menuColumn];
+            moveTester->buttonState = BUTTON_MANAGER_STATE_NULL;
+            if (system->menuAEvent != BUTTON_MANAGER_STATE_NULL) {
+                ButtonChanged(button, system->menuAEvent, system->menuATouchEvent, moveTester);
+            }
+            if (system->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(system)) {
+                if (!system->menuAHeld && system->menuAEvent == BUTTON_MANAGER_STATE_NULL) {
+                    int row = moveTester->menuRow, column = moveTester->menuColumn;
+                    switch (PoketchSystem_GetMenuPressedKeys(system) & (PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_KEY_UP | PAD_KEY_DOWN)) {
+                    case PAD_KEY_LEFT:
+                        column--;
+                        break;
+                    case PAD_KEY_RIGHT:
+                        column++;
+                        break;
+                    case PAD_KEY_UP:
+                        row--;
+                        break;
+                    case PAD_KEY_DOWN:
+                        row++;
+                        break;
+                    }
+                    if (row >= 0 && row < 3 && column >= 0 && column < 2) {
+                        moveTester->menuRow = row;
+                        moveTester->menuColumn = column;
+                    }
+                    button = buttons[moveTester->menuRow][moveTester->menuColumn];
+                }
+                const TouchScreenHitTable *box = &moveTester->buttonManager->hitTable[button];
+                PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), box->rect.left, box->rect.top + 8, TRUE);
+            }
+        }
+#endif
 
         if (stateFuncs[moveTester->state](moveTester)) {
             Free(moveTester);

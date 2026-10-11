@@ -2,6 +2,7 @@
 #include <nitro/sinit.h>
 
 #include "applications/poketch/dowsing_machine/graphics.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 
 #include "bg_window.h"
@@ -9,6 +10,7 @@
 #include "script_manager.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#include "system.h"
 #include "touch_screen.h"
 
 #include "res/sound/pl_sound_data.naix"
@@ -21,6 +23,10 @@ typedef struct PoketchDowsingMachine {
     u8 state;
     u8 subState;
     u8 shouldExit;
+#ifdef SDK_PORT
+    u16 menuX, menuY;
+    u8 menuMoveTimer;
+#endif
     DowsingMachineData dowsingData;
     DowsingMachineGraphics *graphics;
     PoketchSystem *poketchSys;
@@ -88,6 +94,11 @@ static BOOL Init(PoketchDowsingMachine *appData, PoketchSystem *poketchSys, BgCo
         appData->state = STATE_LOAD_APP;
         appData->subState = 0;
         appData->shouldExit = FALSE;
+#ifdef SDK_PORT
+        appData->menuX = 112;
+        appData->menuY = 96;
+        appData->menuMoveTimer = 0;
+#endif
         appData->unused = NULL;
         appData->poketchSys = poketchSys;
 
@@ -170,6 +181,38 @@ static BOOL State_UpdateApp(PoketchDowsingMachine *appData)
         return FALSE;
     }
 
+#ifdef SDK_PORT
+    if (appData->poketchSys->menuActive && appData->poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(appData->poketchSys)) {
+        u32 direction = gSystem.heldKeysRaw & (PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_KEY_UP | PAD_KEY_DOWN);
+        if ((PoketchSystem_GetMenuPressedKeys(appData->poketchSys) & direction) || appData->menuMoveTimer == 0) {
+            int x = appData->menuX, y = appData->menuY;
+            switch (direction) {
+            case PAD_KEY_LEFT:
+                x -= 8;
+                break;
+            case PAD_KEY_RIGHT:
+                x += 8;
+                break;
+            case PAD_KEY_UP:
+                y -= 8;
+                break;
+            case PAD_KEY_DOWN:
+                y += 8;
+                break;
+            }
+            appData->menuX = x < 24 ? 24 : (x > 192 ? 192 : x);
+            appData->menuY = y < 24 ? 24 : (y > 160 ? 160 : y);
+            appData->menuMoveTimer = 8;
+        } else {
+            appData->menuMoveTimer--;
+        }
+        if (direction == 0) {
+            appData->menuMoveTimer = 0;
+        }
+        PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), appData->menuX, appData->menuY, TRUE);
+    }
+#endif
+
     switch (appData->subState) {
     case 0:
         if (CheckScreenTapped(appData, &x, &y)) {
@@ -185,7 +228,11 @@ static BOOL State_UpdateApp(PoketchDowsingMachine *appData)
             break;
         }
 
-        if ((PoketchSystem_IsPlayerMoving(appData->poketchSys) == TRUE) || PoketechSystem_IsRunningTask(appData->poketchSys)) {
+        BOOL blocked = PoketechSystem_IsRunningTask(appData->poketchSys);
+#ifdef SDK_PORT
+        blocked &= !(appData->poketchSys->menuActive && appData->poketchSys->menuAppInputEnabled);
+#endif
+        if (PoketchSystem_IsPlayerMoving(appData->poketchSys) || blocked) {
             PoketchDowsingMachineGraphics_StopAllAnimations(appData->graphics);
             appData->subState = 2;
             break;
@@ -217,6 +264,13 @@ static BOOL State_UpdateApp(PoketchDowsingMachine *appData)
 
 static BOOL CheckScreenTapped(PoketchDowsingMachine *appData, u32 *x, u32 *y)
 {
+#ifdef SDK_PORT
+    if (PoketchSystem_GetMenuPressedKeys(appData->poketchSys) & PAD_BUTTON_A) {
+        *x = appData->menuX + 4;
+        *y = appData->menuY + 4;
+        return TRUE;
+    }
+#endif
     if (PoketechSystem_IsRunningTask(appData->poketchSys) == FALSE) {
         if (TouchScreen_GetTapState(x, y)) {
             if ((*x - 24 < 176) & (*y - 24 < 144)) {

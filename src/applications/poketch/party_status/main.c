@@ -2,6 +2,7 @@
 #include <nitro/sinit.h>
 
 #include "applications/poketch/party_status/graphics.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 
 #include "bg_window.h"
@@ -17,6 +18,9 @@ typedef struct PoketchPartyStatus {
     u8 state;
     u8 subState;
     u8 shouldExit;
+#ifdef SDK_PORT
+    u8 menuSelection;
+#endif
     PartyStatus partyData;
     PartyStatusGraphics *graphics;
     PoketchSystem *poketchSys;
@@ -79,6 +83,9 @@ static BOOL Init(PoketchPartyStatus *partyStatus, PoketchSystem *poketchSys, BgC
         partyStatus->state = STATE_LOAD_APP;
         partyStatus->subState = 0;
         partyStatus->shouldExit = FALSE;
+#ifdef SDK_PORT
+        partyStatus->menuSelection = 0;
+#endif
 
         GetPartyMonInfo(&partyStatus->partyData, SaveData_GetParty(PoketchSystem_GetSaveData(poketchSys)));
 
@@ -159,6 +166,59 @@ static BOOL State_UpdateApp(PoketchPartyStatus *appData)
         ChangeState(appData, STATE_SHUTDOWN);
         return FALSE;
     }
+
+#ifdef SDK_PORT
+    if (appData->poketchSys->menuActive) {
+        appData->partyData.screenTouched = FALSE;
+        appData->partyData.screenTapped = FALSE;
+        if (appData->poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(appData->poketchSys)) {
+            u32 keys = PoketchSystem_GetMenuPressedKeys(appData->poketchSys);
+            u32 count = appData->partyData.partyCount;
+            if (keys & PAD_BUTTON_Y) {
+                GetPartyMonInfo(&appData->partyData, SaveData_GetParty(PoketchSystem_GetSaveData(appData->poketchSys)));
+                PartyStatusGraphics_StartTask(appData->graphics, PARTY_STATUS_GRAPHICS_REFRESH);
+                count = appData->partyData.partyCount;
+            }
+            if (count != 0) {
+                if (appData->menuSelection >= count) {
+                    appData->menuSelection = count - 1;
+                }
+                int next = appData->menuSelection;
+                if (!appData->poketchSys->menuAHeld) {
+                    switch (keys & (PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_KEY_UP | PAD_KEY_DOWN)) {
+                    case PAD_KEY_LEFT:
+                        if (next % 2) {
+                            next--;
+                        }
+                        break;
+                    case PAD_KEY_RIGHT:
+                        if (!(next % 2)) {
+                            next++;
+                        }
+                        break;
+                    case PAD_KEY_UP:
+                        next -= 2;
+                        break;
+                    case PAD_KEY_DOWN:
+                        next += 2;
+                        break;
+                    }
+                }
+                if (next >= 0 && next < count) {
+                    appData->menuSelection = next;
+                }
+                appData->partyData.touchX = 64 + (appData->menuSelection % 2) * 96;
+                appData->partyData.touchY = 44 + (appData->menuSelection / 2) * 48;
+                appData->partyData.screenTouched = appData->poketchSys->menuAHeld;
+                appData->partyData.screenTapped = (keys & PAD_BUTTON_A) != 0;
+                PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), appData->partyData.touchX - 24, appData->partyData.touchY - 8, TRUE);
+            } else {
+                PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), 0, 0, FALSE);
+            }
+        }
+        return FALSE;
+    }
+#endif
 
     if (PartyStatusGraphics_TaskIsNotActive(appData->graphics, 2)) {
         appData->partyData.screenTouched = PoketchSystem_GetDisplayHeldCoords(&appData->partyData.touchX, &appData->partyData.touchY);
