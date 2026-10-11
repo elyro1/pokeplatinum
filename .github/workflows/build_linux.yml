@@ -2,7 +2,7 @@ name: build_linux
 
 on:
   push:
-    branches: [ pc_port ]
+    branches: [ pc_port, pc_single_screen_mod ]
     paths-ignore:
       - '**.md'
   pull_request:
