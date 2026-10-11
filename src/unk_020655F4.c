@@ -1505,6 +1505,16 @@ static void sub_02066824(MapObject *mapObj, const VecFx32 *param1, int param2, i
     data->duration = param4;
     data->unk_04 = *param1;
 
+#ifdef SDK_PORT
+    SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
+    if (myConfig->enable60fps && myConfig->enable60fpsSpeedFix) {
+        data->duration *= 2;
+        data->unk_04.x /= 2;
+        data->unk_04.y /= 2;
+        data->unk_04.z /= 2;
+    }
+#endif
+
     MapObject_TryFace(mapObj, param2);
     MapObject_Turn(mapObj, param3);
     sub_02062A0C(mapObj, param5);
