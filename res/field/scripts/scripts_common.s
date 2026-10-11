@@ -1443,8 +1443,32 @@ CommonScript_HatchEgg:
 CommonScript_RepelsEffectWoreOff:
     PlaySE SE_CONFIRM_sseq_3
     LockAll
+    GetNextRepel VAR_0x8004
+    GoToIfEq VAR_0x8004, ITEM_NONE, CommonScript_NoRepelsLeft
+    BufferItemName 1, VAR_0x8004
+    GoToIfEq VAR_0x8004, VAR_LAST_REPEL_USED, CommonScript_OfferSameRepel
+    Message CommonStrings_Text_RepelWoreOffUseDifferent
+    GoTo CommonScript_ConfirmRepeatRepel
+
+CommonScript_OfferSameRepel:
+    BufferItemName 0, VAR_LAST_REPEL_USED
+    Message CommonStrings_Text_RepelWoreOffUseAnother
+CommonScript_ConfirmRepeatRepel:
+    ShowYesNoMenu VAR_RESULT
+    GoToIfNe VAR_RESULT, MENU_YES, CommonScript_RepeatRepelEnd
+    UseRepel VAR_0x8004, VAR_RESULT
+    GoToIfEq VAR_RESULT, FALSE, CommonScript_RepeatRepelEnd
+    PlaySE SEQ_SE_DP_CARD2_sseq
+    BufferPlayerName 0
+    BufferItemName 1, VAR_0x8004
+    Message CommonStrings_Text_UsedRepel
+    WaitABPress
+    GoTo CommonScript_RepeatRepelEnd
+
+CommonScript_NoRepelsLeft:
     Message CommonStrings_Text_RepelsEffectWoreOff
     WaitABPress
+CommonScript_RepeatRepelEnd:
     CloseMessage
     ReleaseAll
     End

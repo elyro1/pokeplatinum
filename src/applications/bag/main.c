@@ -48,6 +48,7 @@
 #include "touch_screen.h"
 #include "trainer_info.h"
 #include "unk_0208C098.h"
+#include "vars_flags.h"
 #include "vram_transfer.h"
 
 #include "res/graphics/bag/bag_graphics.naix"
@@ -2309,6 +2310,7 @@ static String *TryUseRepel(BagController *controller, u16 item)
 
     u32 stepCount = Item_LoadParam(item, ITEM_PARAM_EFFECT_PARAM, HEAP_ID_BAG);
     SetRepelSteps(controller, stepCount);
+    *VarsFlags_GetVarAddress(SaveData_GetVarsFlags(controller->bagCtx->saveData), VAR_LAST_REPEL_USED) = item;
     controller->selectedItemCount = 1;
     Sound_PlayEffect(SEQ_SE_DP_CARD2_sseq);
 

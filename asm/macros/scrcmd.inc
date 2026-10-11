@@ -5242,6 +5242,17 @@
 
     /* CallCommonScript aliases below */
 
+    .macro GetNextRepel destVarID
+    .short SCRCMD_GETNEXTREPEL
+    .short \destVarID
+    .endm
+
+    .macro UseRepel item, destVarID
+    .short SCRCMD_USEREPEL
+    .short \item
+    .short \destVarID
+    .endm
+
     .macro Common_HandleSignpostInput
     CallCommonScript 0x7D0
     .endm
