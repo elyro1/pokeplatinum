@@ -254,6 +254,7 @@ void NetworkIcon_Update()
 
 void NetworkIcon_Init()
 {
+    return; //EXP
     BOOL isWifi = FALSE;
     if (CommManager_IsConnectedToWifi()) {
         isWifi = TRUE;

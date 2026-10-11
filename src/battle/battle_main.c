@@ -2256,6 +2256,7 @@ static void BattleMain_AssignRecordingRoles(BattleSystem *battleSys, FieldBattle
 
 static void BattleMain_SetNetworkIconStrength(void)
 {
+    return; // EXP
     NetworkIcon_Init();
 
     if (CommManager_IsConnectedToWifi()) {
