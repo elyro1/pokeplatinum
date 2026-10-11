@@ -19,6 +19,7 @@
 #include "brightness_controller.h"
 #include "heap.h"
 #include "narc.h"
+#include "pltt_transfer.h"
 #include "sound_playback.h"
 #include "sprite.h"
 #include "sprite_resource.h"
@@ -397,19 +398,52 @@ static void ov21_021DE1A4(UnkStruct_ov21_021DDEC8 *param0, PokedexGraphicData **
     PokedexGraphicData *v0 = *param1;
     NARC *v1 = PokedexGraphics_GetNARC(*param1);
 
-    param0->unk_04[0] = SpriteResourceCollection_AddTilesFrom(v0->spriteResourceCollection[0], v1, time_day_icons_NCGR_lz, TRUE, time_day_icons_NCGR_lz + 6000, NNS_G2D_VRAM_TYPE_2DSUB, param2);
+#ifdef SDK_BUILD_ARM
+    const NNS_G2D_VRAM_TYPE iconVramType = NNS_G2D_VRAM_TYPE_2DSUB;
+#else
+    const NNS_G2D_VRAM_TYPE iconVramType = NNS_G2D_VRAM_TYPE_2DMAIN;
+    param0->unk_04[1] = SpriteResourceCollection_AddPaletteFrom(v0->spriteResourceCollection[1], v1, info_NCLR, FALSE, time_day_icons_NCGR_lz + 6000, iconVramType, 1, param2);
+    NNSG2dPaletteData *iconPalette = SpriteResource_GetPaletteFade(param0->unk_04[1]);
+    // The original icon cell uses palette 5 of the shared sub-screen palette.
+    memcpy(iconPalette->pRawData, (u8 *)iconPalette->pRawData + 5 * 32, 32);
+    SpriteTransfer_RequestPlttFreeSpace(param0->unk_04[1]);
+    SpriteResource_ReleaseData(param0->unk_04[1]);
+#endif
+    param0->unk_04[0] = SpriteResourceCollection_AddTilesFrom(v0->spriteResourceCollection[0], v1, time_day_icons_NCGR_lz, TRUE, time_day_icons_NCGR_lz + 6000, iconVramType, param2);
 
+#ifndef SDK_BUILD_ARM
+    // The sub-screen asset uses 32-byte character indices. Main OBJ uses
+    // 128-byte indices; loading the original asset would change DISPCNT for
+    // every existing main-screen sprite, including the map and banner text.
+    SpriteResource_GetTileData(param0->unk_04[0])->mappingType = GX_OBJVRAMMODE_CHAR_1D_128K;
+#endif
     SpriteTransfer_RequestCharAtEnd(param0->unk_04[0]);
     SpriteResource_ReleaseData(param0->unk_04[0]);
 
     param0->unk_04[2] = SpriteResourceCollection_AddFrom(v0->spriteResourceCollection[2], v1, time_day_icons_cell_NCER_lz, TRUE, time_day_icons_cell_NCER_lz + 6000, 2, param2);
     param0->unk_04[3] = SpriteResourceCollection_AddFrom(v0->spriteResourceCollection[3], v1, time_day_icons_anim_NANR_lz, TRUE, time_day_icons_anim_NANR_lz + 6000, 3, param2);
+#ifndef SDK_BUILD_ARM
+    NNSG2dCellDataBank *iconCells = SpriteResource_GetSpriteData(param0->unk_04[2]);
+    for (int cellIndex = 0; cellIndex < iconCells->numCells; cellIndex++) {
+        const NNSG2dCellData *cell = NNS_G2dGetCellDataByIdx(iconCells, cellIndex);
+        for (int oamIndex = 0; oamIndex < cell->numOAMAttrs; oamIndex++) {
+            NNSG2dCellOAMAttrData *oam = &cell->pOamAttrArray[oamIndex];
+            int character = oam->attr2 & GX_OAM_ATTR2_NAME_MASK;
+            GF_ASSERT((character % 4) == 0);
+            oam->attr2 = (oam->attr2 & ~GX_OAM_ATTR2_NAME_MASK) | (character / 4);
+        }
+    }
+#endif
 }
 
 static void ov21_021DE224(UnkStruct_ov21_021DDEC8 *param0, PokedexGraphicData **param1)
 {
     PokedexGraphicData *v0 = *param1;
 
+#ifndef SDK_BUILD_ARM
+    SpriteTransfer_ResetPlttTransfer(param0->unk_04[1]);
+    SpriteResourceCollection_Remove(v0->spriteResourceCollection[1], param0->unk_04[1]);
+#endif
     SpriteTransfer_ResetCharTransfer(param0->unk_04[0]);
 
     SpriteResourceCollection_Remove(v0->spriteResourceCollection[0], param0->unk_04[0]);
@@ -423,12 +457,21 @@ static void ov21_021DE258(UnkStruct_ov21_021DDEC8 *param0, PokedexGraphicData **
     SpriteListTemplate v1;
     PokedexGraphicData *v2 = *param1;
 
-    SpriteResourcesHeader_Init(&v0, time_day_icons_NCGR_lz + 6000, info_NCLR + 2100, time_day_icons_cell_NCER_lz + 6000, time_day_icons_anim_NANR_lz + 6000, 0xffffffff, 0xffffffff, FALSE, 1, v2->spriteResourceCollection[0], v2->spriteResourceCollection[1], v2->spriteResourceCollection[2], v2->spriteResourceCollection[3], NULL, NULL);
+#ifdef SDK_BUILD_ARM
+    const int paletteID = info_NCLR + 2100;
+#else
+    const int paletteID = time_day_icons_NCGR_lz + 6000;
+#endif
+    SpriteResourcesHeader_Init(&v0, time_day_icons_NCGR_lz + 6000, paletteID, time_day_icons_cell_NCER_lz + 6000, time_day_icons_anim_NANR_lz + 6000, 0xffffffff, 0xffffffff, FALSE, 1, v2->spriteResourceCollection[0], v2->spriteResourceCollection[1], v2->spriteResourceCollection[2], v2->spriteResourceCollection[3], NULL, NULL);
 
     v1.list = v2->spriteList;
     v1.resourceData = &v0;
     v1.priority = 31;
+#ifdef SDK_BUILD_ARM
     v1.vramType = NNS_G2D_VRAM_TYPE_2DSUB;
+#else
+    v1.vramType = NNS_G2D_VRAM_TYPE_2DMAIN;
+#endif
     v1.heapID = param2;
     v1.position.x = 0;
     v1.position.y = 0;
@@ -437,6 +480,11 @@ static void ov21_021DE258(UnkStruct_ov21_021DDEC8 *param0, PokedexGraphicData **
     param0->unk_00 = SpriteList_Add(&v1);
 
     Sprite_SetAnim(param0->unk_00, 0);
+#ifndef SDK_BUILD_ARM
+    VecFx32 iconScale = { FX32_ONE * 3 / 8, FX32_ONE * 3 / 8, FX32_ONE };
+    Sprite_SetAffineScaleEx(param0->unk_00, &iconScale, AFFINE_OVERWRITE_MODE_NORMAL);
+    Sprite_SetExplicitPalette(param0->unk_00, PlttTransfer_GetPlttOffset(SpriteTransfer_GetPaletteProxy(param0->unk_04[1], NULL), NNS_G2D_VRAM_TYPE_2DMAIN));
+#endif
 }
 
 static void ov21_021DE2E0(UnkStruct_ov21_021DDEC8 *param0)
@@ -458,6 +506,13 @@ static void ov21_021DE2EC(UnkStruct_ov21_021DDE4C *param0, UnkStruct_ov21_021DDD
 
 static void ov21_021DE334(UnkStruct_ov21_021DDE4C *param0, UnkStruct_ov21_021DDDA4 *param1)
 {
+#ifndef SDK_BUILD_ARM
+    if ((gSystem.pressedKeys & PAD_BUTTON_A) && ov21_021D3998(param1->unk_04) == 2) {
+        int nextTime = (ov21_021DCA28(param1->unk_00) + 1) % 3;
+        ov21_021DCA30(param1->unk_00, nextTime);
+    }
+    return;
+#endif
     TouchScreenActions_HandleAction(param0->unk_10);
     ov21_021DE3D0(param0, param1);
 
@@ -576,9 +631,15 @@ static void ov21_021DE49C(UnkStruct_ov21_021DDEC8 *param0, const UnkStruct_ov21_
 {
     VecFx32 v0;
 
+#ifdef SDK_BUILD_ARM
     v0.x = param2->unk_00 << FX32_SHIFT;
     v0.y = param2->unk_04 << FX32_SHIFT;
     v0.y += (192 << FX32_SHIFT);
+#else
+    v0.x = 94 * FX32_ONE;
+    v0.y = 40 * FX32_ONE;
+#endif
+    v0.z = 0;
 
     Sprite_SetPosition(param0->unk_00, &v0);
     Sprite_SetAnim(param0->unk_00, ov21_021DCA28(param1->unk_00));

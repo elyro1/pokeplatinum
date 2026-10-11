@@ -386,7 +386,11 @@ static BOOL CrySubDataUpdate(PokedexDataManager *dataMan, void *data)
 
         ResetButtons(pokedexCrySubPageData, pokedexCrySubData);
 
+#ifdef SDK_BUILD_ARM
         if (ov21_021E33BC(pokedexCrySubData->screenMan) && (ov21_021D3998(pokedexCrySubData->sortData) == 2)) {
+#else
+        if (ov21_021D3998(pokedexCrySubData->sortData) == 2) {
+#endif
             AdvancePlayButton(pokedexCrySubPageData, pokedexCrySubData);
         }
 
@@ -588,8 +592,13 @@ static void ResetButtons(PokedexCrySubPageData *pokedexCrySubPageData, PokedexCr
         pokedexCrySubPageData->buttonState[button] = BUTTON_RESET;
     }
 
+#ifdef SDK_BUILD_ARM
     TouchScreenActions_HandleAction(pokedexCrySubPageData->adjustorTouchScreenActions);
     TouchScreenActions_HandleAction(pokedexCrySubPageData->buttonTouchScreenActions);
+#else
+    InitCrySoundValues(pokedexCrySubPageData);
+    pokedexCrySubPageData->loop = FALSE;
+#endif
 }
 
 static void FreeTouchScreen(PokedexCrySubPageData *pokedexCrySubPageData)
@@ -1221,7 +1230,7 @@ static void UpdateButtonStateGraphic(Sprite *buttonSprite, CrySubButtonData *but
     case TOUCH_BUTTON_RELEASED:
     case BUTTON_RESET:
         UpdateButtonGraphic(buttonSprite, buttonData, buttonActive);
-        Sprite_SetAnimSpeed(buttonSprite, (FX32_ONE * 2));
+        Sprite_SetAnimSpeed(buttonSprite, FX32_ONE * 2);
         break;
     default:
         break;
@@ -1258,7 +1267,7 @@ static void UpdateButtonStateGraphicOOB(Sprite *buttonSprite, CrySubButtonData *
     case TOUCH_BUTTON_HELD_OUT_OF_BOUNDS:
     case BUTTON_RESET:
         UpdateButtonGraphic(buttonSprite, buttonData, buttonActive);
-        Sprite_SetAnimSpeed(buttonSprite, (FX32_ONE * 2));
+        Sprite_SetAnimSpeed(buttonSprite, FX32_ONE * 2);
         break;
     default:
         break;
@@ -1288,7 +1297,11 @@ static void PlaySpeciesCry(PokedexCrySubPageData *pokedexCrySubPageData, Pokedex
 {
     pokedexCrySubPageData->cryPlaying = TRUE;
 
+#ifdef SDK_BUILD_ARM
     Sound_PlayPokemonCryEx(POKECRY_POKEDEX_CHORUS, species, 0, 127, 0x1ff, 0); // invalid heapID?
+#else
+    Sound_PlayPokemonCryEx(POKECRY_NORMAL, species, 0, 127, HEAP_ID_POKEDEX, 0);
+#endif
     SetCrySoundValues(pokedexCrySubPageData);
 }
 

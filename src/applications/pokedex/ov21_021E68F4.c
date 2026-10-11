@@ -242,7 +242,11 @@ static int ov21_021E6AB8(PokedexDataManager *dataMan, void *data)
     if (ov21_021E33AC(v0->unk_0C)) {
         ov21_021E6DAC(v1);
 
+#ifdef SDK_BUILD_ARM
         if (ov21_021E33BC(v0->unk_0C) && (ov21_021D3998(v0->unk_08) == 2)) {
+#else
+        if (ov21_021D3998(v0->unk_08) == 2) {
+#endif
             ov21_021E72E8(v1, v0);
         }
 

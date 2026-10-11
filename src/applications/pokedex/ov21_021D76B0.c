@@ -263,6 +263,18 @@ static int ov21_021D7860(PokedexDataManager *dataMan, void *data)
 
     ov21_021D8434(v1, v0->unk_1C->unk_0C, v0->unk_1C->unk_08);
     ov21_021D7B20(v1, v0);
+#ifndef SDK_BUILD_ARM
+    if (gSystem.pressedKeys & (PAD_BUTTON_L | PAD_BUTTON_R)) {
+        int target = (gSystem.pressedKeys & PAD_BUTTON_L) ? 0 : PokedexSort_CaughtStatusLength(v0->unk_1C->unk_04) - 1;
+        if (PokedexSort_IsValidStatusIndex(v0->unk_1C->unk_04, target)
+            && target != PokedexSort_CurrentStatusIndex(v0->unk_1C->unk_04)
+            && ov21_021D5B68(v0->unk_1C)) {
+            ov21_021D853C(v0, target);
+            Sound_PlayEffect(SEQ_SE_DP_DENSI06_sseq);
+        }
+    }
+#endif
+
 
     if (v0->unk_1C->unk_20 == 0) {
         ov21_021D82A8(v1, v0);

@@ -234,7 +234,11 @@ static BOOL FormSubDataUpdate(PokedexDataManager *dataMan, void *data)
     if (ov21_021E33AC(formSubData->subScreen)) {
         SetButtonOutOfBounds(formSubPageData);
 
+#ifdef SDK_BUILD_ARM
         if (ov21_021E33BC(formSubData->subScreen) && (ov21_021D3998(formSubData->sortData) == 2)) {
+#else
+        if (ov21_021D3998(formSubData->sortData) == 2) {
+#endif
             CheckButtonKeyHeld(formSubPageData, formSubData);
         }
 
@@ -636,7 +640,11 @@ static void UpdateButtonDisplay(PokedexGraphicData **graphicData, FormSubGraphic
 
 static void CheckButtonKeyHeld(FormSubPageData *formSubPageData, FormSubData *formSubData)
 {
+#ifdef SDK_BUILD_ARM
     if (gSystem.heldKeys & PAD_BUTTON_A) {
+#else
+    if (gSystem.pressedKeys & PAD_BUTTON_A) {
+#endif
         formSubPageData->buttonPressed = TRUE;
     }
 }

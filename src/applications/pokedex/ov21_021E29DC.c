@@ -23,7 +23,10 @@
 
 #include "bg_window.h"
 #include "brightness_controller.h"
+#include "font.h"
 #include "heap.h"
+#include "message.h"
+#include "text.h"
 #include "narc.h"
 #include "pltt_transfer.h"
 #include "sound_playback.h"
@@ -57,6 +60,9 @@ typedef struct {
 
 typedef struct {
     int unk_00;
+#ifndef SDK_BUILD_ARM
+    int tabPaletteOffset;
+#endif
     PokedexTextData *unk_04[5];
     SpriteResource *unk_18[4];
 } UnkStruct_ov21_021E326C;
@@ -496,7 +502,7 @@ static BOOL ov21_021E2EC0(int param0)
 
 static BOOL ov21_021E2EC4(UnkStruct_ov21_021E2BA8 *param0, int param1, int param2)
 {
-    int v0, v1;
+    int v0 = 48, v1 = 72;
     BOOL v2 = 1;
 
     switch (param1) {
@@ -559,6 +565,10 @@ static BOOL ov21_021E2EC4(UnkStruct_ov21_021E2BA8 *param0, int param1, int param
         break;
     }
 
+    if (!v2) {
+        return FALSE;
+    }
+
     switch (param2) {
     case 0:
         if (ov21_021E2EC0(param1)) {
@@ -611,7 +621,7 @@ static void ov21_021E3080(PokedexGraphicData **param0, UnkStruct_ov21_021E326C *
     ov21_021E3178(param0, param1, heapID);
     ov21_021E3268(param0, param1, heapID);
     ov21_021E3270(param0, param1, heapID);
-    ov21_021E3FC0(param1, 0, 1);
+    ov21_021E3FC0(param1, param2->unk_08, 1);
 }
 
 static void ov21_021E30BC(PokedexGraphicData **param0, UnkStruct_ov21_021E326C *param1)
@@ -639,6 +649,13 @@ static void ov21_021E30E4(PokedexGraphicData **param0, const UnkStruct_ov21_021E
     v0 = PokedexGraphics_GetGraphicNarcTilemapData(*param0, banner_sinnoh_NSCR_lz, TRUE, &v1, heapID);
 
     Bg_LoadToTilemapRect((*param0)->bgConfig, 2, v1->rawData, 0, 0, v1->screenWidth / 8, v1->screenHeight / 8);
+#ifndef SDK_BUILD_ARM
+    // Repeat the banner's plain middle tiles across the full tab strip,
+    // removing the old left arrow and right divider while keeping its border.
+    const u16 *bannerTiles = (const u16 *)v1->rawData;
+    Bg_FillTilemapRect((*param0)->bgConfig, 2, bannerTiles[2], 0, 0, 32, 1, TILEMAP_FILL_VAL_INCLUDES_PALETTE);
+    Bg_FillTilemapRect((*param0)->bgConfig, 2, bannerTiles[32 + 2], 0, 1, 32, 1, TILEMAP_FILL_VAL_INCLUDES_PALETTE);
+#endif
     Heap_Free(v0);
     Bg_ScheduleTilemapTransfer((*param0)->bgConfig, 2);
 }
@@ -653,7 +670,23 @@ static void ov21_021E3178(PokedexGraphicData **param0, UnkStruct_ov21_021E326C *
     SpriteTransfer_RequestCharAtEnd(param1->unk_18[0]);
     SpriteResource_ReleaseData(param1->unk_18[0]);
 
-    param1->unk_18[1] = SpriteResourceCollection_AddPaletteFrom(v0->spriteResourceCollection[1], v1, banner_default_NCLR, FALSE, banner_default_NCLR + 2000, NNS_G2D_VRAM_TYPE_2DMAIN, 1, param2);
+#ifdef SDK_BUILD_ARM
+    const int tabPaletteCount = 1;
+#else
+    const int tabPaletteCount = 2;
+#endif
+
+    param1->unk_18[1] = SpriteResourceCollection_AddPaletteFrom(v0->spriteResourceCollection[1], v1, banner_default_NCLR, FALSE, banner_default_NCLR + 2000, NNS_G2D_VRAM_TYPE_2DMAIN, tabPaletteCount, param2);
+
+#ifndef SDK_BUILD_ARM
+    const u16 tabPalettes[32] = {
+        GX_RGB(0, 0, 0), 0, GX_RGB(8, 8, 14), GX_RGB(31, 31, 31),
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        GX_RGB(0, 0, 0), 0, GX_RGB(8, 8, 14), GX_RGB(31, 23, 5),
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+    memcpy(SpriteResource_GetPaletteFade(param1->unk_18[1])->pRawData, tabPalettes, sizeof(tabPalettes));
+#endif
 
     SpriteTransfer_RequestPlttFreeSpace(param1->unk_18[1]);
     SpriteResource_ReleaseData(param1->unk_18[1]);
@@ -705,10 +738,25 @@ static void ov21_021E3270(PokedexGraphicData **param0, UnkStruct_ov21_021E326C *
 
     v3 = PlttTransfer_GetPlttOffset(displayBox.paletteProxy, NNS_G2D_VRAM_TYPE_2DMAIN);
 
+#ifndef SDK_BUILD_ARM
+    param1->tabPaletteOffset = v3;
+#endif
+
     for (v4 = 0; v4 < 5; v4++) {
         v0 = PokedexTextManager_NewWindow(v2->textMan, 8, 2);
 
+#ifdef SDK_BUILD_ARM
         PokedexTextManager_DisplayMessage(v2->textMan, v0, TEXT_BANK_POKEDEX, pl_msg_pokedex_info + v4, 0, 0);
+#else
+        MessageLoader *labels = MessageLoader_Init(MSG_LOADER_PRELOAD_ENTIRE_BANK, NARC_INDEX_MSGDATA__PL_MSG, TEXT_BANK_POKEDEX, param2);
+        String *label = MessageLoader_GetNewString(labels, pl_msg_pokedex_info + v4);
+        u32 labelWidth = Font_CalcStringWidth(FONT_SYSTEM, label, 0);
+        Text_AddPrinterWithParamsAndColor(v0, FONT_SYSTEM, label, 0, 0, TEXT_SPEED_NO_TRANSFER, TEXT_COLOR(3, 2, 0), NULL);
+        String_Free(label);
+        MessageLoader_Free(labels);
+        displayBox.x = 4 + v4 * 50 + (48 - (int)labelWidth) / 2;
+        displayBox.y = 1;
+#endif
 
         displayBox.window = v0;
         param1->unk_04[v4] = PokedexTextManager_NextTextData(&displayBox);
@@ -1397,6 +1445,34 @@ static void ov21_021E3D48(UnkStruct_ov21_021E37B4 *param0, UnkStruct_ov21_021E34
         return;
     }
 
+#ifndef SDK_BUILD_ARM
+    int direction = 0;
+    if (gSystem.pressedKeys & PAD_KEY_RIGHT) {
+        direction = 1;
+    } else if (gSystem.pressedKeys & PAD_KEY_LEFT) {
+        direction = -1;
+    }
+    if (direction != 0) {
+        int target = v0->unk_08;
+        for (int step = 0; step < 4; step++) {
+            target = (target + direction + 5) % 5;
+            if (target == 3 && PokedexSort_CurrentCaughtStatus(v0->unk_04) != 2) {
+                continue;
+            }
+            if (target == 4 && !PokedexSort_CanDetectForms(v0->unk_04)) {
+                continue;
+            }
+            if (ov21_021E3C18(param1, target, v0->unk_08)) {
+                PokedexPanel_Move(param0->unk_14, 4, target);
+                param1->unk_0C[target] = 2;
+                Sound_PlayEffect(SEQ_SE_DP_DENSI06_sseq);
+                break;
+            }
+        }
+    }
+    return;
+#endif
+
     if (gSystem.pressedKeys & PAD_KEY_RIGHT) {
         PokedexPanel_Move(param0->unk_14, 0, 1);
     }
@@ -1501,6 +1577,11 @@ static void ov21_021E3EEC(UnkStruct_ov21_021E37B4 *param0, UnkStruct_ov21_021E34
 {
     UnkStruct_ov21_021E2BA8 *v0 = param1->unk_04;
 
+#ifndef SDK_BUILD_ARM
+    // The detail action is always focused; left/right remain tab navigation.
+    param1->unk_30 = 0;
+    return;
+#endif
     if (v0->unk_08 == 0) {
         return;
     }
@@ -1565,8 +1646,15 @@ static BOOL ov21_021E3F98(PokedexGraphicData **param0, BOOL param1)
 
 static void ov21_021E3FC0(UnkStruct_ov21_021E326C *param0, int param1, int param2)
 {
+#ifdef SDK_BUILD_ARM
     sub_020129D0(param0->unk_04[param2]->fontOAM, 0);
     sub_020129D0(param0->unk_04[param1]->fontOAM, 1);
+#else
+    for (int tab = 0; tab < 5; tab++) {
+        sub_020129D0(param0->unk_04[tab]->fontOAM, TRUE);
+        sub_02012A60(param0->unk_04[tab]->fontOAM, param0->tabPaletteOffset + (tab == param1));
+    }
+#endif
 }
 
 static void ov21_021E3FE4(UnkStruct_ov21_021E3900 *param0, const UnkStruct_ov21_021E342C *param1)

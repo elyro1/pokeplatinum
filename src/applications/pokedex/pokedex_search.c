@@ -15,6 +15,8 @@
 #include "applications/pokedex/struct_ov21_021D5B68.h"
 #include "applications/pokedex/struct_ov21_021E68F4.h"
 
+#include "constants/charcode.h"
+
 #include "bg_window.h"
 #include "brightness_controller.h"
 #include "font.h"
@@ -28,6 +30,7 @@
 #include "sprite_util.h"
 #include "string_gf.h"
 #include "text.h"
+#include "system.h"
 
 #include "res/graphics/pokedex/zukan.naix"
 #include "res/text/bank/pokedex.h"
@@ -57,6 +60,10 @@ typedef struct {
     BOOL noneFound;
     enum ScreenState screenState;
     int screenTimer;
+#ifndef SDK_BUILD_ARM
+    int selectedRow;
+    int menuRevision;
+#endif
 } PokedexSearchSettings;
 
 typedef struct {
@@ -68,6 +75,9 @@ typedef struct {
     enum FilterForm filterForm;
     BOOL noneFound;
     int noneFoundTimer;
+#ifndef SDK_BUILD_ARM
+    int menuRevision;
+#endif
     Sprite *form;
     SpriteResource *searchGraphics[4];
     PokedexLoadingScreen loadingScreen;
@@ -113,6 +123,10 @@ static void FilterTypeMessage(PokedexGraphicData **param0, int typeFilter, enum 
 static void FilterFormSilhouette(PokedexSearchDisplay *searchDisplay, int filterForm);
 static void EmptyDexMessage(PokedexGraphicData **param0, enum HeapID heapID);
 static void ov21_021D8C00(PokedexGraphicData **param0);
+#ifndef SDK_BUILD_ARM
+static void HandleSearchMenuInput(PokedexSearchSettings *settings);
+static void DrawSearchMenu(PokedexSearchDisplay *display, PokedexGraphicData **graphics, const PokedexSearchSettings *settings, enum HeapID heapID);
+#endif
 
 void PokedexSearch_TransitionFunctions(PokedexScreenManager *param0, PokedexApp *param1, enum HeapID heapID)
 {
@@ -331,6 +345,10 @@ static int ResetSearchSettings(PokedexDataManager *dataMan, void *data)
     searchSettings->screenChange = FALSE;
     searchSettings->applyFilter = FALSE;
     searchSettings->screenState = SS_MENU;
+#ifndef SDK_BUILD_ARM
+    searchSettings->selectedRow = 0;
+    searchSettings->menuRevision = 0;
+#endif
 
     return 1;
 }
@@ -353,6 +371,10 @@ static int UpdateScreenState(PokedexDataManager *dataMan, void *data)
         if (searchSettings->noneFound) {
             searchSettings->noneFound = FALSE;
         }
+
+#ifndef SDK_BUILD_ARM
+        HandleSearchMenuInput(searchSettings);
+#endif
 
         if (searchSettings->screenChange == TRUE) {
             if (searchSettings->applyFilter == FALSE) {
@@ -526,6 +548,20 @@ static void DefaultDisplay(PokedexSearchDisplay *searchDisplay, PokedexGraphicDa
     GetSearchGraphics(searchDisplay, param1, heapID);
     InitCellActors(searchDisplay, param1, searchSettings, heapID);
 
+#ifndef SDK_BUILD_ARM
+    const u16 menuPalette[16] = {
+        0, GX_RGB(6, 4, 6), GX_RGB(31, 31, 31), GX_RGB(17, 7, 10),
+        GX_RGB(12, 4, 7), 0, GX_RGB(25, 12, 6), 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+    GX_LoadBGPltt(menuPalette, 7 * 32, sizeof(menuPalette));
+    Bg_ClearTilemap((*param1)->bgConfig, BG_LAYER_MAIN_3);
+    VecFx32 formPosition = { 174 * FX32_ONE, 137 * FX32_ONE, 0 };
+    VecFx32 formScale = { FX32_ONE / 2, FX32_ONE / 2, FX32_ONE };
+    Sprite_SetPosition(searchDisplay->form, &formPosition);
+    Sprite_SetExplicitPriority(searchDisplay->form, 0);
+    Sprite_SetAffineScaleEx(searchDisplay->form, &formScale, AFFINE_OVERWRITE_MODE_NORMAL);
+    DrawSearchMenu(searchDisplay, param1, searchSettings, heapID);
+#else
     DescriptionMessage(param1, searchSettings->filterMethod, heapID);
     FilterMethodMap(param1, searchSettings->filterMethod, heapID);
     SortOrderMessage(param1, searchSettings->sortOrder, heapID);
@@ -533,6 +569,7 @@ static void DefaultDisplay(PokedexSearchDisplay *searchDisplay, PokedexGraphicDa
     FilterType1Message(param1, searchSettings->typeFilter1, heapID);
     FilterType2Message(param1, searchSettings->typeFilter2, heapID);
     FilterFormSilhouette(searchDisplay, searchSettings->filterForm);
+#endif
 
     Bg_SetPriority(BG_LAYER_MAIN_1, 1);
     Bg_SetPriority(BG_LAYER_MAIN_2, 0);
@@ -706,6 +743,24 @@ static void EmptyDexMessage(PokedexGraphicData **param0, enum HeapID heapID)
 
 static void UpdateSelectionDisplay(PokedexSearchDisplay *searchDisplay, PokedexGraphicData **param1, const PokedexSearchSettings *searchSettings, enum HeapID heapID)
 {
+#ifndef SDK_BUILD_ARM
+    BOOL redraw = searchDisplay->menuRevision != searchSettings->menuRevision;
+    if (searchSettings->noneFound && !searchDisplay->noneFound) {
+        searchDisplay->noneFoundTimer = 64;
+        redraw = TRUE;
+    }
+    searchDisplay->noneFound = searchSettings->noneFound;
+    if (searchDisplay->noneFoundTimer > 0) {
+        searchDisplay->noneFoundTimer--;
+        if (searchDisplay->noneFoundTimer == 0) {
+            redraw = TRUE;
+        }
+    }
+    if (redraw) {
+        DrawSearchMenu(searchDisplay, param1, searchSettings, heapID);
+    }
+    return;
+#endif
     if (searchSettings->noneFound != searchDisplay->noneFound) {
         searchDisplay->noneFound = searchSettings->noneFound;
 
@@ -1003,6 +1058,9 @@ static void LoadingScreenTransition(PokedexSearchDisplay *searchDisplay, Pokedex
 {
     if (searchSettings->screenTimer == 4) {
         if (searchSettings->screenState == SS_SEARCH) {
+#ifndef SDK_BUILD_ARM
+            Sprite_SetDrawFlag(searchDisplay->form, FALSE);
+#endif
             PokedexMain_SetLoadingScreenParams(&searchDisplay->loadingScreen, (*param1)->bgConfig, 2, searchDisplay->screenData, 0, 12, 0, 20, 4);
         } else {
             ReturnSearchDisplay(param1, searchDisplay, heapID);
@@ -1054,6 +1112,10 @@ static void ReturnSearchDisplay(PokedexGraphicData **param0, PokedexSearchDispla
     Bg_SetPriority(BG_LAYER_MAIN_1, 1);
     Bg_SetPriority(BG_LAYER_MAIN_2, 0);
     Window_FillTilemap(&(*param0)->window, 0);
+#ifndef SDK_BUILD_ARM
+    searchDisplay->menuRevision = -1;
+    return;
+#endif
 
     FilterMethodMap(param0, searchDisplay->filterMethod, heapID);
     DescriptionMessage(param0, searchDisplay->filterMethod, heapID);
@@ -1063,3 +1125,111 @@ static void ReturnSearchDisplay(PokedexGraphicData **param0, PokedexSearchDispla
     FilterType2Message(param0, searchDisplay->typeFilter2, heapID);
     FilterFormSilhouette(searchDisplay, searchDisplay->filterForm);
 }
+
+#ifndef SDK_BUILD_ARM
+static void HandleSearchMenuInput(PokedexSearchSettings *settings)
+{
+    if (settings->screenChange) {
+        return;
+    }
+    if (gSystem.pressedKeys & PAD_BUTTON_B) {
+        settings->screenChange = TRUE;
+        settings->applyFilter = FALSE;
+        Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
+        return;
+    }
+    if (gSystem.pressedKeys & (PAD_KEY_UP | PAD_KEY_DOWN)) {
+        int direction = (gSystem.pressedKeys & PAD_KEY_UP) ? -1 : 1;
+        settings->selectedRow = (settings->selectedRow + direction + 6) % 6;
+        settings->menuRevision++;
+        Sound_PlayEffect(SEQ_SE_DP_DENSI06_sseq);
+        return;
+    }
+    if (!(gSystem.pressedKeys & PAD_BUTTON_A)) {
+        return;
+    }
+    switch (settings->selectedRow) {
+    case 0:
+        settings->sortOrder = (settings->sortOrder + 1) % MAX_SORT_ORDER;
+        break;
+    case 1:
+        settings->filterName = (settings->filterName + 1) % MAX_FILTER_NAME;
+        break;
+    case 2:
+        settings->typeFilter1 = (settings->typeFilter1 + 1) % MAX_FILTER_TYPE;
+        break;
+    case 3:
+        settings->typeFilter2 = (settings->typeFilter2 + 1) % MAX_FILTER_TYPE;
+        break;
+    case 4:
+        settings->filterForm = (settings->filterForm + 1) % MAX_FILTER_FORM;
+        break;
+    case 5:
+        settings->screenChange = TRUE;
+        settings->applyFilter = TRUE;
+        break;
+    }
+    settings->menuRevision++;
+    Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
+}
+
+static void DrawSearchMenu(PokedexSearchDisplay *display, PokedexGraphicData **graphics, const PokedexSearchSettings *settings, enum HeapID heapID)
+{
+    const int labelMessages[] = { pl_msg_pokedex_order, pl_msg_pokedex_name, pl_msg_pokedex_type, pl_msg_pokedex_type, pl_msg_pokedex_form, pl_msg_pokedex_ok };
+    const int typeMessages[MAX_FILTER_TYPE] = {
+        pl_msg_pokedex_none, pl_msg_pokedex_normal, pl_msg_pokedex_fight,
+        pl_msg_pokedex_flying, pl_msg_pokedex_poison, pl_msg_pokedex_ground,
+        pl_msg_pokedex_rock, pl_msg_pokedex_bug, pl_msg_pokedex_ghost,
+        pl_msg_pokedex_steel, pl_msg_pokedex_fire, pl_msg_pokedex_water,
+        pl_msg_pokedex_grass, pl_msg_pokedex_electric, pl_msg_pokedex_psychic,
+        pl_msg_pokedex_ice, pl_msg_pokedex_dragon, pl_msg_pokedex_dark
+    };
+    const int valueMessages[] = {
+        pl_msg_pokedex_numerical + settings->sortOrder,
+        settings->filterName == FN_NONE ? pl_msg_pokedex_none : pl_msg_pokedex_abc + settings->filterName - 1,
+        typeMessages[settings->typeFilter1], typeMessages[settings->typeFilter2],
+        pl_msg_pokedex_none
+    };
+    Window *window = &(*graphics)->window;
+    Window_FillTilemap(window, 4);
+
+    String *heading = PokedexMain_GetMessage(display->noneFoundTimer > 0 ? pl_msg_pokedex_nonefound : pl_msg_pokedex_search, heapID);
+    String *firstLine = String_Init(128, heapID);
+    if (display->noneFoundTimer > 0) {
+        String_Copy(firstLine, heading);
+    } else {
+        String_CopyLineNum(firstLine, heading, 0);
+    }
+    int headingX = (256 - (int)Font_CalcMaxLineWidth(FONT_SYSTEM, firstLine, 0)) / 2;
+    Text_AddPrinterWithParamsAndColor(window, FONT_SYSTEM, firstLine, headingX, 4, TEXT_SPEED_NO_TRANSFER, TEXT_COLOR(2, 1, 4), NULL);
+    String_Free(firstLine);
+    String_Free(heading);
+
+    for (int row = 0; row < 6; row++) {
+        int y = row == 5 ? 162 : 32 + row * 24;
+        int background = row == settings->selectedRow ? 6 : 3;
+        Window_FillRectWithColor(window, background, 12, y - 2, 232, 21);
+        String *label = PokedexMain_GetMessage(labelMessages[row], heapID);
+        if (row == 2 || row == 3) {
+            // Give each independent type slot a visible number.
+            String *numbered = String_Init(32, heapID);
+            String_Copy(numbered, label);
+            String_AppendChar(numbered, CHAR_SPACE);
+            String_AppendChar(numbered, row == 2 ? CHAR_1 : CHAR_2);
+            String_Free(label);
+            label = numbered;
+        }
+        int x = row == 5 ? 12 + Font_CalcCenterAlignment(FONT_SYSTEM, label, 0, 232) : 24;
+        Text_AddPrinterWithParamsAndColor(window, FONT_SYSTEM, label, x, y, TEXT_SPEED_NO_TRANSFER, TEXT_COLOR(2, 1, background), NULL);
+        String_Free(label);
+        if (row < 5 && (row != 4 || settings->filterForm == FF_NONE)) {
+            String *value = PokedexMain_GetMessage(valueMessages[row], heapID);
+            Text_AddPrinterWithParamsAndColor(window, FONT_SYSTEM, value, 112, y, TEXT_SPEED_NO_TRANSFER, TEXT_COLOR(2, 1, background), NULL);
+            String_Free(value);
+        }
+    }
+    FilterFormSilhouette(display, settings->filterForm);
+    display->menuRevision = settings->menuRevision;
+    Window_ScheduleCopyToVRAM(window);
+}
+#endif

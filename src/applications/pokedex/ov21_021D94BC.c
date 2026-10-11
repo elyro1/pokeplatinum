@@ -339,6 +339,10 @@ static int ov21_021D964C(PokedexDataManager *dataMan, void *data)
         return 0;
     }
 
+#ifndef SDK_BUILD_ARM
+    // PC search input belongs to the visible main-screen filter menu.
+    return 0;
+#endif
     v3 = PokedexSearch_GetFilterMethod(v0->unk_08);
 
     switch (dataMan->state) {
