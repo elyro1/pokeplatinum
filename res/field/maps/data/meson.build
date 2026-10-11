@@ -7,7 +7,6 @@ map_data_files = copy_gen.process(files(
     'map_data_005.bin',
     'map_data_006.bin',
     'map_data_007.bin',
-    'map_data_008.bin',
     'map_data_009.bin',
     'map_data_010.bin',
     'map_data_011.bin',
@@ -671,6 +670,7 @@ iron_island_source = files('map_data_054.bin')
 if build_target != 'arm'
     iron_island_source = custom_target('iron_island_widescreen',
         input: iron_island_source,
+        depend_files: files('../../../../tools/scripts/map_scenery.py'),
         output: 'map_data_054.bin',
         command: [
             find_program('../../../../tools/scripts/extend_iron_island.py', native: true),
@@ -679,6 +679,20 @@ if build_target != 'arm'
     )
 endif
 map_data_files = [map_data_files, copy_gen.process(iron_island_source)]
+
+route_219_source = files('map_data_008.bin')
+if build_target != 'arm'
+    route_219_source = custom_target('route_219_widescreen',
+        input: route_219_source,
+        output: 'map_data_008.bin',
+        depend_files: files('../../../../tools/scripts/map_scenery.py'),
+        command: [
+            find_program('../../../../tools/scripts/extend_route_219.py', native: true),
+            '@INPUT@', '@OUTPUT@',
+        ],
+    )
+endif
+map_data_files = [map_data_files, copy_gen.process(route_219_source)]
 
 map_data_narc = custom_target('land_data.narc',
     output: [

@@ -6,7 +6,6 @@ matrix_bin_gen = generator(
 )
 
 matrix_data_srcs = files(
-    'map_matrix_000.json',
     'map_matrix_001.json',
     'map_matrix_002.json',
     'map_matrix_003.json',
@@ -297,12 +296,28 @@ matrix_data_srcs = files(
     'map_matrix_288.json'
 )
 
+main_matrix_source = files('map_matrix_000.json')
+if build_target != 'arm'
+    main_matrix_source = custom_target('route_219_matrix_widescreen',
+        input: main_matrix_source,
+        output: 'map_matrix_000.json',
+        depend_files: files('../../../tools/scripts/map_scenery.py'),
+        command: [
+            find_program('../../../tools/scripts/extend_route_219.py', native: true),
+            '--matrix', '@INPUT@', '@OUTPUT@',
+        ],
+    )
+endif
+
 map_matrix_narc = custom_target('map_matrix.narc',
     output: [
         'map_matrix.narc',
         'map_matrix.naix',
     ],
-    input: matrix_bin_gen.process(matrix_data_srcs, env: jsoncnv_env),
+    input: [
+        matrix_bin_gen.process(matrix_data_srcs, env: jsoncnv_env),
+        matrix_bin_gen.process(main_matrix_source, env: jsoncnv_env),
+    ],
     depends: [ py_consts_generators ],
     command: [
         nitroarc_exe,
