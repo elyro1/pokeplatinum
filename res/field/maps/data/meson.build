@@ -29,7 +29,6 @@ map_data_files = copy_gen.process(files(
     'map_data_028.bin',
     'map_data_029.bin',
     'map_data_030.bin',
-    'map_data_031.bin',
     'map_data_032.bin',
     'map_data_033.bin',
     'map_data_034.bin',
@@ -693,6 +692,20 @@ if build_target != 'arm'
     )
 endif
 map_data_files = [map_data_files, copy_gen.process(route_219_source)]
+
+route_204_source = files('map_data_031.bin')
+if build_target != 'arm'
+    route_204_source = custom_target('route_204_widescreen',
+        input: route_204_source,
+        output: 'map_data_031.bin',
+        depend_files: files('../../../../tools/scripts/map_scenery.py'),
+        command: [
+            find_program('../../../../tools/scripts/extend_route_204.py', native: true),
+            '@INPUT@', '@OUTPUT@',
+        ],
+    )
+endif
+map_data_files = [map_data_files, copy_gen.process(route_204_source)]
 
 map_data_narc = custom_target('land_data.narc',
     output: [

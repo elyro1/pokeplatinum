@@ -300,10 +300,18 @@ main_matrix_source = files('map_matrix_000.json')
 if build_target != 'arm'
     main_matrix_source = custom_target('route_219_matrix_widescreen',
         input: main_matrix_source,
-        output: 'map_matrix_000.json',
+        output: 'map_matrix_000_route_219.json',
         depend_files: files('../../../tools/scripts/map_scenery.py'),
         command: [
             find_program('../../../tools/scripts/extend_route_219.py', native: true),
+            '--matrix', '@INPUT@', '@OUTPUT@',
+        ],
+    )
+    main_matrix_source = custom_target('route_204_matrix_widescreen',
+        input: main_matrix_source,
+        output: 'map_matrix_000.json',
+        command: [
+            find_program('../../../tools/scripts/extend_route_204.py', native: true),
             '--matrix', '@INPUT@', '@OUTPUT@',
         ],
     )

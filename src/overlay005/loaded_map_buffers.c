@@ -8,7 +8,12 @@
 
 #include "heap.h"
 
+#ifdef SDK_PORT
+// Widescreen scenery repeats complete tree meshes, including their crowns.
+#define MAP_MODEL_FILE_SIZE 0x20000
+#else
 #define MAP_MODEL_FILE_SIZE 0xF000
+#endif
 
 enum LoadedMapBuffersAllocType {
     LOADED_MAP_BUFFERS_ALLOC_STATIC = 1,

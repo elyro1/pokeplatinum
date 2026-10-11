@@ -126,7 +126,7 @@ def read_land(source):
     return model, block, mdl, scale, shapes
 
 
-def repack_land(source, additions, bounds):
+def repack_land(source, additions, bounds, model_limit=0xF000):
     model, block, mdl, scale, shapes = read_land(source)
     sizes = list(struct.unpack_from("<4I", source))
     start = 16 + sizes[0] + sizes[1]
@@ -149,7 +149,7 @@ def repack_land(source, additions, bounds):
     box_scale = struct.unpack_from("<i", model, mdl + 56)[0] / 4096
     struct.pack_into("<6h", result, mdl + 44,
                      *(round(c / box_scale * 4096) for c in bounds))
-    if len(result) > 0xF000:
+    if len(result) > model_limit:
         raise ValueError("Extended model exceeds the engine's model buffer")
     sizes[2] = len(result)
     return (struct.pack("<4I", *sizes) + source[16:start] + result
