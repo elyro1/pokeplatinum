@@ -1552,9 +1552,9 @@ static void ov5_021D6E20(UnkStruct_ov5_021D6594 *param0, int param1)
     if (param1 != 0xffff) {
         GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG2, 0);
 #ifdef SDK_PORT
-        // Eterna Forest's scrolling overlay is a seamless 256-pixel tilemap.
+        // The dense snow and Eterna Forest overlays are seamless scrolling tilemaps.
         // Other overlays retain edge extension, including the dark cave mask.
-        SIM_SetFieldOverlayTiled(param1 == 9);
+        SIM_SetFieldOverlayTiled(param1 == 0 || param1 == 9);
 #endif
 
         v0.unk_08 = NARC_AllocAndReadWholeMember(param0->unk_144, param0->unk_04[param1].unk_08, 4);
