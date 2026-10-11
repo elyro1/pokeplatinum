@@ -4,6 +4,10 @@
 #include <nitro/fx/fx_const.h>
 #include <nitro/types.h>
 
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
+
 #include "constants/heap.h"
 
 #include "struct_decls/map_object.h"
@@ -1603,6 +1607,13 @@ static void SysTask_CutIn_TransferResources(SysTask *dummyTask, void *hmCutInPtr
         for (i = 0; i < 4; i++) {
             if (cutIn->charSource[i] != NULL) {
                 SpriteTransfer_RequestCharAtEnd(cutIn->charSource[i]);
+#ifdef SDK_PORT
+                if (i == 0) {
+                    const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(cutIn->charSource[i]);
+                    SIM_SetFieldTiledSpriteRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN),
+                        SpriteResource_GetTileData(cutIn->charSource[i])->szByte, TRUE);
+                }
+#endif
             }
         }
 
@@ -1809,6 +1820,12 @@ static void CutIn_DeleteSpriteResources(HMCutIn *cutIn)
 
     for (i = 0; i < 4; i++) {
         if (cutIn->charSource[i] != NULL) {
+#ifdef SDK_PORT
+            if (i == 0) {
+                const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(cutIn->charSource[i]);
+                SIM_SetFieldTiledSpriteRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN), 0, FALSE);
+            }
+#endif
             SpriteTransfer_ResetCharTransfer(cutIn->charSource[i]);
         }
     }
@@ -2016,6 +2033,9 @@ static void CutIn_ClearTileMapBG3(BgConfig *bgConfig)
 static void CutIn_InitWindow(HMCutIn *cutIn)
 {
     CutIn_CreateWindowTask(cutIn);
+#ifdef SDK_PORT
+    SIM_SetFieldMoveCutIn(TRUE);
+#endif
     cutIn->updateWindow = FALSE;
 
     CutIn_ClearWindowMask(cutIn);
@@ -2069,6 +2089,9 @@ static void CutIn_DeleteWindowTask(HMCutIn *cutIn)
 
     SysTask_Done(cutIn->windowTask);
     GX_SetVisibleWnd(GX_WNDMASK_NONE);
+#ifdef SDK_PORT
+    SIM_SetFieldMoveCutIn(FALSE);
+#endif
 }
 
 static void SysTask_CutIn_ShowWindow(SysTask *task, void *hmCutInPtr)
