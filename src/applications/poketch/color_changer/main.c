@@ -177,6 +177,16 @@ static BOOL State_UpdateApp(PoketchColorChanger *appData)
 
 static BOOL CheckColorChanged(PoketchColorChanger *appData)
 {
+#ifdef SDK_PORT
+    u32 keys = PoketchSystem_GetMenuPressedKeys(appData->poketchSys) & (PAD_KEY_LEFT | PAD_KEY_RIGHT);
+    if (keys == PAD_KEY_LEFT || keys == PAD_KEY_RIGHT) {
+        u32 color = (appData->currentColor + (keys == PAD_KEY_RIGHT ? 1 : POKETCH_SCREEN_COLOR_MAX - 1)) % POKETCH_SCREEN_COLOR_MAX;
+        appData->colorData.color = color;
+        appData->currentColor = color;
+        Poketch_SetScreenColor(appData->poketch, color);
+        return TRUE;
+    }
+#endif
     if (!PoketechSystem_IsRunningTask(appData->poketchSys)) {
         u32 x, y;
 

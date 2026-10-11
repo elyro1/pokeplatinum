@@ -915,6 +915,9 @@ static void StartMenu_Poketch(FieldTask *fieldTask)
     StartMenu *menu = FieldTask_GetEnv(fieldTask);
     PoketchSystem *poketchSys = FieldSystem_GetPoketchSystem();
 
+    if (poketchSys != NULL) {
+        PoketchSystem_SetMenuAppInputEnabled(poketchSys, FALSE);
+    }
     switch (menu->state) {
     case START_MENU_STATE_POKETCH_WAIT:
         if (!StartMenu_CanOpenPoketch(FieldTask_GetFieldSystem(fieldTask))
@@ -954,6 +957,7 @@ static void StartMenu_Poketch(FieldTask *fieldTask)
             menu->state = START_MENU_STATE_POKETCH_CLOSE_WAIT;
             break;
         }
+        PoketchSystem_SetMenuAppInputEnabled(poketchSys, TRUE);
         // Raw PAD edges retain L/R even when the player's button mode is L=A.
         switch (gSystem.pressedKeysRaw & (PAD_BUTTON_L | PAD_BUTTON_R)) {
         case PAD_BUTTON_L:

@@ -346,6 +346,11 @@ static BOOL State_UnloadApp(PoketchLinkSearcher *appData)
 
 static BOOL ScreenIsPressed(PoketchLinkSearcher *appData)
 {
+#ifdef SDK_PORT
+    if (PoketchSystem_GetMenuPressedKeys(appData->poketchSys) & PAD_BUTTON_A) {
+        return TRUE;
+    }
+#endif
     if (!PoketechSystem_IsRunningTask(appData->poketchSys)) {
         u32 x, y;
 

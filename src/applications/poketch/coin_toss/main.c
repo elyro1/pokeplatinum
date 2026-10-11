@@ -42,7 +42,7 @@ static BOOL State_LoadApp(PoketchCoinToss *appData);
 static BOOL State_UpdateApp(PoketchCoinToss *appData);
 static BOOL State_UnloadApp(PoketchCoinToss *appData);
 
-static BOOL CheckCoinTapped(void);
+static BOOL CheckCoinTapped(PoketchCoinToss *appData);
 
 static void NitroStaticInit(void)
 {
@@ -161,7 +161,7 @@ static BOOL State_UpdateApp(PoketchCoinToss *appData)
 
     switch (appData->subState) {
     case 0:
-        if (CheckCoinTapped()) {
+        if (CheckCoinTapped(appData)) {
             appData->coin.isHeads = MTRNG_Next() % 2;
             PoketchCoinTossGraphics_StartTask(appData->graphics, COIN_TOSS_GRAPHICS_TOSS_COIN);
             appData->subState++;
@@ -194,8 +194,13 @@ static BOOL State_UnloadApp(PoketchCoinToss *appData)
     return FALSE;
 }
 
-static BOOL CheckCoinTapped(void)
+static BOOL CheckCoinTapped(PoketchCoinToss *appData)
 {
+#ifdef SDK_PORT
+    if (PoketchSystem_GetMenuPressedKeys(appData->poketchSys) & PAD_BUTTON_A) {
+        return TRUE;
+    }
+#endif
     u32 x, y;
 
     if (PoketchSystem_GetDisplayTappedCoords(&x, &y)) {

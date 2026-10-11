@@ -66,6 +66,11 @@ struct PoketchGraphics_TaskData {
     PoketchSystem *poketchSys;
     u16 poketchPalettes[NUM_POKETCH_THEMES * SLOTS_PER_POKETCH_THEME];
     u16 palette[SLOTS_PER_PALETTE];
+#ifdef SDK_PORT
+    BOOL menuFocusVisible;
+    u16 menuFocusOffset;
+    u16 menuFocusPreviousTile;
+#endif
 };
 
 typedef struct PoketchGraphics_ExtraTaskData {
@@ -118,6 +123,9 @@ BOOL PoketchGraphics_Main(PoketchGraphics_TaskData **taskDataPtr, const PoketchG
             return FALSE;
         }
 
+#ifdef SDK_PORT
+        newTaskData->menuFocusVisible = FALSE;
+#endif
         newTaskData->constTaskData = constTaskData;
         newTaskData->bgConfig = BgConfig_New(HEAP_ID_POKETCH_MAIN);
         newTaskData->poketchSys = poketchSys;
@@ -709,3 +717,35 @@ static void PoketchGraphics_FreeTilemapBufferTask(SysTask *task, void *taskMan)
 
     PoketchGraphics_EndTask(taskMan);
 }
+
+#ifdef SDK_PORT
+void PoketchGraphics_SetMenuFocus(PoketchGraphics_TaskData *taskData, u32 x, u32 y, BOOL visible)
+{
+    if (!visible && !taskData->menuFocusVisible) {
+        return;
+    }
+    // BG0's first 64 character tiles are reserved before the border artwork.
+    // A small arrow on this foreground layer leaves each app's own graphics intact.
+    u16 *tilemap = Bg_GetTilemapBuffer(taskData->bgConfig, BG_LAYER_SUB_0);
+    if (tilemap == NULL) {
+        return;
+    }
+    u32 offset = (y / 8) * 32 + x / 8;
+    if (visible && taskData->menuFocusVisible && taskData->menuFocusOffset == offset) {
+        return;
+    }
+    if (taskData->menuFocusVisible) {
+        tilemap[taskData->menuFocusOffset] = taskData->menuFocusPreviousTile;
+        taskData->menuFocusVisible = FALSE;
+    }
+    if (visible && x < 256 && y < 192) {
+        static const u32 arrow[] = { 0x00000000, 0x00000100, 0x00001100, 0x00011100, 0x00111100, 0x00011100, 0x00001100, 0x00000100 };
+        Bg_LoadTiles(taskData->bgConfig, BG_LAYER_SUB_0, (void *)arrow, sizeof(arrow), 1);
+        taskData->menuFocusOffset = offset;
+        taskData->menuFocusPreviousTile = tilemap[offset];
+        tilemap[offset] = (15 << 12) | 1;
+        taskData->menuFocusVisible = TRUE;
+    }
+    Bg_CopyTilemapBufferToVRAM(taskData->bgConfig, BG_LAYER_SUB_0);
+}
+#endif

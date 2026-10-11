@@ -292,11 +292,16 @@ static BOOL State_UpdateApp(PoketchBerrySearcher *appData)
     if (PoketchBerrySearcherGraphics_TaskIsNotActive(appData->graphics, BERRY_SEARCHER_GRAPHICS_REFRESH)) {
         u32 x, y;
 
-        if (PoketchSystem_GetDisplayTappedCoords(&x, &y)) {
-            if ((x - POKETCH_SCREEN_MIN_X < 192) & (y - POKETCH_SCREEN_MIN_Y < 192)) {
-                appData->mapData.berryCount = GetReadyBerryPatches(appData);
-                PoketchBerrySearcherGraphics_StartTask(appData->graphics, BERRY_SEARCHER_GRAPHICS_REFRESH);
-            }
+        BOOL refresh = PoketchSystem_GetDisplayTappedCoords(&x, &y);
+        if (refresh) {
+            refresh = (x - POKETCH_SCREEN_MIN_X < 192) && (y - POKETCH_SCREEN_MIN_Y < 192);
+        }
+#ifdef SDK_PORT
+        refresh |= (PoketchSystem_GetMenuPressedKeys(appData->poketchSys) & PAD_BUTTON_A) != 0;
+#endif
+        if (refresh) {
+            appData->mapData.berryCount = GetReadyBerryPatches(appData);
+            PoketchBerrySearcherGraphics_StartTask(appData->graphics, BERRY_SEARCHER_GRAPHICS_REFRESH);
         }
     }
 

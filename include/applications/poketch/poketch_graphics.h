@@ -48,4 +48,8 @@ void PoketchGraphics_StartTask(PoketchGraphics_TaskData *taskData, u32 taskId);
 BOOL PoketchGraphics_TaskIsNotActive(PoketchGraphics_TaskData *taskData, u32 taskId);
 BOOL PoketchGraphics_NoActiveTasks(PoketchGraphics_TaskData *taskData);
 
+#ifdef SDK_PORT
+void PoketchGraphics_SetMenuFocus(PoketchGraphics_TaskData *taskData, u32 x, u32 y, BOOL visible);
+#endif
+
 #endif // POKEPLATINUM_POKETCH_GRAPHICS_H

@@ -22,6 +22,7 @@
 #include "savedata.h"
 #include "sound_playback.h"
 #include "sys_task.h"
+#include "system.h"
 #include "touch_pad.h"
 #include "touch_screen.h"
 #include "trainer_info.h"
@@ -193,10 +194,27 @@ BOOL PoketchSystem_IsSystemShutdown(PoketchSystem *poketchSys)
 #ifdef SDK_PORT
 void PoketchSystem_SetMenuActive(PoketchSystem *poketchSys, BOOL active)
 {
+    PoketchGraphics_SetMenuFocus(poketchSys->taskData, 0, 0, FALSE);
     poketchSys->menuActive = active;
     poketchSys->menuButtonTimer = 0;
+    poketchSys->menuAppInputEnabled = FALSE;
+    poketchSys->menuAWaitForRelease = TRUE;
+    poketchSys->menuAHeld = FALSE;
+    poketchSys->menuPressedKeys = 0;
+    poketchSys->menuAEvent = BUTTON_MANAGER_STATE_NULL;
+    poketchSys->menuATouchEvent = BUTTON_TOUCH_DOWN;
     poketchSys->touchingScreen = FALSE;
     poketchSys->buttonState = BUTTON_MANAGER_STATE_NULL;
+}
+
+void PoketchSystem_SetMenuAppInputEnabled(PoketchSystem *poketchSys, BOOL enabled)
+{
+    poketchSys->menuAppInputEnabled = enabled;
+}
+
+u32 PoketchSystem_GetMenuPressedKeys(const PoketchSystem *poketchSys)
+{
+    return poketchSys->menuActive && poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(poketchSys) ? poketchSys->menuPressedKeys : 0;
 }
 
 BOOL PoketchSystem_IsReadyForMenu(const PoketchSystem *poketchSys)
@@ -221,6 +239,8 @@ BOOL PoketchSystem_RequestAppChange(PoketchSystem *poketchSys, enum ButtonDir di
 
     // Start the existing asynchronous switch without enabling app touch input
     // or bypassing field-task blocking for any other Poketch operation.
+    poketchSys->menuAppInputEnabled = FALSE;
+    poketchSys->menuAWaitForRelease = TRUE;
     poketchSys->buttonDir = direction;
     poketchSys->skipApp = FALSE;
     poketchSys->appChanging = TRUE;
@@ -285,6 +305,12 @@ static BOOL PoketchSystem_InitInternal(PoketchSystem *poketchSys)
 #ifdef SDK_PORT
         poketchSys->menuActive = FALSE;
         poketchSys->menuButtonTimer = 0;
+        poketchSys->menuAppInputEnabled = FALSE;
+        poketchSys->menuAWaitForRelease = TRUE;
+        poketchSys->menuAHeld = FALSE;
+        poketchSys->menuPressedKeys = 0;
+        poketchSys->menuAEvent = BUTTON_MANAGER_STATE_NULL;
+        poketchSys->menuATouchEvent = BUTTON_TOUCH_DOWN;
 #endif
 
         if (PoketchSystem_ButtonInit(poketchSys)) {
@@ -649,6 +675,27 @@ static void PoketchSystem_ButtonUpdate(PoketchSystem *poketchSys)
     poketchSys->buttonState = BUTTON_MANAGER_STATE_NULL;
 #ifdef SDK_PORT
     if (poketchSys->menuActive) {
+        BOOL allowed = poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(poketchSys);
+        BOOL down = (gSystem.heldKeysRaw & PAD_BUTTON_A) != 0;
+        if (!allowed) {
+            poketchSys->menuAWaitForRelease = TRUE;
+            PoketchGraphics_SetMenuFocus(poketchSys->taskData, 0, 0, FALSE);
+        }
+        if (!down) {
+            poketchSys->menuAWaitForRelease = FALSE;
+        }
+        BOOL held = allowed && down && !poketchSys->menuAWaitForRelease;
+        poketchSys->menuPressedKeys = allowed ? (gSystem.pressedKeysRaw & ~PAD_BUTTON_A) : 0;
+        poketchSys->menuAEvent = BUTTON_MANAGER_STATE_NULL;
+        poketchSys->menuATouchEvent = BUTTON_TOUCH_DOWN;
+        if (held != poketchSys->menuAHeld) {
+            poketchSys->menuAEvent = held ? BUTTON_MANAGER_STATE_TOUCH : (allowed ? BUTTON_MANAGER_STATE_TAP : BUTTON_MANAGER_STATE_DRAGGING);
+            poketchSys->menuATouchEvent = held ? BUTTON_TOUCH_PRESSED : BUTTON_TOUCH_RELEASED;
+            if (held) {
+                poketchSys->menuPressedKeys |= PAD_BUTTON_A;
+            }
+            poketchSys->menuAHeld = held;
+        }
         if (poketchSys->menuButtonTimer != 0 && --poketchSys->menuButtonTimer == 0) {
             // The release tasks restore the border button and play its click.
             PoketchGraphics_StartTask(poketchSys->taskData, poketchSys->buttonDir == BUTTON_UP ? TASK_UP_RELEASED : TASK_DOWN_RELEASED);
@@ -755,7 +802,11 @@ void PoketchSystem_PlaySoundEffect(u32 soundID)
 {
     PoketchSystem *poketchSys = PoketchSystem_GetFromFieldSystem();
 
-    if ((poketchSys->appChanging == FALSE) && (PoketechSystem_IsRunningTask(poketchSys) == FALSE)) {
+    if (!poketchSys->appChanging && (!PoketechSystem_IsRunningTask(poketchSys)
+#ifdef SDK_PORT
+            || (poketchSys->menuActive && poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(poketchSys))
+#endif
+                )) {
         Sound_PlayEffect(soundID);
     }
 }
@@ -764,7 +815,11 @@ void PoketchSystem_PlayCry(u32 species, u32 form)
 {
     PoketchSystem *poketchSys = PoketchSystem_GetFromFieldSystem();
 
-    if (poketchSys->appChanging == FALSE && PoketechSystem_IsRunningTask(poketchSys) == FALSE) {
+    if (!poketchSys->appChanging && (!PoketechSystem_IsRunningTask(poketchSys)
+#ifdef SDK_PORT
+            || (poketchSys->menuActive && poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(poketchSys))
+#endif
+                )) {
         Sound_PlayPokemonCry(species, form);
     }
 }
@@ -809,8 +864,21 @@ BOOL PoketechSystem_IsRunningTask(const PoketchSystem *poketchSys)
     return FieldSystem_IsRunningTask(poketchSys->fieldSystem);
 }
 
-void PoketechSystem_UpdateButtonManager(const PoketchSystem *poketchSys, PoketchButtonManager *buttonManager)
+void PoketechSystem_UpdateButtonManager(PoketchSystem *poketchSys, PoketchButtonManager *buttonManager)
 {
+#ifdef SDK_PORT
+    if (poketchSys->menuActive) {
+        if (poketchSys->loadedAppID == POKETCH_APPID_PEDOMETER
+            || poketchSys->loadedAppID == POKETCH_APPID_DIGITALWATCH
+            || poketchSys->loadedAppID == POKETCH_APPID_ANALOGWATCH
+            || poketchSys->loadedAppID == POKETCH_APPID_COUNTER) {
+            if (poketchSys->menuAEvent != BUTTON_MANAGER_STATE_NULL) {
+                buttonManager->callback(0, poketchSys->menuAEvent, poketchSys->menuATouchEvent, buttonManager->buttonCallbackData);
+            }
+        }
+        return;
+    }
+#endif
     if (PoketechSystem_IsRunningTask(poketchSys) == FALSE && poketchSys->appChanging == FALSE) {
         PoketchButtonManager_Update(buttonManager);
     }

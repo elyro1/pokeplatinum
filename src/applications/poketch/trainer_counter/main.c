@@ -2,6 +2,7 @@
 #include <nitro/sinit.h>
 
 #include "applications/poketch/poketch_button.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 #include "applications/poketch/trainer_counter/graphics.h"
 #include "field/field_system_decl.h"
@@ -17,6 +18,9 @@ typedef struct PoketchTrainerCounter {
     u8 state;
     u8 subState;
     u8 shouldExit;
+#ifdef SDK_PORT
+    u8 menuSelection;
+#endif
     TrainerCounterData chainData;
     TrainerCounterGraphics *graphics;
     PoketchSystem *poketchSys;
@@ -107,6 +111,9 @@ static BOOL Init(PoketchTrainerCounter *appData, PoketchSystem *poketchSys, BgCo
         appData->shouldExit = FALSE;
         appData->buttonManager = PoketchButtonManager_New(sMonHitboxes, NELEMS(sMonHitboxes), TouchCallback, appData, HEAP_ID_POKETCH_APP);
         appData->buttonState = BUTTON_MANAGER_STATE_NULL;
+#ifdef SDK_PORT
+        appData->menuSelection = 0;
+#endif
         appData->pressedIcon = 0;
         appData->poketchSys = poketchSys;
 
@@ -193,6 +200,29 @@ static BOOL State_UpdateApp(PoketchTrainerCounter *appData)
         ChangeState(appData, STATE_SHUTDOWN);
         return FALSE;
     }
+
+#ifdef SDK_PORT
+    if (appData->poketchSys->menuActive && appData->poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(appData->poketchSys)) {
+        u32 count = appData->chainData.bestChainsCount;
+        u32 keys = PoketchSystem_GetMenuPressedKeys(appData->poketchSys);
+        if (count != 0) {
+            u32 direction = keys & (PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_KEY_UP | PAD_KEY_DOWN);
+            if (direction == PAD_KEY_RIGHT || direction == PAD_KEY_DOWN) {
+                appData->menuSelection = (appData->menuSelection + 1) % count;
+            } else if (direction == PAD_KEY_LEFT || direction == PAD_KEY_UP) {
+                appData->menuSelection = (appData->menuSelection + count - 1) % count;
+            }
+            static const u8 positions[][2] = { { 88, 76 }, { 152, 92 }, { 24, 100 } };
+            PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), positions[appData->menuSelection][0], positions[appData->menuSelection][1], TRUE);
+            if (keys & PAD_BUTTON_A) {
+                appData->pressedIcon = appData->menuSelection;
+                appData->buttonState = BUTTON_MANAGER_STATE_TOUCH;
+            }
+        } else {
+            PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), 0, 0, FALSE);
+        }
+    }
+#endif
 
     enum Species activeSpecies;
 

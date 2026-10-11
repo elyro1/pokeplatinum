@@ -117,11 +117,19 @@ struct PoketchSystem {
 #ifdef SDK_PORT
     BOOL menuActive;
     u8 menuButtonTimer;
+    BOOL menuAppInputEnabled;
+    BOOL menuAWaitForRelease;
+    BOOL menuAHeld;
+    u32 menuPressedKeys;
+    u32 menuAEvent;
+    u32 menuATouchEvent;
 #endif
 };
 
 #ifdef SDK_PORT
 void PoketchSystem_SetMenuActive(PoketchSystem *poketchSys, BOOL active);
+void PoketchSystem_SetMenuAppInputEnabled(PoketchSystem *poketchSys, BOOL enabled);
+u32 PoketchSystem_GetMenuPressedKeys(const PoketchSystem *poketchSys);
 BOOL PoketchSystem_IsReadyForMenu(const PoketchSystem *poketchSys);
 BOOL PoketchSystem_RequestAppChange(PoketchSystem *poketchSys, enum ButtonDir direction);
 
@@ -168,7 +176,7 @@ void PoketchSystem_PlayCry(u32 species, u32 form);
 BOOL PoketchSystem_GetDisplayHeldCoords(u32 *x, u32 *y);
 BOOL PoketchSystem_GetDisplayTappedCoords(u32 *x, u32 *y);
 BOOL PoketechSystem_IsRunningTask(const PoketchSystem *poketchSys);
-void PoketechSystem_UpdateButtonManager(const PoketchSystem *poketchSys, PoketchButtonManager *buttonManager);
+void PoketechSystem_UpdateButtonManager(PoketchSystem *poketchSys, PoketchButtonManager *buttonManager);
 BOOL PoketchSystem_IsPlayerMoving(const PoketchSystem *poketchSys);
 BOOL PoketchSystem_PedometerUpdated(const PoketchSystem *poketchSys);
 FieldSystem *PoketchSystem_GetFieldSystem(const PoketchSystem *poketchSys);

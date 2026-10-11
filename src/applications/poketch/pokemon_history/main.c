@@ -3,6 +3,7 @@
 
 #include "applications/poketch/pokemon_history/graphics.h"
 #include "applications/poketch/poketch_button.h"
+#include "applications/poketch/poketch_graphics.h"
 #include "applications/poketch/poketch_system.h"
 
 #include "bg_window.h"
@@ -26,6 +27,9 @@ typedef struct PoketchPokemonHistory {
     u8 state;
     u8 subState;
     u8 shouldExit;
+#ifdef SDK_PORT
+    u8 menuSelection;
+#endif
     HistoryData history;
     PokemonHistoryGraphics *graphics;
     PoketchSystem *poketchSys;
@@ -117,6 +121,9 @@ static BOOL Init(PoketchPokemonHistory *appData, PoketchSystem *poketchSys, BgCo
         appData->shouldExit = FALSE;
         appData->buttonManager = PoketchButtonManager_New(sHitboxes, NELEMS(sHitboxes), TouchCallback, appData, HEAP_ID_POKETCH_APP);
         appData->buttonState = BUTTON_MANAGER_STATE_NULL;
+#ifdef SDK_PORT
+        appData->menuSelection = 0;
+#endif
         appData->pressedIdx = 0;
         appData->poketchSys = poketchSys;
 
@@ -203,6 +210,41 @@ static BOOL State_UpdateApp(PoketchPokemonHistory *appData)
         ChangeState(appData, STATE_SHUTDOWN);
         return FALSE;
     }
+
+#ifdef SDK_PORT
+    if (appData->poketchSys->menuActive && appData->poketchSys->menuAppInputEnabled && PoketchSystem_IsReadyForMenu(appData->poketchSys)) {
+        u32 count = appData->history.count;
+        u32 keys = PoketchSystem_GetMenuPressedKeys(appData->poketchSys);
+        if (count != 0) {
+            int next = appData->menuSelection;
+            switch (keys & (PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_KEY_UP | PAD_KEY_DOWN)) {
+            case PAD_KEY_LEFT:
+                next--;
+                break;
+            case PAD_KEY_RIGHT:
+                next++;
+                break;
+            case PAD_KEY_UP:
+                next -= 4;
+                break;
+            case PAD_KEY_DOWN:
+                next += 4;
+                break;
+            }
+            if (next >= 0 && next < count) {
+                appData->menuSelection = next;
+            }
+            PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), 24 + 40 * (appData->menuSelection % 4), 44 + 48 * (appData->menuSelection / 4), TRUE);
+            if (keys & PAD_BUTTON_A) {
+                // Touch hitboxes are ordered opposite to the displayed history.
+                appData->pressedIdx = MAX_HISTORY_SIZE - 1 - appData->menuSelection;
+                appData->buttonState = BUTTON_MANAGER_STATE_TOUCH;
+            }
+        } else {
+            PoketchGraphics_SetMenuFocus(PoketchSystem_GetTaskData(), 0, 0, FALSE);
+        }
+    }
+#endif
 
     if (appData->buttonState == BUTTON_MANAGER_STATE_TOUCH) {
         int monIdx = MAX_HISTORY_SIZE - 1 - appData->pressedIdx;

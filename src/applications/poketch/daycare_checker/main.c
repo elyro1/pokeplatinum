@@ -197,6 +197,11 @@ static BOOL State_UnloadApp(PoketchDaycareChecker *appData)
 
 static BOOL ScreenIsPressed(PoketchDaycareChecker *apData)
 {
+#ifdef SDK_PORT
+    if (PoketchSystem_GetMenuPressedKeys(apData->poketchSys) & PAD_BUTTON_A) {
+        return TRUE;
+    }
+#endif
     if (PoketechSystem_IsRunningTask(apData->poketchSys) == FALSE) {
         u32 x, y;
 
