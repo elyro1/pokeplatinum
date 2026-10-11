@@ -101,7 +101,7 @@ SnowpointCity_CallAllowEnterTemple:
 SnowpointCity_AllowEnterTemple:
     WaitTime 30, VAR_RESULT
     ClearFlag FLAG_HIDE_SNOWPOINT_CITY_CANDICE
-    AddObject LOCALID_CANDICE
+    AddObjectFromEdge LOCALID_CANDICE, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     ApplyMovement LOCALID_CANDICE, SnowpointCity_Movement_CandiceEnter
     WaitMovement
     Message SnowpointCity_Text_LetThatPersonIn
@@ -213,7 +213,7 @@ SnowpointCity_TakeShipToBattleZone:
 
 SnowpointCity_Cynthia:
     ClearFlag FLAG_HIDE_SNOWPOINT_CITY_CYNTHIA
-    AddObject LOCALID_CYNTHIA
+    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_WEST
     LockObject LOCALID_CYNTHIA
     CloseMessage
     ApplyMovement LOCALID_CYNTHIA, SnowpointCity_Movement_CynthiaEnter
@@ -233,7 +233,7 @@ SnowpointCity_Cynthia:
     CloseMessage
     ApplyMovement LOCALID_CYNTHIA, SnowpointCity_Movement_CynthiaLeave
     WaitMovement
-    RemoveObject LOCALID_CYNTHIA
+    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_EAST
     ApplyMovement LOCALID_PLAYER, SnowpointCity_Movement_PlayerWalkOnSpotSouth2
     WaitMovement
     SetFlag FLAG_SAILED_TO_BATTLE_ZONE

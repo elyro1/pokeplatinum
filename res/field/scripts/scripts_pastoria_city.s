@@ -374,7 +374,7 @@ PastoriaCity_CoordEvent_RivalBattle:
     SetObjectEventPos LOCALID_RIVAL, 595, 819
     SetObjectEventMovementType LOCALID_RIVAL, MOVEMENT_TYPE_LOOK_WEST
     SetObjectEventDir LOCALID_RIVAL, DIR_WEST
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalEnterForBattle
     WaitMovement
     Common_SetRivalBGM
@@ -413,7 +413,7 @@ PastoriaCity_RivalPostBattle:
     CloseMessage
     ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalLeaveAfterBattle
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     SetVar VAR_PASTORIA_CITY_STATE, 2
     ReleaseAll
     End
@@ -460,7 +460,7 @@ PastoriaCity_OnFrame_ExitGym:
     SetObjectEventPos LOCALID_RIVAL, 595, 819
     SetObjectEventMovementType LOCALID_RIVAL, MOVEMENT_TYPE_LOOK_SOUTH
     SetObjectEventDir LOCALID_RIVAL, DIR_SOUTH
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     LockObject LOCALID_RIVAL
     ApplyMovement LOCALID_RIVAL, PastoriaCity_Movement_RivalEnterAfterGym
     ApplyMovement LOCALID_PLAYER, PastoriaCity_Movement_PlayerFaceRivalAfterGym
@@ -677,7 +677,7 @@ PastoriaCity_GruntMPushedTheButton:
     Return
 
 PastoriaCity_MoveGruntMEast:
-    RemoveObject LOCALID_GRUNT_M
+    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST
     ClearFlag FLAG_HIDE_PASTORIA_CITY_GRUNT_M
     SetObjectEventPos LOCALID_GRUNT_M, 637, 812
     SetObjectEventMovementType LOCALID_GRUNT_M, MOVEMENT_TYPE_LOOK_EAST
@@ -953,7 +953,7 @@ PastoriaCity_FaceBoardEnd:
 
 PastoriaCity_CroagunkScene:
     ClearFlag FLAG_HIDE_PASTORIA_CITY_CROAGUNK
-    AddObject LOCALID_CROAGUNK
+    AddObjectFromEdge LOCALID_CROAGUNK, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     ApplyMovement LOCALID_PLAYER, PastoriaCity_Movement_PlayerWalkOnSpotSouth
     ApplyMovement LOCALID_CROAGUNK, PastoriaCity_Movement_CroagunkEnter
     WaitMovement

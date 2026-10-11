@@ -109,7 +109,7 @@ VeilstoneCity_CoordEvent_CrasherWake:
     CallIfEq VAR_0x8004, 682, VeilstoneCity_CrasherWakeLeaveX682
     CallIfEq VAR_0x8004, 683, VeilstoneCity_CrasherWakeLeaveX683
     CallIfEq VAR_0x8004, 684, VeilstoneCity_CrasherWakeLeaveX684
-    RemoveObject LOCALID_CRASHER_WAKE
+    RemoveObjectAtEdge LOCALID_CRASHER_WAKE, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     WaitTime 20, VAR_RESULT
     GetPlayerGender VAR_0x8004
     CallIfEq VAR_0x8004, GENDER_MALE, VeilstoneCity_DawnGoodLuck
@@ -120,7 +120,7 @@ VeilstoneCity_CoordEvent_CrasherWake:
     CallIfEq VAR_0x8004, 682, VeilstoneCity_CounterpartLeaveX682
     CallIfEq VAR_0x8004, 683, VeilstoneCity_CounterpartLeaveX683
     CallIfEq VAR_0x8004, 684, VeilstoneCity_CounterpartLeaveX684
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     SetVar VAR_VEILSTONE_CITY_CRASHER_WAKE_STATE, 1
     ReleaseAll
     End
@@ -536,7 +536,7 @@ VeilstoneCity_WarehouseScene:
     WaitTime 15, VAR_RESULT
     ClearFlag FLAG_HIDE_VEILSTONE_CITY_LOOKER
     SetObjectEventPos LOCALID_LOOKER, 692, 606
-    AddObject LOCALID_LOOKER
+    AddObjectFromEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_NORTH
     Common_SetLookerBGM
     ApplyMovement LOCALID_LOOKER, VeilstoneCity_Movement_LookerEnterAfterBattle
     WaitMovement
@@ -556,7 +556,7 @@ VeilstoneCity_WarehouseScene:
     ApplyMovement LOCALID_COUNTERPART, VeilstoneCity_Movement_CounterpartLeaveAfterBattle
     ApplyMovement LOCALID_LOOKER, VeilstoneCity_Movement_LookerWatchCounterpartLeave
     WaitMovement
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     GoToIfEq VAR_0x8005, 595, VeilstoneCity_LookerWalkToPlayerZ595
     GoToIfEq VAR_0x8005, 597, VeilstoneCity_LookerWalkToPlayerZ597
@@ -1080,7 +1080,7 @@ VeilstoneCity_GruntMStorageKey:
     SetObjectEventMovementType LOCALID_LOOKER, MOVEMENT_TYPE_LOOK_NORTH
     SetObjectEventDir LOCALID_LOOKER, DIR_NORTH
     ClearFlag FLAG_HIDE_VEILSTONE_CITY_LOOKER
-    AddObject LOCALID_LOOKER
+    AddObjectFromEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     GetPlayerDir VAR_RESULT
     GoToIfEq VAR_RESULT, DIR_NORTH, VeilstoneCity_GruntMStorageKeyLeaveNorth
     GoToIfEq VAR_RESULT, DIR_SOUTH, VeilstoneCity_GruntMStorageKeyLeaveSouth
@@ -1128,7 +1128,7 @@ VeilstoneCity_GruntMStorageKeyLeaveWest:
     End
 
 VeilstoneCity_RemoveGruntMStorageKey:
-    RemoveObject LOCALID_GRUNT_M_STORAGE_KEY
+    RemoveObjectAtEdge LOCALID_GRUNT_M_STORAGE_KEY, MOVEMENT_ACTION_WALK_FAST_SOUTH
     GoTo VeilstoneCity_AskWillYouEnterTheHideout
     End
 
@@ -1352,7 +1352,7 @@ VeilstoneCity_OnFrame_CounterpartNeedsHelp:
     CloseMessage
     ApplyMovement LOCALID_COUNTERPART, VeilstoneCity_Movement_CounterpartLeaveNeedsHelp
     WaitMovement
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     Call VeilstoneCity_SetCounterpartPositionAtWarehouse
     ClearFlag FLAG_HIDE_VEILSTONE_COUNTERPART
     AddObject LOCALID_COUNTERPART

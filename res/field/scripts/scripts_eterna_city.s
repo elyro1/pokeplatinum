@@ -168,7 +168,7 @@ EternaCity_SetCynthiaPositionForGiveCutZ525:
 
 EternaCity_CynthiaGiveCut:
     ClearFlag FLAG_HIDE_ETERNA_CITY_CYNTHIA
-    AddObject LOCALID_CYNTHIA
+    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_WEST
     LockObject LOCALID_CYNTHIA
     CallIfEq VAR_0x8005, 522, EternaCity_EnterCynthiaForGiveCutZ522
     CallIfNe VAR_0x8005, 522, EternaCity_EnterCynthiaForGiveCutNotZ522
@@ -263,7 +263,7 @@ EternaCity_CynthiaLeaveAfterCutZ525:
     End
 
 EternaCity_CynthiaGiveCutEnd:
-    RemoveObject LOCALID_CYNTHIA
+    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     SetVar VAR_ETERNA_CITY_STATE, 2
     ReleaseAll
     End
@@ -708,7 +708,7 @@ EternaCity_CoordEvent_Rival:
     ScrCmd_331
     SetObjectEventPos LOCALID_RIVAL, 299, 533
     ClearFlag FLAG_HIDE_ETERNA_CITY_RIVAL
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     LockObject LOCALID_RIVAL
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     GoToIfEq VAR_0x8005, 523, EternaCity_RivalRunIntoPlayerZ523
@@ -805,7 +805,7 @@ EternaCity_Cyrus:
     ApplyMovement LOCALID_RIVAL, EternaCity_Movement_RivalWatchCyrusLeave
     ApplyMovement LOCALID_PLAYER, EternaCity_Movement_PlayerMoveAsideAndWatchCyrusLeave
     WaitMovement
-    RemoveObject LOCALID_CYRUS
+    RemoveObjectAtEdge LOCALID_CYRUS, MOVEMENT_ACTION_WALK_NORMAL_WEST
     WaitTime 35, VAR_RESULT
     ApplyMovement LOCALID_RIVAL, EternaCity_Movement_RivalFacePlayer
     ApplyMovement LOCALID_PLAYER, EternaCity_Movement_PlayerFaceRival
@@ -816,7 +816,7 @@ EternaCity_Cyrus:
     ApplyMovement LOCALID_RIVAL, EternaCity_Movement_RivalLeave
     ApplyMovement LOCALID_PLAYER, EternaCity_Movement_PlayerWatchRivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
     SetVar VAR_ETERNA_CITY_STATE, 1
     ReleaseAll
     End
@@ -1059,7 +1059,7 @@ EternaCity_SetCynthiaPositionForGiveEggZ545:
 
 EternaCity_ShowCynthia:
     ClearFlag FLAG_HIDE_ETERNA_CITY_CYNTHIA
-    AddObject LOCALID_CYNTHIA
+    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_CYNTHIA
     Return
 
@@ -1076,7 +1076,7 @@ EternaCity_CynthiaTryGiveEgg:
     Call EternaCity_GiveTogepiEgg
     ApplyMovement LOCALID_CYNTHIA, EternaCity_Movement_CynthiaLeaveAfterEgg
     WaitMovement
-    RemoveObject LOCALID_CYNTHIA
+    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     GoTo EternaCity_CynthiaTryGiveEggEnd
     End
 
@@ -1174,7 +1174,7 @@ EternaCity_CynthiaLeaveAfterEggEast:
     End
 
 EternaCity_RemoveCynthia:
-    RemoveObject LOCALID_CYNTHIA
+    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     GoTo EternaCity_CynthiaTryAgainGiveEggEnd
     End
 

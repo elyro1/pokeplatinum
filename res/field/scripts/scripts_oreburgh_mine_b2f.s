@@ -52,7 +52,7 @@ OreburghMineB2F_RoarkLeave:
     GoTo OreburghMineB2F_RemoveRoark
 
 OreburghMineB2F_RemoveRoark:
-    RemoveObject LOCALID_ROARK
+    RemoveObjectAtEdge LOCALID_ROARK, MOVEMENT_ACTION_WALK_NORMAL_EAST
     SetFlag FLAG_ROARK_RETURNED_TO_OREBURGH_GYM
     SetFlag FLAG_HIDE_OREBURGH_CITY_RIVAL
     ReleaseAll

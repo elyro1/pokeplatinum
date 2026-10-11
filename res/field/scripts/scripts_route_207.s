@@ -44,7 +44,7 @@ Route207_CoordEvent_Counterpart:
 
 Route207_ShowCounterpart:
     ClearFlag FLAG_HIDE_ROUTE_207_COUNTERPART
-    AddObject LOCALID_COUNTERPART
+    AddObjectFromEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST
     LockObject LOCALID_COUNTERPART
     Return
 
@@ -100,7 +100,7 @@ Route207_CounterpartLeave:
     CloseMessage
     ApplyMovement LOCALID_COUNTERPART, Route207_Movement_CounterpartLeave
     WaitMovement
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_WEST
     Common_FadeToDefaultMusic
     SetVar VAR_ROUTE_207_COUNTERPART_TRIGGER_STATE, 1
     ReleaseAll

@@ -25,7 +25,7 @@ MtCoronet2F_CoordEvent_Looker:
     SetObjectEventMovementType LOCALID_LOOKER, MOVEMENT_TYPE_LOOK_WEST
     SetObjectEventDir LOCALID_LOOKER, DIR_WEST
     ClearFlag FLAG_HIDE_MT_CORONET_2F_LOOKER
-    AddObject LOCALID_LOOKER
+    AddObjectFromEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_LOOKER, MtCoronet2F_Movement_LookerNoticePlayer
     WaitMovement
     Common_SetLookerBGM

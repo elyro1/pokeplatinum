@@ -76,7 +76,7 @@ Route213_GruntMLeaveWest:
 
 Route213_MoveGruntMEast:
     SetFlag FLAG_TALKED_TO_ROUTE_213_GRUNT_M
-    RemoveObject LOCALID_GRUNT_M
+    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST
     SetObjectEventPos LOCALID_GRUNT_M, 683, 833
     SetObjectEventDir LOCALID_GRUNT_M, DIR_EAST
     SetObjectEventMovementType LOCALID_GRUNT_M, MOVEMENT_TYPE_LOOK_EAST
@@ -114,10 +114,10 @@ Route213_GruntMEastLeaveWest:
     End
 
 Route213_Looker:
-    RemoveObject LOCALID_GRUNT_M
+    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_EAST
     SetFlag FLAG_ROUTE_213_GRUNT_M_LEFT
     ClearFlag FLAG_HIDE_ROUTE_213_LOOKER
-    AddObject LOCALID_LOOKER
+    AddObjectFromEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_EAST
     Common_SetLookerBGM
     GetOverworldWeather VAR_RESULT
     CallIfEq VAR_RESULT, OVERWORLD_WEATHER_RAINING, _0261
@@ -135,7 +135,7 @@ Route213_Looker:
     CallIfEq VAR_0x8004, DIR_EAST, Route213_LookerLeaveEast
     CallIfEq VAR_0x8004, DIR_NORTH, Route213_LookerLeaveNorth
     CallIfEq VAR_0x8004, DIR_SOUTH, Route213_LookerLeaveSouth
-    RemoveObject LOCALID_LOOKER
+    RemoveObjectAtEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_EAST
     Common_FadeToDefaultMusic4
     GetOverworldWeather VAR_RESULT
     CallIfEq VAR_RESULT, OVERWORLD_WEATHER_RAINING, _0261

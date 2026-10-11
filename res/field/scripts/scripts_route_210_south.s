@@ -69,10 +69,10 @@ Route210South_UseSecretPotion:
     ApplyMovement LOCALID_PSYDUCK_2, Route210South_Movement_Psyduck2Leave
     ApplyMovement LOCALID_PSYDUCK_1, Route210South_Movement_Psyduck1Leave
     WaitMovement
-    RemoveObject LOCALID_PSYDUCK_3
-    RemoveObject LOCALID_PSYDUCK_4
-    RemoveObject LOCALID_PSYDUCK_2
-    RemoveObject LOCALID_PSYDUCK_1
+    RemoveObjectAtEdge LOCALID_PSYDUCK_3, MOVEMENT_ACTION_WALK_NORMAL_NORTH
+    RemoveObjectAtEdge LOCALID_PSYDUCK_4, MOVEMENT_ACTION_WALK_NORMAL_NORTH
+    RemoveObjectAtEdge LOCALID_PSYDUCK_2, MOVEMENT_ACTION_WALK_FAST_NORTH
+    RemoveObjectAtEdge LOCALID_PSYDUCK_1, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     WaitTime 45, VAR_RESULT
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     GoToIfEq VAR_0x8004, 560, Route210South_SetCynthiaPositionX560
@@ -91,7 +91,7 @@ Route210South_SetCynthiaPositionX561:
 
 Route210South_CynthiaEnter:
     ClearFlag FLAG_HIDE_ROUTE_210_SOUTH_CYNTHIA
-    AddObject LOCALID_CYNTHIA
+    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_CYNTHIA
     ApplyMovement LOCALID_CYNTHIA, Route210South_Movement_CynthiaEnter
     WaitMovement
@@ -132,7 +132,7 @@ Route210South_CynthiaLeaveX561:
     GoTo Route210South_RemoveCynthia
 
 Route210South_RemoveCynthia:
-    RemoveObject LOCALID_CYNTHIA
+    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     SetFlag FLAG_USED_SECRETPOTION
     ReleaseAll
     End

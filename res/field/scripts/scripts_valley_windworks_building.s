@@ -36,7 +36,7 @@ ValleyWindworksBuilding_OnFrame_FirstEntry:
     ApplyMovement LOCALID_GALACTIC_GRUNT_1, ValleyWindworksBuilding_Movement_GalacticGrunt1Leave
     ApplyMovement LOCALID_PLAYER, ValleyWindworksBuilding_Movement_PlayerWatchGalacticGrunt1Leave
     WaitMovement
-    RemoveObject LOCALID_GALACTIC_GRUNT_1
+    RemoveObjectAtEdge LOCALID_GALACTIC_GRUNT_1, MOVEMENT_ACTION_WALK_FAST_WEST
     SetVar VAR_VALLEY_WINDWORKS_TEAM_GALACTIC_STATE, 1
     ReleaseAll
     End
@@ -135,7 +135,7 @@ ValleyWindworksBuilding_FinallySeeMyDaughterAgain:
     SetFlag FLAG_HIDE_ROUTE_205_SOUTH_LITTLE_GIRL
     ClearFlag FLAG_HIDE_VALLEY_WINDWORKS_BUILDING_LITTLE_GIRL
     SetObjectEventMovementType LOCALID_LITTLE_GIRL, MOVEMENT_TYPE_LOOK_WEST
-    AddObject LOCALID_LITTLE_GIRL
+    AddObjectFromEdge LOCALID_LITTLE_GIRL, MOVEMENT_ACTION_WALK_FAST_EAST
     LockObject LOCALID_LITTLE_GIRL
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     GoToIfEq VAR_0x8005, 6, ValleyWindworksBuilding_LittleGirlWalkToScientistPapaZ6

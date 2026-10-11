@@ -381,7 +381,7 @@ EternaForest_GardeniaLeaveEast:
     End
 
 EternaForest_RemoveGardenia:
-    RemoveObject LOCALID_GARDENIA
+    RemoveObjectAtEdge LOCALID_GARDENIA, MOVEMENT_ACTION_WALK_NORMAL_EAST
     ReleaseAll
     End
 

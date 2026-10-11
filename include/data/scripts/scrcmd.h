@@ -851,6 +851,7 @@ ScriptCommand(SCRCMD_USEREPEL,                                             ScrCm
 
 ScriptCommand(SCRCMD_ADDOBJECTFROMEDGE,                                    ScrCmd_AddObjectFromEdge)
 ScriptCommand(SCRCMD_REMOVEOBJECTATEDGE,                                  ScrCmd_RemoveObjectAtEdge)
+ScriptCommand(SCRCMD_APPLYMOVEMENTSAFEEXIT,                               ScrCmd_ApplyMovementSafeExit)
 
 // clang-format on
 

@@ -335,7 +335,7 @@ Route224_CoordEvent_Marley:
 
 Route224_MarleyWalkToPlayerZ496:
     SetObjectEventPos LOCALID_MARLEY, 902, 504
-    AddObject LOCALID_MARLEY
+    AddObjectFromEdge LOCALID_MARLEY, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_MARLEY
     ApplyMovement LOCALID_MARLEY, Route224_Movement_MarleyWalkToPlayerZ496
     WaitMovement
@@ -344,7 +344,7 @@ Route224_MarleyWalkToPlayerZ496:
 
 Route224_MarleyWalkToPlayerZ497:
     SetObjectEventPos LOCALID_MARLEY, 902, 505
-    AddObject LOCALID_MARLEY
+    AddObjectFromEdge LOCALID_MARLEY, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_MARLEY
     ApplyMovement LOCALID_MARLEY, Route224_Movement_MarleyWalkToPlayerZ497
     WaitMovement
@@ -353,7 +353,7 @@ Route224_MarleyWalkToPlayerZ497:
 
 Route224_MarleyWalkToPlayerZ498:
     SetObjectEventPos LOCALID_MARLEY, 902, 506
-    AddObject LOCALID_MARLEY
+    AddObjectFromEdge LOCALID_MARLEY, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_MARLEY
     ApplyMovement LOCALID_MARLEY, Route224_Movement_MarleyWalkToPlayerZ498
     WaitMovement

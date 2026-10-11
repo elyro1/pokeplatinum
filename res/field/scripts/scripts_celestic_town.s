@@ -81,13 +81,13 @@ CelesticTown_GruntMLeaveElderEnterEast:
     GoTo CelesticTown_GiveOldCharm
 
 CelesticTown_RemoveGruntMAddElder:
-    RemoveObject LOCALID_GRUNT_M
+    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_FAST_SOUTH
     RemoveObject LOCALID_ELDER
     SetObjectEventPos LOCALID_ELDER, 466, 531
     SetObjectEventDir LOCALID_ELDER, DIR_NORTH
     SetObjectEventMovementType LOCALID_ELDER, MOVEMENT_TYPE_LOOK_NORTH
     ClearFlag FLAG_HIDE_CELESTIC_TOWN_ELDER
-    AddObject LOCALID_ELDER
+    AddObjectFromEdge LOCALID_ELDER, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_ELDER
     Return
 

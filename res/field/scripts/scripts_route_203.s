@@ -119,7 +119,7 @@ Route203_RivalLeaveZ760:
     GoTo Route203_RemoveRival
 
 Route203_RemoveRival:
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_EAST
     SetVar VAR_ROUTE_203_RIVAL_STATE, 1
     ReleaseAll
     End

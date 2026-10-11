@@ -294,7 +294,7 @@ Route201_Briefcase:
     Message Route201_Text_IHopeYoullDoWell
     Message Route201_Text_ComeSeeMeInSandgemTown
     CloseMessage
-    ApplyMovement LOCALID_PROF_ROWAN, Route201_Movement_ProfRowanLeave
+    ApplyMovementSafeExit LOCALID_PROF_ROWAN, Route201_Movement_ProfRowanLeave
     ApplyMovement LOCALID_RIVAL, Route201_Movement_RivalMoveAwayForProfRowan
     ApplyMovement LOCALID_PLAYER, Route201_Movement_PlayerWatchProfRowanLeave
     WaitMovement
@@ -329,7 +329,7 @@ Route201_LucasLeave:
 
 Route201_CounterpartLeave:
     ApplyMovement LOCALID_PLAYER, Route201_Movement_WatchCounterpartLeave
-    ApplyMovement LOCALID_COUNTERPART, Route201_Movement_CounterpartLeave
+    ApplyMovementSafeExit LOCALID_COUNTERPART, Route201_Movement_CounterpartLeave
     WaitMovement
     SetFlag FLAG_HIDE_ROUTE_201_COUNTERPART
     RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST

@@ -670,6 +670,13 @@
     .short SCRCMD_WAITMOVEMENT
     .endm
 
+    // Like ApplyMovement; protect the final walk before RemoveObjectAtEdge.
+    .macro ApplyMovementSafeExit localID, movementOffset
+    .short SCRCMD_APPLYMOVEMENTSAFEEXIT
+    .short \localID
+    .long \movementOffset-.-4
+    .endm
+
     .macro LockAll
     .short SCRCMD_LOCKALL
     .endm

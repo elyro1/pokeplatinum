@@ -87,7 +87,7 @@ JubilifeCity_FirstArrivalX175:
 
 JubilifeCity_CounterpartWalkToPlayerFirstArrival:
     ClearFlag FLAG_HIDE_JUBILIFE_CITY_COUNTERPART
-    AddObject LOCALID_COUNTERPART
+    AddObjectFromEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     LockObject LOCALID_COUNTERPART
     ApplyMovement LOCALID_COUNTERPART, JubilifeCity_Movement_CounterpartNoticePlayer
     WaitMovement
@@ -187,7 +187,7 @@ JubilifeCity_CounterpartLeave:
     ApplyMovement LOCALID_COUNTERPART, JubilifeCity_Movement_CounterpartLeaveFirstArrival
     ApplyMovement LOCALID_PLAYER, JubilifeCity_Movement_PlayerWatchCounterpartLeave
     WaitMovement
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     SetVar VAR_JUBILIFE_CITY_STATE, 1
     ReleaseAll
     End
@@ -883,8 +883,8 @@ JubilifeCity_TeamGalacticBattle:
     ApplyMovement LOCALID_GRUNT_M_1, JubilifeCity_Movement_Grunt1Leave
     ApplyMovement LOCALID_GRUNT_M_2, JubilifeCity_Movement_Grunt2Leave
     WaitMovement
-    RemoveObject LOCALID_GRUNT_M_1
-    RemoveObject LOCALID_GRUNT_M_2
+    RemoveObjectAtEdge LOCALID_GRUNT_M_1, MOVEMENT_ACTION_WALK_FAST_NORTH
+    RemoveObjectAtEdge LOCALID_GRUNT_M_2, MOVEMENT_ACTION_WALK_FAST_NORTH
     SetFlag FLAG_HIDE_JUBILIFE_GALACTIC_GRUNTS
     ApplyMovement LOCALID_PROF_ROWAN, JubilifeCity_Movement_ProfRowanWalkOnSpotSouth2
     ApplyMovement LOCALID_COUNTERPART, JubilifeCity_Movement_CounterpartWalkToPlayerAfterGalacticBattle
@@ -951,8 +951,8 @@ JubilifeCity_CounterpartAndProfRowanLeave:
     End
 
 JubilifeCity_CollectorJubilifeTV:
-    RemoveObject LOCALID_COUNTERPART
-    RemoveObject LOCALID_PROF_ROWAN
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
+    RemoveObjectAtEdge LOCALID_PROF_ROWAN, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     ClearFlag FLAG_HIDE_SANDGEM_TOWN_LAB_PROF_ROWAN
     SetVar VAR_JUBILIFE_CITY_STATE, 4
     SetVar VAR_JUBILIFE_LOOKER_PAL_PAD_STATE, 2
@@ -963,7 +963,7 @@ JubilifeCity_CollectorJubilifeTV:
     SetObjectEventPos LOCALID_COLLECTOR, 174, 750
     SetObjectEventMovementType LOCALID_COLLECTOR, MOVEMENT_TYPE_LOOK_NORTH
     ClearFlag FLAG_HIDE_JUBILIFE_CITY_COLLECTOR
-    AddObject LOCALID_COLLECTOR
+    AddObjectFromEdge LOCALID_COLLECTOR, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     LockObject LOCALID_COLLECTOR
     ApplyMovement LOCALID_COLLECTOR, JubilifeCity_Movement_CollectorWalkToPlayer
     WaitMovement
@@ -974,7 +974,7 @@ JubilifeCity_CollectorJubilifeTV:
     WaitTime 15, VAR_RESULT
     ApplyMovement LOCALID_COLLECTOR, JubilifeCity_Movement_CollectorLeave
     WaitMovement
-    RemoveObject LOCALID_COLLECTOR
+    RemoveObjectAtEdge LOCALID_COLLECTOR, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     ReleaseAll
     End
 
@@ -1461,7 +1461,7 @@ JubilifeCity_PoketchCoPresidentLeaveSouth:
     End
 
 JubilifeCity_RemovePoketchCoPresident:
-    RemoveObject LOCALID_POKETCH_CO_PRESIDENT
+    RemoveObjectAtEdge LOCALID_POKETCH_CO_PRESIDENT, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     SetFlag FLAG_RECEIVED_POKETCH
     ClearFlag FLAG_HIDE_POKETCH_CO_1F_POKETCH_CO_PRESIDENT
     RemoveObject LOCALID_LOOKER

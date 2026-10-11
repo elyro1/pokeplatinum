@@ -113,7 +113,7 @@ ValorLakefront_GruntMNorthLeaveWestEast:
     GoTo ValorLakefront_RemoveGruntM
 
 ValorLakefront_RemoveGruntM:
-    RemoveObject LOCALID_GRUNT_M
+    RemoveObjectAtEdge LOCALID_GRUNT_M, MOVEMENT_ACTION_WALK_SLOW_NORTH
     SetFlag FLAG_HIDE_GRAND_LAKE_ROUTE_213_LOBBY_LOOKER
     ClearFlag FLAG_BLOCK_PASTORIA_CITY_CROAGUNK_EVENT
     GoTo ValorLakefront_Cynthia
@@ -185,7 +185,7 @@ ValorLakefront_Cynthia:
     ClearFlag FLAG_HIDE_VALOR_LAKEFRONT_CYNTHIA
     SetObjectEventDir LOCALID_CYNTHIA, DIR_SOUTH
     SetObjectEventMovementType LOCALID_CYNTHIA, MOVEMENT_TYPE_LOOK_SOUTH
-    AddObject LOCALID_CYNTHIA
+    AddObjectFromEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     ApplyMovement LOCALID_CYNTHIA, ValorLakefront_Movement_CynthiaEnter
     WaitMovement
     Message ValorLakefront_Text_IHadToTalk
@@ -197,7 +197,7 @@ ValorLakefront_Cynthia:
     ClearFlag FLAG_HIDE_VALOR_LAKEFRONT_RIVAL
     SetObjectEventDir LOCALID_RIVAL, DIR_NORTH
     SetObjectEventMovementType LOCALID_RIVAL, MOVEMENT_TYPE_LOOK_NORTH
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     Common_SetRivalBGM
     CallIfEq VAR_0x8000, DIR_NORTH, ValorLakefront_RivalEnterNorth
     CallIfEq VAR_0x8000, DIR_SOUTH, ValorLakefront_RivalEnterSouth
@@ -219,7 +219,7 @@ ValorLakefront_Cynthia:
     ApplyMovement LOCALID_PLAYER, ValorLakefront_Movement_PlayerWatchRivalLeave
     ApplyMovement LOCALID_RIVAL, ValorLakefront_Movement_RivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     Common_FadeToDefaultMusic2
     Message ValorLakefront_Text_HesYourFriend
     CloseMessage
@@ -356,7 +356,7 @@ ValorLakefront_CynthiaLeave:
     GoTo ValorLakefront_RemoveCynthia
 
 ValorLakefront_RemoveCynthia:
-    RemoveObject LOCALID_CYNTHIA
+    RemoveObjectAtEdge LOCALID_CYNTHIA, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     SetVar VAR_DUMMY_0x4083, 2
     SetFlag FLAG_DUMMY_0x00B7
     SetFlag FLAG_HIDE_PASTORIA_CITY_RIVAL

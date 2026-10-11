@@ -128,7 +128,7 @@ StarkMountainOutside_OnFrame_LookerBuck:
     ApplyMovement LOCALID_BUCK, StarkMountainOutside_Movement_BuckLeave
     ApplyMovement LOCALID_PLAYER, StarkMountainOutside_Movement_PlayerWalkOnSpotWest
     WaitMovement
-    RemoveObject LOCALID_BUCK
+    RemoveObjectAtEdge LOCALID_BUCK, MOVEMENT_ACTION_WALK_NORMAL_EAST
     ApplyMovement LOCALID_LOOKER, StarkMountainOutside_Movement_LookerWalkOnSpotSouth
     ApplyMovement LOCALID_PLAYER, StarkMountainOutside_Movement_PlayerWalkOnSpotNorth
     WaitMovement

@@ -165,7 +165,7 @@ FightArea_PostBattleVolknerFlint:
     ApplyMovement LOCALID_RIVAL, FightArea_Movement_RivalLeave
     ApplyMovement LOCALID_PLAYER, FightArea_Movement_PlayerWatchRivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     ApplyMovement LOCALID_BUCK, FightArea_Movement_BuckWalkToPlayer
     ApplyMovement LOCALID_PLAYER, FightArea_Movement_PlayerFaceBuck
     WaitMovement
@@ -174,7 +174,7 @@ FightArea_PostBattleVolknerFlint:
     ApplyMovement LOCALID_BUCK, FightArea_Movement_BuckLeave
     ApplyMovement LOCALID_PLAYER, FightArea_Movement_PlayerWatchBuckLeave
     WaitMovement
-    RemoveObject LOCALID_BUCK
+    RemoveObjectAtEdge LOCALID_BUCK, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     GetNationalDexEnabled VAR_RESULT
     CallIfEq VAR_RESULT, TRUE, FightArea_RemoveBlockade
     SetVar VAR_FIGHT_AREA_STATE, 2

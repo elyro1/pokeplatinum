@@ -24,7 +24,7 @@ Route217_SnowpointNPCF:
 Route217_CoordEvent_Maylene:
     LockAll
     ClearFlag FLAG_HIDE_ROUTE_217_MAYLENE
-    AddObject LOCALID_MAYLENE
+    AddObjectFromEdge LOCALID_MAYLENE, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     CallIfEq VAR_0x8004, 302, Route217_MayleneEnterX302
     CallIfEq VAR_0x8004, 303, Route217_MayleneEnterX303
@@ -40,7 +40,7 @@ Route217_CoordEvent_Maylene:
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     CallIfEq VAR_0x8004, 302, Route217_MayleneLeaveX302
     CallIfEq VAR_0x8004, 303, Route217_MayleneLeaveX303
-    RemoveObject LOCALID_MAYLENE
+    RemoveObjectAtEdge LOCALID_MAYLENE, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     SetVar VAR_ROUTE_217_STATE, 1
     SetFlag FLAG_HIDE_VEILSTONE_CITY_GYM_MAYLENE
     ReleaseAll

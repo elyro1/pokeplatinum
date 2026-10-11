@@ -185,7 +185,7 @@ SandgemTown_RivalExitLab:
     ApplyMovement LOCALID_SANDGEM_COUNTERPART, SandgemTown_Movement_CounterpartWatchRivalLeave
     ApplyMovement LOCALID_RIVAL, SandgemTown_Movement_RivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_EAST
     Common_FadeToDefaultMusic2
     GetPlayerGender VAR_RESULT
     GoToIfEq VAR_RESULT, GENDER_MALE, SandgemTown_DawnLetsGoInside
@@ -570,7 +570,7 @@ SandgemTown_CounterpartLeave:
     ApplyMovement LOCALID_PLAYER, SandgemTown_Movement_PlayerWatchCounterpartLeave
     WaitMovement
     Common_FadeToDefaultMusic3
-    RemoveObject LOCALID_SANDGEM_COUNTERPART
+    RemoveObjectAtEdge LOCALID_SANDGEM_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_NORTH
     SetVar VAR_SANDGEM_TOWN_STATE, 2
     ReleaseAll
     End

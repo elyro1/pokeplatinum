@@ -40,7 +40,7 @@ Route227_CoordEvent_WakeRival:
     ApplyMovement LOCALID_PLAYER, Route227_Movement_PlayerWalkWestWatchWakeLeave
     ApplyMovement LOCALID_RIVAL, Route227_Movement_RivalWatchWakeLeave
     WaitMovement
-    RemoveObject LOCALID_CRASHER_WAKE
+    RemoveObjectAtEdge LOCALID_CRASHER_WAKE, MOVEMENT_ACTION_WALK_NORMAL_SOUTH
     ApplyMovement LOCALID_RIVAL, Route227_Movement_RivalWalkOnSpotSouth
     ApplyMovement LOCALID_PLAYER, Route227_Movement_PlayerWalkToRival
     WaitMovement
@@ -52,7 +52,7 @@ Route227_CoordEvent_WakeRival:
     ApplyMovement LOCALID_RIVAL, Route227_Movement_RivalLeave
     ApplyMovement LOCALID_PLAYER, Route227_Movement_PlayerWatchRivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     SetVar VAR_ROUTE_227_WAKE_RIVAL_STATE, 1
     ReleaseAll
     End

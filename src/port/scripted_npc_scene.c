@@ -36,6 +36,13 @@ typedef struct {
     u8 path[NPC_SCENE_MAX_TILES];
     int pathCount;
     int pathIndex;
+    BOOL keepObject;
+    int minimumSteps;
+    const MapObjectAnimCmd *prefix;
+    int prefixCount;
+    int prefixIndex;
+    BOOL prefixActive;
+    BOOL nativeWalking;
 } NpcSceneTask;
 
 static BOOL NpcScene_OrdinaryBillboard(const MapObject *object)
@@ -192,7 +199,7 @@ static BOOL NpcScene_FindExitDetour(NpcSceneTask *scene)
     int count = 1;
     BOOL found = FALSE;
     for (int head = 0; head < count && !found; head++) {
-        if (nodes[head].depth >= scene->remaining) {
+        if (nodes[head].depth >= scene->remaining || nodes[head].depth >= NPC_SCENE_MAX_TILES) {
             continue;
         }
         for (int i = 0; i < 3; i++) {
@@ -212,7 +219,12 @@ static BOOL NpcScene_FindExitDetour(NpcSceneTask *scene)
             VecFx32 renderPos;
             VEC_Add(&dest, &renderOffset, &renderPos);
             int forward = dx * MapObject_GetDxFromDir(scene->dir) + dz * MapObject_GetDzFromDir(scene->dir);
-            if (forward > 0 && !NpcScene_PositionVisible(scene->fieldSystem, &renderPos)) {
+            int sideways = dx * MapObject_GetDzFromDir(scene->dir) - dz * MapObject_GetDxFromDir(scene->dir);
+            // A blocker early in an authored departure can be farther than
+            // twelve tiles from the screen edge. Route around it back to the
+            // departure row, then resume checked walking toward the edge.
+            BOOL departureWaypoint = scene->keepObject && scene->minimumSteps > 0 && forward >= 2 && sideways == 0;
+            if (forward > 0 && (!NpcScene_PositionVisible(scene->fieldSystem, &renderPos) || departureWaypoint)) {
                 scene->pathCount = nodes[next].depth;
                 scene->pathIndex = 0;
                 for (int step = scene->pathCount - 1; step >= 0; step--) {
@@ -239,7 +251,7 @@ static void NpcScene_UseNativeView(NpcSceneTask *scene)
 
 static void NpcScene_Finish(SysTask *task, NpcSceneTask *scene)
 {
-    if (scene->exiting) {
+    if (scene->exiting && !scene->keepObject) {
         MapObject_SetFlagAndDeleteObject(scene->object);
     }
     u8 *movementCount = FieldSystem_GetScriptMemberPtr(scene->fieldSystem, SCRIPT_MANAGER_MOVEMENT_COUNT);
@@ -258,15 +270,35 @@ static void NpcScene_Update(SysTask *task, void *param)
         }
         MapObject_FinishAnimation(scene->animation);
         scene->animation = NULL;
-        scene->remaining--;
-        if (scene->pathCount != 0) {
-            scene->pathIndex++;
+        if (scene->prefixActive) {
+            scene->prefixActive = FALSE;
+            scene->prefixIndex++;
+        } else if (scene->nativeWalking) {
+            scene->minimumSteps = 0;
+            scene->remaining = 0;
+        } else {
+            scene->remaining--;
+            if (scene->minimumSteps > 0) {
+                scene->minimumSteps--;
+            }
+            if (scene->pathCount != 0) {
+                scene->pathIndex++;
+            }
         }
     }
     if (scene->nativeView) {
         // Render the narrow view before changing object lifetime/position.
         // ScriptManager holds that view until the whole script ends.
         if (scene->fieldSystem->npcSceneRenderFrame == scene->nativeFrame) {
+            return;
+        }
+        if (scene->keepObject && scene->minimumSteps > 0) {
+            // Complete the remaining authored leg with native script behavior
+            // only if no safe bounded route exists in the widescreen view.
+            scene->commands[0].movementAction = MovementAction_TurnActionTowardsDir(scene->dir, scene->commands[0].movementAction);
+            scene->commands[0].count = scene->minimumSteps;
+            scene->nativeWalking = TRUE;
+            scene->animation = MapObject_StartAnimation(scene->object, scene->commands);
             return;
         }
         if (!scene->exiting) {
@@ -278,11 +310,21 @@ static void NpcScene_Update(SysTask *task, void *param)
         NpcScene_Finish(task, scene);
         return;
     }
+    if (scene->prefixIndex < scene->prefixCount) {
+        scene->commands[0] = scene->prefix[scene->prefixIndex];
+        scene->prefixActive = TRUE;
+        scene->animation = MapObject_StartAnimation(scene->object, scene->commands);
+        return;
+    }
+    if (scene->keepObject) {
+        scene->commands[0] = scene->prefix[scene->prefixCount];
+        scene->commands[0].count = 1;
+    }
     if (!scene->exiting && scene->remaining == 0) {
         NpcScene_Finish(task, scene);
         return;
     }
-    if (scene->exiting && !NpcScene_ObjectVisible(scene)) {
+    if (scene->exiting && scene->minimumSteps == 0 && !NpcScene_ObjectVisible(scene)) {
         NpcScene_Finish(task, scene);
         return;
     }
@@ -303,7 +345,7 @@ static void NpcScene_Update(SysTask *task, void *param)
     scene->animation = MapObject_StartAnimation(scene->object, scene->commands);
 }
 
-BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles, BOOL exiting)
+static BOOL NpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles, BOOL exiting, const MapObjectAnimCmd *departure, int prefixCount)
 {
     if (fieldSystem->npcSceneViewWidth == HW_LCD_WIDTH && fieldSystem->npcSceneNativeViewLocks == 0) {
         return FALSE; // Preserve native-width movement and timing exactly.
@@ -317,6 +359,13 @@ BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 act
     scene->exiting = exiting;
     scene->anchor = *MapObject_GetPos(object);
     scene->remaining = maxTiles < NPC_SCENE_MAX_TILES ? maxTiles : NPC_SCENE_MAX_TILES;
+    if (departure != NULL) {
+        scene->keepObject = TRUE;
+        scene->prefix = departure;
+        scene->prefixCount = prefixCount;
+        scene->minimumSteps = departure[prefixCount].count;
+        scene->remaining += scene->minimumSteps;
+    }
     scene->commands[0].movementAction = action;
     scene->commands[0].count = 1;
     scene->commands[1].movementAction = MOVEMENT_ACTION_END;
@@ -352,7 +401,7 @@ BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 act
             }
         }
     }
-    if (!scene->nativeView && !NpcScene_ObjectVisible(scene) && exiting) {
+    if (!scene->nativeView && !NpcScene_ObjectVisible(scene) && exiting && !scene->keepObject) {
         Heap_Free(scene);
         return FALSE;
     }
@@ -364,4 +413,27 @@ BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 act
     (*movementCount)++;
     SysTask_Start(NpcScene_Update, scene, 0);
     return TRUE;
+}
+
+BOOL ScriptedNpcScene_Start(FieldSystem *fieldSystem, MapObject *object, u16 action, u16 maxTiles, BOOL exiting)
+{
+    return NpcScene_Start(fieldSystem, object, action, maxTiles, exiting, NULL, 0);
+}
+
+BOOL ScriptedNpcScene_StartDeparture(FieldSystem *fieldSystem, MapObject *object, const MapObjectAnimCmd *commands)
+{
+    if (fieldSystem->npcSceneViewWidth <= HW_LCD_WIDTH || fieldSystem->npcSceneNativeViewLocks != 0 || !NpcScene_OrdinaryBillboard(object)) {
+        return FALSE;
+    }
+    // This opt-in command protects the final walking leg. Keep the original
+    // bytecode for unsupported lists, and bound scanning independently of it.
+    for (int i = 0; i < 64; i++) {
+        if (commands[i].movementAction == MOVEMENT_ACTION_END) {
+            if (i == 0 || commands[i - 1].count == 0 || NpcScene_WalkDirection(commands[i - 1].movementAction) == DIR_NONE) {
+                return FALSE;
+            }
+            return NpcScene_Start(fieldSystem, object, commands[i - 1].movementAction, NPC_SCENE_MAX_TILES, TRUE, commands, i - 1);
+        }
+    }
+    return FALSE;
 }

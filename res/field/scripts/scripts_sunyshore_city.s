@@ -46,7 +46,7 @@ SunyshoreCity_CoordEvent_RivalAndJasmine:
     ApplyMovement LOCALID_JASMINE, SunyshoreCity_Movement_JasmineNoticePlayer
     WaitMovement
     ClearFlag FLAG_HIDE_SUNYSHORE_CITY_RIVAL
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     LockObject LOCALID_RIVAL
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     GoToIfEq VAR_0x8004, 853, SunyshoreCity_RivalEnterX853
@@ -110,7 +110,7 @@ SunyshoreCity_RivalAndJasmine:
     CallIfEq VAR_0x8004, 855, SunyshoreCity_RivalLeaveX855
     CallIfEq VAR_0x8004, 856, SunyshoreCity_RivalLeaveX856
     CallIfEq VAR_0x8004, 857, SunyshoreCity_RivalLeaveX857
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     CallIfEq VAR_0x8004, 853, SunyshoreCity_JasmineWalkToPlayerX853
     CallIfEq VAR_0x8004, 854, SunyshoreCity_JasmineWalkToPlayerX854
     CallIfEq VAR_0x8004, 855, SunyshoreCity_JasmineWalkToPlayerX855
@@ -476,7 +476,7 @@ SunyshoreCity_GiveVolknerHotBattle:
     WaitTime 15, VAR_RESULT
     ApplyMovement LOCALID_FLINT, SunyshoreCity_Movement_FlintLeave
     WaitMovement
-    RemoveObject LOCALID_FLINT
+    RemoveObjectAtEdge LOCALID_FLINT, MOVEMENT_ACTION_WALK_NORMAL_EAST
     WaitTime 1, VAR_RESULT
     SetObjectEventPos LOCALID_FLINT, 845, 748
     SetObjectEventMovementType LOCALID_FLINT, MOVEMENT_TYPE_LOOK_SOUTH
@@ -660,7 +660,7 @@ SunyshoreCity_FlintLeaveEast:
     GoTo SunyshoreCity_RemoveVolkner
 
 SunyshoreCity_RemoveVolkner:
-    RemoveObject LOCALID_FLINT
+    RemoveObjectAtEdge LOCALID_FLINT, MOVEMENT_ACTION_WALK_NORMAL_EAST
     ReleaseAll
     End
 

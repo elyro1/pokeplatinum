@@ -96,7 +96,7 @@ GalacticHQHall_CoordEvent_Speech:
     ApplyMovement LOCALID_LOOKER, GalacticHQHall_Movement_LookerLeave
     ApplyMovement LOCALID_PLAYER, GalacticHQHall_Movement_PlayerWalkOnSpotWest
     WaitMovement
-    RemoveObject LOCALID_LOOKER
+    RemoveObjectAtEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_WEST
     SetVar VAR_GALACTIC_HQ_HALL_STATE, 1
     ReleaseAll
     End

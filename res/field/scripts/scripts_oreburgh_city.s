@@ -88,7 +88,7 @@ OreburghCity_CoordEvent_Rival:
 
 OreburghCity_RivalRunIntoPlayerZ748:
     SetObjectEventPos LOCALID_RIVAL, 271, 748
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_PLAYER, OreburghCity_Movement_PlayerGetPushedByRival
     ApplyMovement LOCALID_RIVAL, OreburghCity_Movement_RivalRunIntoPlayer
     WaitMovement
@@ -97,7 +97,7 @@ OreburghCity_RivalRunIntoPlayerZ748:
 
 OreburghCity_RivalRunIntoPlayerZ749:
     SetObjectEventPos LOCALID_RIVAL, 271, 749
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_PLAYER, OreburghCity_Movement_PlayerGetPushedByRival
     ApplyMovement LOCALID_RIVAL, OreburghCity_Movement_RivalRunIntoPlayer
     WaitMovement
@@ -106,7 +106,7 @@ OreburghCity_RivalRunIntoPlayerZ749:
 
 OreburghCity_RivalRunIntoPlayerZ750:
     SetObjectEventPos LOCALID_RIVAL, 271, 750
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_PLAYER, OreburghCity_Movement_PlayerGetPushedByRival
     ApplyMovement LOCALID_RIVAL, OreburghCity_Movement_RivalRunIntoPlayer
     WaitMovement
@@ -115,7 +115,7 @@ OreburghCity_RivalRunIntoPlayerZ750:
 
 OreburghCity_RivalRunIntoPlayerZ751:
     SetObjectEventPos LOCALID_RIVAL, 271, 751
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_PLAYER, OreburghCity_Movement_PlayerGetPushedByRival
     ApplyMovement LOCALID_RIVAL, OreburghCity_Movement_RivalRunIntoPlayer
     WaitMovement

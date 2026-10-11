@@ -145,7 +145,7 @@ CounterpartTalk_CounterpartLeaveEast:
     End
 
 CounterpartTalk_RemoveCounterpart:
-    RemoveObject LOCALID_SANDGEM_COUNTERPART
+    RemoveObjectAtEdge LOCALID_SANDGEM_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_EAST
     ClearFlag FLAG_HIDE_ROUTE_202_COUNTERPART
     SetVar VAR_ROUTE_202_STATE, 2
     ReleaseAll

@@ -153,7 +153,7 @@ Route202_CounterpartLeave:
     CloseMessage
     ApplyMovement LOCALID_COUNTERPART, Route202_Movement_CounterpartLeaveCatchingTutorial
     WaitMovement
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_WEST
     SetVar VAR_ROUTE_202_STATE, 1
     ReleaseAll
     End
@@ -439,7 +439,7 @@ Route202_CounterpartLeavePokeRadarEast:
     Return
 
 Route202_CounterpartPokeRadarEnd:
-    RemoveObject LOCALID_COUNTERPART
+    RemoveObjectAtEdge LOCALID_COUNTERPART, MOVEMENT_ACTION_WALK_NORMAL_WEST
     ClearFlag FLAG_HIDE_SANDGEM_TOWN_COUNTERPART
     SetVar VAR_ROUTE_202_STATE, 3
     ReleaseAll

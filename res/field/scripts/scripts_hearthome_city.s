@@ -485,12 +485,13 @@ HearthomeCity_SetBunearyAndKeiraPositionsZ729:
 HearthomeCity_BunearyAndKeira:
     ClearFlag FLAG_HIDE_HEARTHOME_CITY_KEIRA
     ClearFlag FLAG_HIDE_HEARTHOME_CITY_BUNEARY
-    AddObject LOCALID_KEIRA
-    AddObject LOCALID_BUNEARY
+    /* The two actors share a spawn tile; stage them one at a time. */
+    AddObjectFromEdge LOCALID_BUNEARY, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_BUNEARY, HearthomeCity_Movement_BunearyEnter
     WaitMovement
     PlayCry SPECIES_BUNEARY
     WaitCry
+    AddObjectFromEdge LOCALID_KEIRA, MOVEMENT_ACTION_WALK_FAST_WEST
     ApplyMovement LOCALID_KEIRA, HearthomeCity_Movement_KeiraEnter
     WaitMovement
     Message HearthomeCity_Text_ThankGoodnessYoureHere
@@ -502,7 +503,7 @@ HearthomeCity_BunearyAndKeira:
     CloseMessage
     ApplyMovement LOCALID_KEIRA, HearthomeCity_Movement_KeiraLeave
     WaitMovement
-    RemoveObject LOCALID_KEIRA
+    RemoveObjectAtEdge LOCALID_KEIRA, MOVEMENT_ACTION_WALK_NORMAL_EAST
     SetVar VAR_HEARTHOME_CITY_STATE, 1
     ReleaseAll
     End

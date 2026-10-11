@@ -24,7 +24,7 @@ MtCoronet1FSouth_CoordEvent_Cyrus:
     ApplyMovement LOCALID_PLAYER, MtCoronet1FSouth_Movement_PlayerMoveAsideAndWatchCyrusLeave
     ApplyMovement LOCALID_CYRUS, MtCoronet1FSouth_Movement_CyrusLeave
     WaitMovement
-    RemoveObject LOCALID_CYRUS
+    RemoveObjectAtEdge LOCALID_CYRUS, MOVEMENT_ACTION_WALK_NORMAL_WEST
     SetVar VAR_MT_CORONET_1F_SOUTH_STATE, 1
     ReleaseAll
     End

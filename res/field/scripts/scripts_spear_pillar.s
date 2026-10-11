@@ -189,7 +189,7 @@ SpearPillar_CoordEvent_MarsJupiter:
     ScrCmd_18C LOCALID_PLAYER, DIR_SOUTH
     ApplyMovement LOCALID_RIVAL, SpearPillar_Movement_RivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     SetVar VAR_SPEAR_PILLAR_STATE, 2
     GoTo SpearPillar_Cyrus
     End
@@ -211,7 +211,7 @@ SpearPillar_RivalEnter:
 
 SpearPillar_RivalEnterX30:
     SetObjectEventPos LOCALID_RIVAL, 31, 40
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     ApplyMovement LOCALID_RIVAL, SpearPillar_Movement_RivalEnter
     WaitMovement
     ScrCmd_18C LOCALID_RIVAL, DIR_EAST
@@ -219,7 +219,7 @@ SpearPillar_RivalEnterX30:
 
 SpearPillar_RivalEnterX31:
     SetObjectEventPos LOCALID_RIVAL, 30, 40
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     ApplyMovement LOCALID_RIVAL, SpearPillar_Movement_RivalEnter
     WaitMovement
     ScrCmd_18C LOCALID_RIVAL, DIR_WEST
@@ -227,7 +227,7 @@ SpearPillar_RivalEnterX31:
 
 SpearPillar_RivalEnterX32:
     SetObjectEventPos LOCALID_RIVAL, 31, 40
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     ApplyMovement LOCALID_RIVAL, SpearPillar_Movement_RivalEnter
     WaitMovement
     ScrCmd_18C LOCALID_RIVAL, DIR_WEST

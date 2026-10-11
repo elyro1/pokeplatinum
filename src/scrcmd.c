@@ -343,6 +343,7 @@ static BOOL ScrCmd_AddObject(ScriptContext *ctx);
 static BOOL ScrCmd_RemoveObject(ScriptContext *ctx);
 static BOOL ScrCmd_AddObjectFromEdge(ScriptContext *ctx);
 static BOOL ScrCmd_RemoveObjectAtEdge(ScriptContext *ctx);
+static BOOL ScrCmd_ApplyMovementSafeExit(ScriptContext *ctx);
 static BOOL ScrCmd_AddFreeCamera(ScriptContext *ctx);
 static BOOL ScrCmd_RestoreCamera(ScriptContext *ctx);
 static BOOL ScrCmd_AddCameraOverrideObject(ScriptContext *ctx);
@@ -2046,7 +2047,7 @@ static BOOL ScrCmd_SetMenuYOriginSide(ScriptContext *ctx)
     return TRUE;
 }
 
-static BOOL ScrCmd_ApplyMovement(ScriptContext *ctx)
+static BOOL ApplyScriptMovement(ScriptContext *ctx, BOOL safeExit)
 {
     u16 localID = ScriptContext_GetVar(ctx);
     #ifdef SDK_BUILD_ARM
@@ -2060,11 +2061,27 @@ static BOOL ScrCmd_ApplyMovement(ScriptContext *ctx)
         return FALSE;
     }
 
-    SysTask *task = MapObject_StartAnimation(object, (MapObjectAnimCmd *)(ctx->scriptPtr + movementOffset));
+    MapObjectAnimCmd *commands = (MapObjectAnimCmd *)(ctx->scriptPtr + movementOffset);
+#ifdef SDK_PORT
+    if (safeExit && ScriptedNpcScene_StartDeparture(ctx->fieldSystem, object, commands)) {
+        return FALSE;
+    }
+#endif
+    SysTask *task = MapObject_StartAnimation(object, commands);
     u8 *movementCount = FieldSystem_GetScriptMemberPtr(ctx->fieldSystem, SCRIPT_MANAGER_MOVEMENT_COUNT);
     (*movementCount)++;
     sub_02040F28(ctx->fieldSystem, task, NULL);
     return FALSE;
+}
+
+static BOOL ScrCmd_ApplyMovement(ScriptContext *ctx)
+{
+    return ApplyScriptMovement(ctx, FALSE);
+}
+
+static BOOL ScrCmd_ApplyMovementSafeExit(ScriptContext *ctx)
+{
+    return ApplyScriptMovement(ctx, TRUE);
 }
 
 static BOOL ScrCmd_Unused_2A1(ScriptContext *ctx)

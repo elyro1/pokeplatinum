@@ -113,7 +113,7 @@ SolaceonTown_CoordEvent_Rival:
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     SetObjectEventPos LOCALID_RIVAL, VAR_0x8004, 661
     ClearFlag FLAG_HIDE_SOLACEON_TOWN_RIVAL
-    AddObject LOCALID_RIVAL
+    AddObjectFromEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_SOUTH
     LockObject LOCALID_RIVAL
     ApplyMovement LOCALID_PLAYER, SolaceonTown_Movement_PlayerFaceNorth
     ApplyMovement LOCALID_RIVAL, SolaceonTown_Movement_RivalWalkSouth
@@ -131,7 +131,7 @@ SolaceonTown_CoordEvent_Rival:
     CloseMessage
     ApplyMovement LOCALID_RIVAL, SolaceonTown_Movement_RivalLeave
     WaitMovement
-    RemoveObject LOCALID_RIVAL
+    RemoveObjectAtEdge LOCALID_RIVAL, MOVEMENT_ACTION_WALK_FAST_NORTH
     Common_FadeToDefaultMusic2
     SetVar VAR_SOLACEON_TOWN_STATE, 1
     ReleaseAll

@@ -190,7 +190,7 @@ ValleyWindworksOutside_OnFrame_Looker:
     ApplyMovement LOCALID_PLAYER, ValleyWindworksOutside_Movement_PlayerWatchLookerLeave
     ApplyMovement LOCALID_LOOKER, ValleyWindworksOutside_Movement_LookerLeave
     WaitMovement
-    RemoveObject LOCALID_LOOKER
+    RemoveObjectAtEdge LOCALID_LOOKER, MOVEMENT_ACTION_WALK_FAST_WEST
     SetVar VAR_VALLEY_WINDWORKS_LOOKER_STATE, 2
     ReleaseAll
     End
