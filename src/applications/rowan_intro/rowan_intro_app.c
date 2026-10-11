@@ -2087,34 +2087,34 @@ static BOOL RowanIntro_Run(RowanIntro *manager)
         break;
     case RI_STATE_DIALOGUE_ROWAN_INTRO:
         if (RowanIntro_DisplayMessage(manager, RowanIntro_Text_MyNameRowan, TRUE) == TRUE) {
-            manager->state = RI_STATE_MOVE_ROWAN_RIGHT_FOR_INFO;
+            manager->state = RI_STATE_LEFT_ROWAN_AFTER_INFO; //RI_STATE_MOVE_ROWAN_RIGHT_FOR_INFO
         }
         break;
-    case RI_STATE_MOVE_ROWAN_RIGHT_FOR_INFO:
-        if (RowanIntro_MoveBgLayer(manager, BG_LAYER_MAIN_1, MBL_CASE_MOVE_RIGHT) == TRUE) {
-            manager->state = RI_STATE_INFO_CHOICE_BOX;
-        }
-        break;
-    case RI_STATE_INFO_CHOICE_BOX:
-        if (RowanIntro_ChoiceBox(manager, CC_INFO, TRUE) == TRUE) {
-            switch (manager->playerChoice) {
-            case 1:
-                manager->bufferedState = RI_STATE_CONTROL_INFO_FADE_IN_START;
-                manager->state = RI_STATE_INFO_FADE_BLACK_START;
-                break;
-            case 2:
-                manager->bufferedState = RI_STATE_ADVENTURE_INFO_FADE_IN_START;
-                manager->state = RI_STATE_INFO_FADE_BLACK_START;
-                {
-                    Bg_ClearTilemap(manager->bgConfig, BG_LAYER_MAIN_0);
-                }
-                break;
-            case 3:
-                manager->state = RI_STATE_LEFT_ROWAN_AFTER_INFO;
-                break;
-            }
-        }
-        break;
+    // case RI_STATE_MOVE_ROWAN_RIGHT_FOR_INFO:
+    //     if (RowanIntro_MoveBgLayer(manager, BG_LAYER_MAIN_1, MBL_CASE_MOVE_RIGHT) == TRUE) {
+    //         manager->state = RI_STATE_LEFT_ROWAN_AFTER_INFO; //RI_STATE_INFO_CHOICE_BOX;
+    //     }
+    //     break;
+    // case RI_STATE_INFO_CHOICE_BOX:
+    //     if (RowanIntro_ChoiceBox(manager, CC_INFO, TRUE) == TRUE) {
+    //         switch (manager->playerChoice) {
+    //         case 1:
+    //             manager->bufferedState = RI_STATE_CONTROL_INFO_FADE_IN_START;
+    //             manager->state = RI_STATE_INFO_FADE_BLACK_START;
+    //             break;
+    //         case 2:
+    //             manager->bufferedState = RI_STATE_ADVENTURE_INFO_FADE_IN_START;
+    //             manager->state = RI_STATE_INFO_FADE_BLACK_START;
+    //             {
+    //                 Bg_ClearTilemap(manager->bgConfig, BG_LAYER_MAIN_0);
+    //             }
+    //             break;
+    //         case 3:
+    //             manager->state = RI_STATE_LEFT_ROWAN_AFTER_INFO;
+    //             break;
+    //         }
+    //     }
+    //     break;
     case RI_STATE_INFO_FADE_BLACK_START:
         StartScreenFade(
             FADE_BOTH_SCREENS,
@@ -2429,21 +2429,21 @@ static BOOL RowanIntro_Run(RowanIntro *manager)
         break;
     case RI_STATE_PKBL_DIALOGUE:
         if (RowanIntro_DisplayMessage(manager, RowanIntro_Text_HavePokeBall, TRUE) == TRUE) {
-            manager->state = RI_STATE_PKBL_WAIT_INPUT;
+            manager->state = RI_STATE_PKBL_ANIM_PUSH_IN; // RI_STATE_PKBL_WAIT_INPUT
         }
         break;
-    case RI_STATE_PKBL_WAIT_INPUT:
-        if (RowanIntro_WasPokeballOpened() == TRUE) {
-            manager->animData.progressCounter = 0;
-            manager->animDelayUpdateCounter = 0;
-            {
-                Bg_ClearTilemap(manager->bgConfig, BG_LAYER_MAIN_0);
-            }
-            manager->state = RI_STATE_PKBL_ANIM_PUSH_IN;
-        } else if (gSystem.pressedKeys) {
-            manager->state = RI_STATE_PKBL_DIALOGUE_USE_TOUCHSCREEN;
-        }
-        break;
+    // case RI_STATE_PKBL_WAIT_INPUT:
+    //     if (RowanIntro_WasPokeballOpened() == TRUE) {
+    //         manager->animData.progressCounter = 0;
+    //         manager->animDelayUpdateCounter = 0;
+    //         {
+    //             Bg_ClearTilemap(manager->bgConfig, BG_LAYER_MAIN_0);
+    //         }
+    //         manager->state = RI_STATE_PKBL_ANIM_PUSH_IN;
+    //     } else if (gSystem.pressedKeys) {
+    //         manager->state = RI_STATE_PKBL_DIALOGUE_USE_TOUCHSCREEN;
+    //     }
+    //     break;
     case RI_STATE_PKBL_ANIM_PUSH_IN:
         if (manager->animDelayUpdateCounter) {
             manager->animDelayUpdateCounter--;
