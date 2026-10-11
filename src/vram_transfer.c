@@ -42,6 +42,26 @@ void VramTransfer_Free(void)
 BOOL VramTransfer_Request(NNS_GFD_DST_TYPE type, u32 destAddr, void *buf, u32 size)
 {
     GF_ASSERT(sTransferTaskManager);
+#ifdef SDK_PORT
+    // The port consumes textures while submitting geometry, before VBlank.
+    // In particular, a newly allocated billboard must have its first frame
+    // uploaded before it can be drawn.
+    if (type == NNS_GFD_DST_3D_TEX_VRAM) {
+        DC_FlushRange(buf, size);
+        GX_BeginLoadTex();
+        GX_LoadTex(buf, destAddr, size);
+        GX_EndLoadTex();
+        return TRUE;
+    }
+
+    if (type == NNS_GFD_DST_3D_TEX_PLTT) {
+        DC_FlushRange(buf, size);
+        GX_BeginLoadTexPltt();
+        GX_LoadTexPltt(buf, destAddr, size);
+        GX_EndLoadTexPltt();
+        return TRUE;
+    }
+#endif
     sTransferTaskManager->cur++;
 
     if (sTransferTaskManager->cur >= sTransferTaskManager->max) {

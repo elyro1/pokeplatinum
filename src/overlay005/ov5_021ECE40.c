@@ -1629,6 +1629,12 @@ static void ov5_021EE134(UnkStruct_ov5_021ED0A4 *param0, int param1)
             v2->unk_08 = param0->unk_F0;
             v2->unk_04 = param1;
             v2->unk_00 = 0;
+#ifdef SDK_PORT
+            // A loaded resource is immediately available to billboard creation.
+            // Upload now because the port draws it before the next VBlank.
+            TextureResourceManager_UploadResourceToVRam(v2->unk_08, param1);
+            v2->unk_00 = 1;
+#endif
 
             v1->unk_06 = 0;
             return;
