@@ -335,6 +335,11 @@ void ov100_021D4C94(UnkStruct_ov100_021D46C8 *param0, int param1)
 
 void ov100_021D4DC8(int param0)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    // The main engine contains Cyrus's dialogue and the overworld scene.
+    // Keep it on the visible top display in the single-screen PC layout.
+    param0 = DS_SCREEN_MAIN;
+#endif
     gSystem.whichScreenIs3D = param0;
     GXLayers_SwapDisplay();
 }
