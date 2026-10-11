@@ -89,7 +89,18 @@ def extend(source, member):
                     p, uv, color, normal = v
                     return ((p[0] + distance, p[1], p[2]),
                             tuple(uv[i] + gradient[i] * distance for i in range(2)), color, normal)
-                additions[shape].append([b, a, shifted(a), shifted(b)])
+                extension = [b, a, shifted(a), shifted(b)]
+                if shape == cliff and pa[1] == pb[1] == filler_y:
+                    # These horizontal edges are the lip of the rounded cliff,
+                    # not a continuation of its wall. Extruding their constant
+                    # T coordinate stretches one atlas row over the rock top.
+                    # Use the flat rock's repeating X/Z mapping and up normal,
+                    # matching the neighboring filler at the same height.
+                    flat = 3 if member == 28 else 0
+                    additions[flat].append([(p, (p[0], p[2]), color, 0x0007FC00)
+                                            for p, _, color, _ in extension])
+                else:
+                    additions[shape].append(extension)
                 if pa[1] == pb[1] == filler_y:
                     continue
                 points = [shifted(b)[0], shifted(a)[0],
