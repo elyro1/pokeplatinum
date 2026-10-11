@@ -104,6 +104,9 @@ enum MainMenuNextApp {
 enum MainMenuOption {
     MAIN_MENU_OPTION_CONTINUE = 0,
     MAIN_MENU_OPTION_NEW_GAME,
+#ifdef SDK_PORT
+    MAIN_MENU_OPTION_SLOT_3,
+#endif
     MAIN_MENU_OPTION_MYSTERY_GIFT,
     MAIN_MENU_OPTION_RANGER_LINK,
     MAIN_MENU_OPTION_GBA_MIGRATION,
@@ -212,6 +215,9 @@ typedef struct MainMenuAppData {
     int alertDismissKeys;
     Window alertWindow;
     BOOL isNewGame;
+#ifdef SDK_PORT
+    BOOL unavailableSlots[3];
+#endif
     BOOL newAlerts;
     BOOL wfcUserInfoErasedMsgPending[1];
     Window wfcUserInfoErasedWindow;
@@ -251,7 +257,16 @@ static WFCUserInfoErasedAlertTemplate sWFCUserInfoErasedMsgWindowTemplate[] = {
     { .x = 5, .y = 5, .width = 22, .height = TEXT_LINES_TILES(7), TEXT_BANK_UNK_0695, pl_msg_00000695_00016, NULL }
 };
 
+#ifdef SDK_PORT
+static BOOL RenderSaveSlot(MainMenuAppData *appData, enum MainMenuOption option, MainMenuWindow *param2, int yPos);
+#endif
+
 static MainMenuOptionTemplate sOptions[NUM_MAIN_MENU_OPTIONS] = {
+#ifdef SDK_PORT
+    [MAIN_MENU_OPTION_CONTINUE] = { NEXT_APP_LOAD_SAVE, TEXT_LINES_TILES(3), 0, RenderSaveSlot },
+    [MAIN_MENU_OPTION_NEW_GAME] = { NEXT_APP_LOAD_SAVE, TEXT_LINES_TILES(3), 0, RenderSaveSlot },
+    [MAIN_MENU_OPTION_SLOT_3] = { NEXT_APP_LOAD_SAVE, TEXT_LINES_TILES(3), 0, RenderSaveSlot },
+#else
     [MAIN_MENU_OPTION_CONTINUE] = {
         .appToLoad = NEXT_APP_LOAD_SAVE,
         .height = TEXT_LINES_TILES(5),
@@ -264,6 +279,7 @@ static MainMenuOptionTemplate sOptions[NUM_MAIN_MENU_OPTIONS] = {
         .textEntryID = MainMenuOptions_Text_NewGame,
         .renderFunc = NULL,
     },
+#endif
     [MAIN_MENU_OPTION_MYSTERY_GIFT] = {
         .appToLoad = NEXT_APP_MYSTERY_GIFT,
         .height = TEXT_LINES_TILES(1),
@@ -764,6 +780,60 @@ static BOOL RenderContinueOption(MainMenuAppData *appData, enum MainMenuOption o
     return TRUE;
 }
 
+#ifdef SDK_PORT
+static void PrintSlotText(MainMenuWindow *window, MessageLoader *loader, StringTemplate *template, int entry, int x, int row, TextColor color)
+{
+    String *text = MessageUtil_ExpandedString(template, loader, entry, HEAP_ID_MAIN_MENU);
+    Text_AddPrinterWithParamsAndColor(window->window, FONT_SYSTEM, text, x, TEXT_LINES(row), TEXT_SPEED_NO_TRANSFER, color, NULL);
+    String_Free(text);
+}
+
+static BOOL RenderSaveSlot(MainMenuAppData *appData, enum MainMenuOption option, MainMenuWindow *window, int yPos)
+{
+    SaveData *snapshot = Heap_AllocAtEnd(HEAP_ID_APPLICATION, sizeof(SaveData));
+    MI_CpuCopy8(appData->saveData, snapshot, sizeof(SaveData));
+    const char *previousPath = CARD_PortSavePath;
+    SaveData_SelectSlot(appData->saveData, option);
+    TrainerInfo *trainer = SaveData_GetTrainerInfo(appData->saveData);
+    PlayTime *time = SaveData_GetPlayTime(appData->saveData);
+    Pokedex *dex = SaveData_GetPokedex(appData->saveData);
+    MessageLoader *loader = MessageLoader_Init(MSG_LOADER_LOAD_ON_DEMAND, NARC_INDEX_MSGDATA__PL_MSG, TEXT_BANK_MAIN_MENU_OPTIONS, HEAP_ID_MAIN_MENU);
+    StringTemplate *template = StringTemplate_Default(HEAP_ID_MAIN_MENU);
+    MainMenuUtil_ShowWindowAtPos(appData->bgConfig, window, 3, yPos, MainMenuOptions_Text_NewGame);
+    Window_FillTilemap(window->window, 15);
+    TextColor color = TEXT_COLOR(1, 2, 15);
+    StringTemplate_SetNumber(template, 0, option + 1, 1, PADDING_MODE_NONE, CHARSET_MODE_EN);
+    PrintSlotText(window, loader, template, MainMenuOptions_Text_Slot, 0, 0, color);
+    appData->unavailableSlots[option] = !SaveData_DataExists(appData->saveData) && CARD_PortSlotHasData();
+    if (appData->unavailableSlots[option]) {
+        PrintSlotText(window, loader, template, MainMenuOptions_Text_SlotUnavailable, 0, 1, color);
+        appData->optionApps[option] = NEXT_APP_LOAD_SAVE;
+    } else if (!SaveData_DataExists(appData->saveData)) {
+        PrintSlotText(window, loader, template, MainMenuOptions_Text_SlotNewGame, 0, 1, color);
+        appData->optionApps[option] = NEXT_APP_GAME_INTRO;
+    } else {
+        color = TrainerInfo_Gender(trainer) == GENDER_FEMALE ? TEXT_COLOR(3, 4, 15) : TEXT_COLOR(7, 8, 15);
+        StringTemplate_SetPlayerName(template, 0, trainer);
+        PrintSlotText(window, loader, template, MainMenuOptions_Text_SlotPlayer, 0, 1, color);
+        StringTemplate_SetNumber(template, 0, TrainerInfo_BadgeCount(trainer), 1, PADDING_MODE_NONE, CHARSET_MODE_EN);
+        PrintSlotText(window, loader, template, MainMenuOptions_Text_SlotBadges, 120, 1, color);
+        StringTemplate_SetNumber(template, 0, PlayTime_GetHours(time), 3, PADDING_MODE_NONE, CHARSET_MODE_EN);
+        StringTemplate_SetNumber(template, 1, PlayTime_GetMinutes(time), 2, PADDING_MODE_ZEROES, CHARSET_MODE_EN);
+        PrintSlotText(window, loader, template, MainMenuOptions_Text_SlotTime, 0, 2, color);
+        StringTemplate_SetNumber(template, 0, Pokedex_CountSeen(dex), 3, PADDING_MODE_NONE, CHARSET_MODE_EN);
+        PrintSlotText(window, loader, template, MainMenuOptions_Text_SlotPokedex, 120, 2, color);
+        appData->optionApps[option] = NEXT_APP_LOAD_SAVE;
+    }
+    Window_DrawStandardFrame(window->window, FALSE, window->frameBaseTile, window->framePltt);
+    StringTemplate_Free(template);
+    MessageLoader_Free(loader);
+    MI_CpuCopy8(snapshot, appData->saveData, sizeof(SaveData));
+    CARD_PortSavePath = previousPath;
+    Heap_Free(snapshot);
+    return TRUE;
+}
+#endif
+
 static BOOL RenderGBAMigrationOption(MainMenuAppData *appData, enum MainMenuOption option, MainMenuWindow *window, int yPos)
 {
     if (appData->agbGameType == 0) {
@@ -898,6 +968,9 @@ static BOOL RenderOptions(MainMenuAppData *appData)
     appData->nextOptionBasetile = OPTION_WINDOWS_BASE_TILE_START;
 
     for (i = 0; i < (sizeof(sOptions) / sizeof(MainMenuOptionTemplate)); i++) {
+#ifdef SDK_PORT
+        if (i == MAIN_MENU_OPTION_WFC_SETTINGS || i == MAIN_MENU_OPTION_WII_MSG_SETTINGS) continue;
+#endif
         MainMenuOptionTemplate *option = &sOptions[i];
 
         MainMenuWindow window;
@@ -955,34 +1028,13 @@ static void RenderOptionsFrames(MainMenuAppData *appData, enum MainMenuOption fo
 
 static void FocusNextOption(MainMenuAppData *appData, int direction)
 {
-    int nextFocused = appData->focusedOption;
-
-    while (TRUE) {
-        nextFocused += direction;
-
-        // Top of the list
-        if (nextFocused == -1) {
-            nextFocused = 0;
-        }
-
-        // Bottom of the list
-        if (nextFocused == NELEMS(sOptions)) {
-            nextFocused = NELEMS(sOptions) - 1;
-        }
-
-        // Reached either the top or the bottom of the list
-        if (nextFocused == appData->focusedOption) {
-            break;
-        }
-
-        // Found an available option
+    for (int nextFocused = appData->focusedOption + direction; nextFocused >= 0 && nextFocused < (int)NELEMS(sOptions); nextFocused += direction) {
         if (appData->optionApps[nextFocused]) {
             Sound_PlayEffect(SE_CONFIRM_sseq_3);
+            appData->focusedOption = nextFocused;
             break;
         }
     }
-
-    appData->focusedOption = nextFocused;
 }
 
 static void TargetFocusedOptionForScroll(MainMenuAppData *appData)
@@ -1133,9 +1185,11 @@ static BOOL MainMenu_Init(ApplicationManager *appMan, int *unused)
 
     MainMenuUtil_Init(HEAP_ID_MAIN_MENU);
 
+#ifndef SDK_PORT
     if (!SaveData_DataExists(appData->saveData)) {
         appData->isNewGame = TRUE;
     }
+#endif
 
     Sound_ConfigureBGMChannelsAndReverb(SOUND_CHANNEL_CONFIG_DEFAULT);
     Sound_SetScene(SOUND_SCENE_NONE);
@@ -1205,6 +1259,15 @@ static BOOL MainMenu_Main(ApplicationManager *appMan, int *state)
             if (JOY_NEW(PAD_BUTTON_A)) {
                 Sound_PlayEffect(SE_CONFIRM_sseq_3);
                 appData->nextApplication = appData->optionApps[appData->focusedOption];
+#ifdef SDK_PORT
+                if (appData->focusedOption <= MAIN_MENU_OPTION_SLOT_3) {
+                    if (appData->unavailableSlots[appData->focusedOption]) {
+                        // Preserve damaged or unreadable files until repaired outside the game.
+                        break;
+                    }
+                    SaveData_SelectSlot(appData->saveData, appData->focusedOption);
+                }
+#endif
 
                 if (appData->nextApplication == NEXT_APP_GBA_MIGRATION) {
                     if (CTRDG_IsPulledOut() == TRUE) {
@@ -1221,7 +1284,11 @@ static BOOL MainMenu_Main(ApplicationManager *appMan, int *state)
                 MainMenuUtil_SetFadeToWhite(TRUE);
             }
 
-            if (appData->nextApplication == NEXT_APP_GAME_INTRO) {
+            if (appData->nextApplication == NEXT_APP_GAME_INTRO
+#ifdef SDK_PORT
+                && appData->focusedOption > MAIN_MENU_OPTION_SLOT_3
+#endif
+            ) {
                 appData->pendingAlerts |= NEW_GAME_WARN;
                 appData->alertsPending = TRUE;
                 *state = MAIN_MENU_STATE_CONFIRM_NEW_GAME;

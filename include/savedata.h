@@ -78,6 +78,9 @@ typedef struct SaveCheckFooter {
 } SaveCheckFooter;
 
 SaveData *SaveData_Init(void);
+#ifdef SDK_PORT
+void SaveData_SelectSlot(SaveData *saveData, int slot);
+#endif
 SaveData *SaveData_Ptr(void);
 void *SaveData_SaveTable(SaveData *saveData, int saveTableID);
 const void *SaveData_SaveTableConst(const SaveData *saveData, int saveTableID);

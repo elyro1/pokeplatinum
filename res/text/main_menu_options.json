@@ -84,6 +84,34 @@
     {
       "id": "MainMenuOptions_Text_WiiMessageSettings",
       "en_US": "Wii MESSAGE SETTINGS"
+    },
+    {
+      "id": "MainMenuOptions_Text_Slot",
+      "en_US": "Slot {STRVAR_1 50, 0, 0}"
+    },
+    {
+      "id": "MainMenuOptions_Text_SlotNewGame",
+      "en_US": "New Game"
+    },
+    {
+      "id": "MainMenuOptions_Text_SlotPlayer",
+      "en_US": "Player {STRVAR_1 3, 0, 0}"
+    },
+    {
+      "id": "MainMenuOptions_Text_SlotBadges",
+      "en_US": "Badges {STRVAR_1 50, 0, 0}"
+    },
+    {
+      "id": "MainMenuOptions_Text_SlotTime",
+      "en_US": "Time {STRVAR_1 52, 0, 0}:{STRVAR_1 51, 1, 0}"
+    },
+    {
+      "id": "MainMenuOptions_Text_SlotPokedex",
+      "en_US": "Pokédex {STRVAR_1 52, 0, 0}"
+    },
+    {
+      "id": "MainMenuOptions_Text_SlotUnavailable",
+      "en_US": "Save unavailable"
     }
   ]
 }

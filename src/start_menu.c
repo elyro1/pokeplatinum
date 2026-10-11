@@ -1,6 +1,9 @@
 #include "start_menu.h"
 
 #include <nitro.h>
+#ifdef SDK_PORT
+#include <stdlib.h>
+#endif
 
 #include "constants/field/map_load.h"
 #include "constants/field_base_tiles.h"
@@ -749,6 +752,11 @@ static BOOL StartMenu_Select(FieldTask *fieldTask)
         menu->state = START_MENU_STATE_END;
         break;
     default:
+#ifdef SDK_PORT
+        if (menu->input == START_MENU_OPTION_EXIT) {
+            exit(0);
+        }
+#endif
         if ((menu_selection_t)sStartMenuActions[menu->input].callback == MENU_CANCEL) {
             menu->state = START_MENU_STATE_END;
         } else if ((menu_selection_t)sStartMenuActions[menu->input].callback != MENU_NOTHING_CHOSEN) {

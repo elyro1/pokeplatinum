@@ -36,11 +36,8 @@ static void SaveDataExtra_SetSaveKey(SaveData *saveData, int extraSaveID, u32 ne
 static SaveData *sSaveDataPtr = NULL;
 static BOOL sSaveComplete;
 
-SaveData *SaveData_Init(void)
+static void SaveData_InitializeContents(SaveData *saveData)
 {
-    SaveData *saveData = Heap_Alloc(HEAP_ID_SAVE, sizeof(SaveData));
-    ;
-
     MI_CpuClearFast(saveData, sizeof(SaveData));
 
     sSaveDataPtr = saveData;
@@ -94,9 +91,29 @@ SaveData *SaveData_Init(void)
         SaveData_Clear(saveData);
         break;
     }
+}
 
+SaveData *SaveData_Init(void)
+{
+#ifdef SDK_PORT
+    CARD_PortMigrateLegacySave();
+#endif
+    SaveData *saveData = Heap_Alloc(HEAP_ID_SAVE, sizeof(SaveData));
+    SaveData_InitializeContents(saveData);
     return saveData;
 }
+
+#ifdef SDK_PORT
+void SaveData_SelectSlot(SaveData *saveData, int slot)
+{
+    static const char *paths[] = { "save1.bin", "save2.bin", "save3.bin" };
+    GF_ASSERT(slot >= 0 && slot < 3);
+    GF_ASSERT(!saveData->state.locked);
+    CARD_PortSavePath = paths[slot];
+    // Keep the allocation stable: application arguments and table pointers use it.
+    SaveData_InitializeContents(saveData);
+}
+#endif
 
 SaveData *SaveData_Ptr(void)
 {
