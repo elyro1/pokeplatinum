@@ -164,6 +164,13 @@ static void ApproachingTrainer_Init(ApproachingTrainerTemplate *apprTrTemplate, 
 
 static int GetTrainerType(const MapObject *trainerMapObj)
 {
+#ifdef SDK_PORT
+    // Visible neighbors retain trainer movement, but their scripts belong to
+    // another route. They cannot start an encounter before event promotion.
+    if (sub_02062E94(trainerMapObj)) {
+        return TRAINER_TYPE_NONE;
+    }
+#endif
     int trainerType = MapObject_GetTrainerType(trainerMapObj);
 
     switch (trainerType) {
@@ -350,7 +357,11 @@ static int GetTrainerIDFromMapObj(MapObject *mapObj)
 
 int MapObject_GetTrainerID(MapObject *mapObj)
 {
+#ifdef SDK_PORT
+    return Script_GetTrainerID(MapObject_GetTrainerMovementScript(mapObj));
+#else
     return GetTrainerIDFromMapObj(mapObj);
+#endif
 }
 
 static MapObject *FindTrainerPartner(FieldSystem *fieldSystem, MapObjectManager *mapObjMan, MapObject *trainerMapObj, int trainerID)

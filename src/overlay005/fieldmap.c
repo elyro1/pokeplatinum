@@ -2,6 +2,8 @@
 
 #include <nitro.h>
 #include <string.h>
+
+#include "pc_frame_profile.h"
 #ifdef SDK_PORT
 #include <simulator/sim.h>
 #endif
@@ -185,6 +187,9 @@ static BOOL FieldMap_Init(ApplicationManager *appMan, int *state)
             }
         }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+        NARC_PreloadFieldArchives();
+#endif
         Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_FIELD1, fieldSystem->mapLoadMode->unk_04);
         GF_ASSERT(fieldSystem->unk_04 == NULL);
 
@@ -249,6 +254,10 @@ static BOOL FieldMap_Main(ApplicationManager *appMan, int *param1)
 {
     FieldSystem *fieldSystem = ApplicationManager_Args(appMan);
 
+    PC_PROFILE_BEGIN(fieldProfile);
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    SIM_ProfileContext(PlayerAvatar_GetXPos(fieldSystem->playerAvatar), PlayerAvatar_GetZPos(fieldSystem->playerAvatar), fieldSystem->location->mapHeaderID, MapMatrix_GetMatrixID(fieldSystem->mapMatrix), PlayerAvatar_GetSpeed(fieldSystem->playerAvatar));
+#endif
     if (FieldSystem_UpdateLocationToPlayerPosition(fieldSystem)) {
         BerryPatches_UpdateGrowthStates(fieldSystem);
         ov5_021D13B4(fieldSystem);
@@ -258,6 +267,7 @@ static BOOL FieldMap_Main(ApplicationManager *appMan, int *param1)
     }
 
     ov5_021D134C(fieldSystem, fieldSystem->unk_C0);
+    PC_PROFILE_END(fieldProfile, SIM_PROFILE_FIELD_NS);
 
     if (fieldSystem->runningFieldMap) {
         return FALSE;
@@ -419,6 +429,7 @@ static BOOL FieldMap_ChangeZone(FieldSystem *fieldSystem)
 
     fieldSystem->location->mapHeaderID = newMapHeaderID;
 
+    PC_PROFILE_BEGIN(zoneProfile);
     MapHeaderData_Load(fieldSystem, newMapHeaderID);
     FieldMapChange_UpdateGameData(fieldSystem, 1);
 
@@ -434,6 +445,7 @@ static BOOL FieldMap_ChangeZone(FieldSystem *fieldSystem)
     RadarChain_Clear(fieldSystem->chain);
     FieldBGM_TryFadeOut(fieldSystem, FieldBGM_GetEffective(fieldSystem, fieldSystem->location->mapHeaderID), 1);
     sub_0203A418(fieldSystem);
+    PC_PROFILE_END(zoneProfile, SIM_PROFILE_ZONE_NS);
 
     if (fieldSystem->unk_04->unk_0C != NULL) {
         ov5_021D5F7C(
@@ -462,6 +474,7 @@ void FieldMap_ChangeZoneDistortionWorld(FieldSystem *fieldSystem, enum MapHeader
 
     fieldSystem->location->mapHeaderID = mapHeaderID;
 
+    PC_PROFILE_BEGIN(zoneProfile);
     MapHeaderData_Load(fieldSystem, mapHeaderID);
     FieldMapChange_UpdateGameDataDistortionWorld(fieldSystem, 1);
 
@@ -472,6 +485,7 @@ void FieldMap_ChangeZoneDistortionWorld(FieldSystem *fieldSystem, enum MapHeader
 
     FieldBGM_TryFadeOut(fieldSystem, FieldBGM_GetEffective(fieldSystem, fieldSystem->location->mapHeaderID), 1);
     sub_0203A418(fieldSystem);
+    PC_PROFILE_END(zoneProfile, SIM_PROFILE_ZONE_NS);
 
     if (fieldSystem->unk_04->unk_0C != NULL) {
         ov5_021D5F7C(fieldSystem->unk_04->unk_0C, FieldOverworldState_GetWeather(fieldState));
@@ -817,6 +831,7 @@ static void FieldSystem_InitLandManager(FieldSystem *fieldSystem)
     }
 
     LandDataManager_InitialLoad(fieldSystem->landDataMan, fieldSystem->location->x, fieldSystem->location->z);
+    LandDataManager_PrepareInitialView(fieldSystem, fieldSystem->landDataMan);
 }
 
 static void ov5_021D1878(FieldSystem *fieldSystem)
@@ -880,6 +895,10 @@ static void ov5_021D1878(FieldSystem *fieldSystem)
         PlayerAvatar_InitMapFeatures(fieldSystem->playerAvatar, v4);
     }
 
+    // Restore saved graphics before creating new neighbor billboards. A fresh
+    // billboard has no paused render state to restore (its zeroed animation
+    // would overwrite the direction established by graphics initialization).
+    sub_02061C48(fieldSystem->mapObjMan);
 #ifdef SDK_PORT
     MapHeaderData_PreloadNeighborObjects(fieldSystem);
     // The original header objects already exist (or were restored from save).
@@ -891,7 +910,6 @@ static void ov5_021D1878(FieldSystem *fieldSystem)
             headerData->objectEvents + headerData->originalObjectEventCount);
     }
 #endif
-    sub_02061C48(fieldSystem->mapObjMan);
     CommPlayerMan_ForcePos();
     sub_02062C3C(fieldSystem->mapObjMan);
     LandDataManager_TrackTarget(PlayerAvatar_GetPos(fieldSystem->playerAvatar), fieldSystem->landDataMan);

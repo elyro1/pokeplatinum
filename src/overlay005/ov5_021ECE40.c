@@ -33,6 +33,9 @@
 #include "resource_collection.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+#include "field/field_system.h"
+#endif
 
 typedef enum {
     UnkEnum_ov5_021ED334_00 = 0,
@@ -163,8 +166,8 @@ void ov5_021ECE40(UnkStruct_ov5_021ED0A4 *param0, const MapObjectManager *param1
 
 #ifdef SDK_PORT
     param4 = NELEMS(param0->unk_60);
-    // The desktop renderer uploads textures immediately. Do not defer NPCs
-    // simply because a zone introduces more than ten distinct graphics IDs.
+    // Use elapsed preparation work to bound PC bursts, rather than the DS's
+    // fixed ten-texture limit. Neighbor graphics are requested off camera.
     param7 = param2;
 #endif
 
@@ -1489,11 +1492,26 @@ int ov5_021EDF30(int param0)
     return Unk_ov5_021FF4E0[param0];
 }
 
+static BOOL ObjectEventGfxManager_TextureBudgetUsed(const UnkStruct_ov5_021ED0A4 *gfxManager)
+{
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    FieldSystem *field = MapObjectMan_FieldSystem(gfxManager->unk_104);
+    // Major transitions already hide the scene. Drain initial graphics there
+    // before applying the traversal budget to newly approaching neighbors.
+    if (field && !field->runningFieldMap) {
+        return FALSE;
+    }
+    return gfxManager->unk_100->textureLoadMicros >= 500;
+#else
+    return FALSE;
+#endif
+}
+
 static int ov5_021EDF3C(UnkStruct_ov5_021ED0A4 *param0, int param1, u32 param2, int param3)
 {
     UnkStruct_ov5_021EDF3C *v0 = param0->unk_100;
 
-    if ((v0->unk_04 >= v0->unk_02) || (BillboardList_IsRedrawing(param0->unk_E0) == 1)) {
+    if ((v0->unk_04 >= v0->unk_02) || ObjectEventGfxManager_TextureBudgetUsed(param0) || (BillboardList_IsRedrawing(param0->unk_E0) == 1)) {
         int v1 = 0;
         UnkStruct_ov5_021EDFBC *v2 = v0->unk_0C;
 
@@ -1515,10 +1533,16 @@ static int ov5_021EDF3C(UnkStruct_ov5_021ED0A4 *param0, int param1, u32 param2, 
     }
 
     {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+        u64 start = OS_TicksToMicroSeconds(OS_GetTick());
+#endif
         void *v3 = ov5_021EDCF4(param0, param2, 0);
 
         ov5_021EE0E8(param0, param1, v3, param3);
         v0->unk_04++;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+        v0->textureLoadMicros += OS_TicksToMicroSeconds(OS_GetTick()) - start;
+#endif
         return 1;
     }
 }
@@ -1562,6 +1586,29 @@ static int ov5_021EDFF0(UnkStruct_ov5_021ED0A4 *param0, int param1)
     return 0;
 }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+static int ObjectEventGfxManager_TexturePriority(const UnkStruct_ov5_021ED0A4 *gfxManager, int graphicsID)
+{
+    FieldSystem *field = MapObjectMan_FieldSystem(gfxManager->unk_104);
+    int priority = 0x7fffffff;
+    if (!field || !field->playerAvatar) {
+        return priority;
+    }
+    int x = PlayerAvatar_GetXPos(field->playerAvatar), z = PlayerAvatar_GetZPos(field->playerAvatar);
+    for (int i = 0; i < gfxManager->unk_100->unk_00; i++) {
+        const UnkStruct_ov5_021EE294 *request = &gfxManager->unk_100->unk_08[i];
+        if (request->unk_04 && request->unk_00 == graphicsID) {
+            int dx = MapObject_GetX(request->unk_04) - x, dz = MapObject_GetZ(request->unk_04) - z;
+            int distance = dx * dx + dz * dz;
+            if (distance < priority) {
+                priority = distance;
+            }
+        }
+    }
+    return priority;
+}
+#endif
+
 static void ov5_021EE030(SysTask *param0, void *param1)
 {
     int v0 = 0;
@@ -1575,13 +1622,37 @@ static void ov5_021EE030(SysTask *param0, void *param1)
         }
     }
 
-    while ((v2->unk_04 < v2->unk_02) && v0 < v2->unk_00) {
+    while ((v2->unk_04 < v2->unk_02) && !ObjectEventGfxManager_TextureBudgetUsed(v1) && v0 < v2->unk_00) {
         if (v3->unk_0C != NULL) {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+            u64 start = OS_TicksToMicroSeconds(OS_GetTick());
+            // Visible/nearby billboards take precedence over distant neighbors.
+            UnkStruct_ov5_021EDFBC *best = v3;
+            int priority = ObjectEventGfxManager_TexturePriority(v1, best->unk_04);
+            for (int i = v0 + 1; i < v2->unk_00; i++) {
+                UnkStruct_ov5_021EDFBC *candidate = &v2->unk_0C[i];
+                if (candidate->unk_0C) {
+                    int distance = ObjectEventGfxManager_TexturePriority(v1, candidate->unk_04);
+                    if (distance < priority) {
+                        best = candidate;
+                        priority = distance;
+                    }
+                }
+            }
+            if (best != v3) {
+                UnkStruct_ov5_021EDFBC swap = *v3;
+                *v3 = *best;
+                *best = swap;
+            }
+#endif
             void *v4 = ov5_021EDCF4(v1, v3->unk_00, 0);
 
             ov5_021EE0E8(v1, v3->unk_04, v4, v3->unk_08);
             v3->unk_0C = NULL;
             v2->unk_04++;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+            v2->textureLoadMicros += OS_TicksToMicroSeconds(OS_GetTick()) - start;
+#endif
         }
 
         v3++;
@@ -1607,6 +1678,9 @@ static void ov5_021EE030(SysTask *param0, void *param1)
     }
 
     v2->unk_04 = 0;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    v2->textureLoadMicros = 0;
+#endif
 }
 
 static void ov5_021EE0E8(UnkStruct_ov5_021ED0A4 *param0, int param1, void *param2, int param3)

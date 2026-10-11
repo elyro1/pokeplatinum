@@ -3,6 +3,19 @@
 #include <nitro.h>
 #include <string.h>
 
+#include "pc_frame_profile.h"
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+#include <math.h>
+#include <simulator/g3_draw.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "constants/field/bdhc.h"
+
+#include "camera.h"
+#include "gfx_box_test.h"
+#endif
+
 #include "constants/battle.h"
 #include "constants/communication/comm_error.h"
 #include "constants/field/map.h"
@@ -100,6 +113,8 @@ typedef struct MapLazyLoaderTrackedTarget {
     BOOL tracking;
 } MapLazyLoaderTrackedTarget;
 
+typedef struct PCPreparedCache PCPreparedCache;
+
 struct LandDataManager {
     LoadedMapBuffers *loadedMapBufs;
     MapLazyLoaderManager mapLazyLoaderMan[MAP_LAZY_LOADER_MANAGER_COUNT];
@@ -132,6 +147,9 @@ struct LandDataManager {
     int offsetAltitude;
     int offsetTileZ;
     VecFx32 offset;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCPreparedCache *prepared;
+#endif
 };
 
 typedef struct LandDataHeader {
@@ -224,6 +242,475 @@ static const MapLoadFunctions sMapLoadWithoutAttributesFns = {
     LandDataManager_InitAndLoadWithoutAttributes,
     LandDataManager_LazyLoadWithoutAttributes
 };
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+#define PC_PREPARED_COUNT 64
+#define PC_CHUNK_READY    5
+static void LandDataHeader_Load(NARC *, const int, LandDataHeader *);
+typedef struct {
+    BOOL hidden, applyRotation;
+    VecFx32 position, rotation, scale;
+} PCPropAppearance;
+// These records contain resource templates, not running gameplay objects.
+// The original quadrant buffers remain authoritative for scripts and collision.
+typedef struct {
+    int index, landID, stage, nextMaterial, nextProp, nextPropMaterial;
+    u64 used;
+    BOOL pinned;
+    LandDataHeader header;
+    LoadedMap map;
+    BDHC collision;
+    u32 bytes;
+    BOOL hasAppearance;
+    PCPropAppearance appearance[MAX_LOADED_MAP_PROPS];
+} PCPreparedChunk;
+struct PCPreparedCache {
+    PCPreparedChunk chunks[PC_PREPARED_COUNT];
+    u64 use, peakPrepareNs;
+    VecFx32 previous;
+    BOOL hasPrevious;
+    u32 bytes;
+    AreaDataManager *owner;
+    int minX, maxX, minZ, maxZ;
+};
+// Distortion World can hold multiple floor managers concurrently.
+static u64 sPCPreparedBytes;
+static u64 PCPrepareClock(void)
+{
+    return OS_TicksToMicroSeconds(OS_GetTick()) * 1000;
+}
+static u64 PCPrepareBudget(void)
+{
+    const char *value = getenv("PLATINUM_PREPARE_US");
+    unsigned long us = value ? strtoul(value, NULL, 10) : 1000;
+    return (us >= 100 && us <= 10000 ? us : 1000) * 1000;
+}
+static u32 PCUploadBudget(void)
+{
+    const char *value = getenv("PLATINUM_UPLOAD_KB");
+    unsigned long kb = value ? strtoul(value, NULL, 10) : 64;
+    return (kb >= 16 && kb <= 4096 ? kb : 64) * 1024;
+}
+static BOOL PCLoadingEnabled(void)
+{
+    const char *legacy = getenv("PLATINUM_LEGACY_LOADING");
+    return !legacy || *legacy != '1';
+}
+static void PCChunkFree(PCPreparedCache *cache, PCPreparedChunk *chunk)
+{
+    cache->bytes -= chunk->bytes;
+    sPCPreparedBytes -= chunk->bytes;
+    free(chunk->map.mapModelFile);
+    free(chunk->map.bdhcFile);
+    free(chunk->map.mapPropManager);
+    memset(chunk, 0, sizeof(*chunk));
+    chunk->index = INVALID_MAP_MATRIX_INDEX;
+}
+static void PCCacheFree(LandDataManager *man)
+{
+    if (!man->prepared) {
+        return;
+    }
+    for (int i = 0; i < PC_PREPARED_COUNT; i++) {
+        PCChunkFree(man->prepared, &man->prepared->chunks[i]);
+    }
+    sPCPreparedBytes -= sizeof(PCPreparedCache);
+    free(man->prepared);
+    man->prepared = NULL;
+    SIM_ProfileSet(SIM_PROFILE_CPU_CACHE_BYTES, NARC_FieldCacheBytes() + sPCPreparedBytes);
+}
+static void PCCacheCreate(LandDataManager *man)
+{
+    if (!PCLoadingEnabled()) {
+        return;
+    }
+    man->prepared = calloc(1, sizeof(PCPreparedCache));
+    if (man->prepared) {
+        sPCPreparedBytes += sizeof(PCPreparedCache);
+        man->prepared->owner = man->areaDataMan;
+        for (int i = 0; i < PC_PREPARED_COUNT; i++) {
+            man->prepared->chunks[i].index = INVALID_MAP_MATRIX_INDEX;
+        }
+    } else {
+        SIM_ProfileAdd(SIM_PROFILE_PREPARE_FALLBACKS, 1);
+    }
+}
+static PCPreparedChunk *PCChunkFind(LandDataManager *man, int index, BOOL create)
+{
+    if (man->prepared && man->prepared->owner != man->areaDataMan) {
+        PCCacheFree(man);
+        PCCacheCreate(man);
+    }
+    if (!man->prepared || index < 0 || index >= man->mapMatrixWidth * man->mapMatrixHeight) {
+        return NULL;
+    }
+    int id = MapMatrix_GetLandDataIDByIndex(index, man->mapMatrix);
+    if (id == INVALID_LAND_DATA_ID) {
+        return NULL;
+    }
+    PCPreparedCache *cache = man->prepared;
+    PCPreparedChunk *slot = NULL;
+    for (int i = 0; i < PC_PREPARED_COUNT; i++) {
+        PCPreparedChunk *chunk = &cache->chunks[i];
+        if (chunk->index == index && chunk->landID != id) {
+            PCChunkFree(cache, chunk);
+        }
+        if (chunk->index == index && chunk->landID == id) {
+            chunk->used = ++cache->use;
+            return chunk;
+        }
+        if (!chunk->pinned && (!slot || chunk->index == INVALID_MAP_MATRIX_INDEX || chunk->used < slot->used)) {
+            slot = chunk;
+        }
+    }
+    if (!create || !slot) {
+        return NULL;
+    }
+    PCChunkFree(cache, slot);
+    slot->index = index;
+    slot->landID = id;
+    slot->used = ++cache->use;
+    return slot;
+}
+static BOOL PCChunkStep(LandDataManager *man, PCPreparedChunk *chunk)
+{
+    if (!chunk || chunk->stage == PC_CHUNK_READY) {
+        return TRUE;
+    }
+    PC_PROFILE_BEGIN(prepareProfile);
+    u64 workStart = PCPrepareClock();
+    NARC *narc = man->landDataNARC;
+    LoadedMap *map = &chunk->map;
+    LandDataHeader *header = &chunk->header;
+    switch (chunk->stage) {
+    case 0: {
+        LandDataHeader_Load(narc, chunk->landID, header);
+        // The header's physical order is attributes, props, model, collision.
+        u32 size = NARC_GetMemberSize(narc, chunk->landID);
+        GF_ASSERT(header->terrainAttributesSize >= 0 && header->terrainAttributesSize <= sizeof(map->terrainAttributes));
+        GF_ASSERT(header->mapModelSize > 0 && header->mapModelSize <= 0x20000);
+        GF_ASSERT(header->bdhcSize >= 0 && header->bdhcSize <= BDHC_BUFFER_SIZE + 24);
+        if (header->terrainAttributesSize < 0 || header->terrainAttributesSize > sizeof(map->terrainAttributes) || header->mapPropsSize < 0 || header->mapModelSize <= 0 || header->mapModelSize > 0x20000 || header->bdhcSize < 0 || header->bdhcSize > BDHC_BUFFER_SIZE + 24 || (u64)16 + header->terrainAttributesSize + header->mapPropsSize + header->mapModelSize + header->bdhcSize > size) {
+            fprintf(stderr, "Invalid land data header: member %d\n", chunk->landID);
+            OS_Terminate();
+            return FALSE;
+        }
+        u32 bytes = header->mapModelSize + BDHC_BUFFER_SIZE + sizeof(MapPropManager);
+        if (sPCPreparedBytes >= NARC_PCWorkingBudget() / 2 || bytes > NARC_PCWorkingBudget() / 2 - sPCPreparedBytes) {
+            return FALSE;
+        }
+        map->mapModelFile = malloc(header->mapModelSize);
+        map->bdhcFile = calloc(1, BDHC_BUFFER_SIZE);
+        BOOL props = !man->skipMapProps && man->mapLoadFns != NULL;
+        map->mapPropManager = props ? calloc(1, sizeof(MapPropManager)) : NULL;
+        if (!map->mapModelFile || !map->bdhcFile || (props && !map->mapPropManager)) {
+            free(map->mapModelFile);
+            free(map->bdhcFile);
+            free(map->mapPropManager);
+            map->mapModelFile = NULL;
+            map->bdhcFile = NULL;
+            map->mapPropManager = NULL;
+            return FALSE;
+        }
+        chunk->bytes = bytes;
+        man->prepared->bytes += bytes;
+        sPCPreparedBytes += bytes;
+        map->bdhc = &chunk->collision;
+        map->mapMatrixIndex = chunk->index;
+        break;
+    }
+    case 1:
+        NARC_ReadFromMember(narc, chunk->landID, 16, header->terrainAttributesSize, map->terrainAttributes);
+        if (map->mapPropManager) {
+            MapPropManager_Init(map->mapPropManager);
+            MapPropManager_Load(narc, header->mapPropsSize, man->areaDataMan, map->mapPropManager, NULL);
+            for (int i = 0; i < MAX_LOADED_MAP_PROPS; i++) {
+                MapProp *prop = &map->mapPropManager->loadedProps[i];
+                if (prop->loaded) {
+                    MapPropAnimationManager_AddPreviewAnimations(prop->modelID, &prop->renderObj, man->mapPropAnimMan);
+                }
+            }
+        }
+        break;
+    case 2:
+        // Reset the member cursor at each stage. Other jobs can use this NARC.
+        NARC_ReadFromMember(narc, chunk->landID, 16 + header->terrainAttributesSize + header->mapPropsSize, 0, map->mapModelFile);
+        LandDataManager_LoadMapModel(narc, header->mapModelSize, &map->mapRenderObj, &map->mapModelFile, AreaDataManager_GetMapTexture(man->areaDataMan));
+        if (AreaDataManager_IsOutdoorsLighting(man->areaDataMan)) {
+            AreaLight_UseGlobalModelAttributes(map->mapRenderObj.resMdl);
+        }
+        break;
+    case 3:
+        if (man->mapLoadFns == &sMapLoadFns && header->bdhcSize) {
+            NARC_ReadFromMember(narc, chunk->landID, 16 + header->terrainAttributesSize + header->mapPropsSize + header->mapModelSize, 0, map->bdhcFile);
+            BDHC_Load(narc, header->bdhcSize, map->bdhc, map->bdhcFile);
+        }
+        break;
+    case 4: {
+        NNSG3dResMdl *model = map->mapRenderObj.resMdl;
+        NNSG3dResMat *materials = NNS_G3dGetMat(model);
+        u64 start = PCPrepareClock();
+        u32 uploaded = 0;
+        for (;;) {
+            NNSG3dResMatData *mat = NULL;
+            if (chunk->nextMaterial < model->info.numMat) {
+                mat = NNS_G3dGetMatDataByIdx(materials, chunk->nextMaterial++);
+            } else if (map->mapPropManager && chunk->nextProp < MAX_LOADED_MAP_PROPS) {
+                MapProp *prop = &map->mapPropManager->loadedProps[chunk->nextProp];
+                if (prop->loaded && prop->model && chunk->nextPropMaterial < prop->model->info.numMat) {
+                    mat = NNS_G3dGetMatDataByIdx(NNS_G3dGetMat(prop->model), chunk->nextPropMaterial++);
+                } else {
+                    chunk->nextProp++;
+                    chunk->nextPropMaterial = 0;
+                    continue;
+                }
+            } else {
+                break;
+            }
+            uploaded += G3SIM_PrewarmTexture(mat->texImageParam, mat->texPlttBase);
+            if (uploaded >= PCUploadBudget() || PCPrepareClock() - start >= PCPrepareBudget() / 2) {
+                u64 elapsed = PCPrepareClock() - workStart;
+                if (elapsed > man->prepared->peakPrepareNs) {
+                    man->prepared->peakPrepareNs = elapsed;
+                }
+                PC_PROFILE_END(prepareProfile, SIM_PROFILE_PREPARE_NS);
+                return TRUE;
+            }
+        }
+        map->valid = TRUE; // Model, collision and initial textures become ready together.
+        break;
+    }
+    }
+    chunk->stage++;
+    u64 elapsed = PCPrepareClock() - workStart;
+    if (elapsed > man->prepared->peakPrepareNs) {
+        man->prepared->peakPrepareNs = elapsed;
+    }
+    PC_PROFILE_END(prepareProfile, SIM_PROFILE_PREPARE_NS);
+    SIM_ProfileSet(SIM_PROFILE_CPU_CACHE_BYTES, NARC_FieldCacheBytes() + sPCPreparedBytes);
+    return TRUE;
+}
+static BOOL PCChunkActivate(LandDataManager *man, LoadedMap *dest, int index)
+{
+    if (index < 0 || index >= man->mapMatrixWidth * man->mapMatrixHeight || MapMatrix_GetLandDataIDByIndex(index, man->mapMatrix) == INVALID_LAND_DATA_ID) {
+        return TRUE;
+    }
+    PCPreparedChunk *chunk = PCChunkFind(man, index, FALSE);
+    if (!chunk || chunk->stage != PC_CHUNK_READY) {
+        SIM_ProfileAdd(SIM_PROFILE_READY_MISSES, 1);
+        return FALSE;
+    }
+    SIM_ProfileAdd(SIM_PROFILE_READY_HITS, 1);
+    memcpy(dest->terrainAttributes, chunk->map.terrainAttributes, sizeof(dest->terrainAttributes));
+    memcpy(dest->mapModelFile, chunk->map.mapModelFile, chunk->header.mapModelSize);
+    NNS_G3dRenderObjInit(&dest->mapRenderObj, NNS_G3dGetMdlByIdx(NNS_G3dGetMdlSet(dest->mapModelFile), 0));
+    if (dest->bdhc && chunk->collision.loaded) {
+        memcpy(dest->bdhcFile, chunk->map.bdhcFile, BDHC_BUFFER_SIZE);
+        *dest->bdhc = chunk->collision;
+#define PC_RELOCATE_BDHC(field, type) dest->bdhc->field = (type *)((u8 *)dest->bdhcFile + ((u8 *)chunk->collision.field - chunk->map.bdhcFile))
+        PC_RELOCATE_BDHC(points, BDHCPoint);
+        PC_RELOCATE_BDHC(normals, VecFx32);
+        PC_RELOCATE_BDHC(constants, fx32);
+        PC_RELOCATE_BDHC(plates, BDHCPlate);
+        PC_RELOCATE_BDHC(strips, BDHCStrip);
+        PC_RELOCATE_BDHC(accessList, u16);
+#undef PC_RELOCATE_BDHC
+    }
+    if (dest->mapPropManager && chunk->map.mapPropManager) {
+        *dest->mapPropManager = *chunk->map.mapPropManager;
+        for (int i = 0; i < MAX_LOADED_MAP_PROPS; i++) {
+            MapProp *prop = &dest->mapPropManager->loadedProps[i];
+            if (!prop->loaded) {
+                continue;
+            }
+            NNS_G3dRenderObjInit(&prop->renderObj, prop->model);
+            MapPropAnimationManager_AddAllAnimationsToRenderObj(prop->modelID, &prop->renderObj, man->mapPropAnimMan);
+        }
+        chunk->hasAppearance = FALSE;
+    }
+    dest->valid = TRUE;
+    dest->mapMatrixIndex = index;
+    return TRUE;
+}
+static void PCRequestBounds(LandDataManager *man, const FieldSystem *field, int tileX, int tileZ)
+{
+    PCPreparedCache *cache = man->prepared;
+    if (!cache) {
+        return;
+    }
+    int localX = tileX - man->offsetTileX, localZ = tileZ - man->offsetTileZ;
+    int minX = localX - 32, maxX = localX + 32, minZ = localZ - 32, maxZ = localZ + 32;
+    if (field && field->camera) {
+        // Conservative ground footprint of the actual camera, including widescreen.
+        const Camera *camera = field->camera;
+        double dx = camera->lookAt.target.x - camera->lookAt.position.x;
+        double dy = camera->lookAt.target.y - camera->lookAt.position.y;
+        double dz = camera->lookAt.target.z - camera->lookAt.position.z;
+        double length = sqrt(dx * dx + dy * dy + dz * dz);
+        if (length > 0) {
+            dx /= length;
+            dy /= length;
+            dz /= length;
+            double horizontal = sqrt(dx * dx + dz * dz);
+            if (horizontal > 0.001) {
+                double rx = -dz / horizontal, rz = dx / horizontal;
+                double ux = -dy * rz, uy = dx * rz - dz * rx, uz = dy * rx;
+                double fov = (double)camera->perspective.sinFovY / (camera->perspective.cosFovY ? camera->perspective.cosFovY : 1);
+                double aspect = 448.0 / 192.0; // Maximum supported view, including pillarboxing/window changes.
+                for (int a = -1; a <= 1; a += 2) {
+                    for (int b = -1; b <= 1; b += 2) {
+                        double x = dx + a * rx * fov * aspect + b * ux * fov;
+                        double y = dy + b * uy * fov;
+                        double z = dz + a * rz * fov * aspect + b * uz * fov;
+                        double t = y < -0.001 ? (camera->lookAt.target.y - camera->lookAt.position.y) / y : camera->perspective.farClip;
+                        if (t < 0) {
+                            t = 0;
+                        }
+                        if (t > camera->perspective.farClip) {
+                            t = camera->perspective.farClip;
+                        }
+                        if (camera->projection == CAMERA_PROJECTION_ORTHOGRAPHIC) {
+                            t = length;
+                            x = dx + a * rx * fov * aspect + b * ux * fov;
+                            z = dz + a * rz * fov * aspect + b * uz * fov;
+                        }
+                        int tx = (int)((camera->lookAt.position.x + x * t) / MAP_OBJECT_TILE_SIZE) - man->offsetTileX;
+                        int tz = (int)((camera->lookAt.position.z + z * t) / MAP_OBJECT_TILE_SIZE) - man->offsetTileZ;
+                        if (tx - 16 < minX) {
+                            minX = tx - 16;
+                        }
+                        if (tx + 16 > maxX) {
+                            maxX = tx + 16;
+                        }
+                        if (tz - 16 < minZ) {
+                            minZ = tz - 16;
+                        }
+                        if (tz + 16 > maxZ) {
+                            maxZ = tz + 16;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Add directional lead from measured preparation cost and actual displacement.
+    // The symmetric chunk margin remains available for sudden reversals.
+    if (field && man->lazyLoaderTrackedTarget.position) {
+        VecFx32 current = *man->lazyLoaderTrackedTarget.position;
+        if (cache->hasPrevious) {
+            double velocity = (fabs((double)current.x - cache->previous.x) + fabs((double)current.z - cache->previous.z)) / MAP_OBJECT_TILE_SIZE;
+            int lead = 16 + (int)(velocity * (10 + 5 * cache->peakPrepareNs / 1000000));
+            if (lead > 32) {
+                lead = 32;
+            }
+            if (current.x > cache->previous.x) {
+                maxX += lead;
+            }
+            if (current.x < cache->previous.x) {
+                minX -= lead;
+            }
+            if (current.z > cache->previous.z) {
+                maxZ += lead;
+            }
+            if (current.z < cache->previous.z) {
+                minZ -= lead;
+            }
+        }
+        cache->previous = current;
+        cache->hasPrevious = TRUE;
+    }
+    // One full chunk covers a sudden reversal and many frames at maximum bike speed.
+    cache->minX = minX < 0 ? 0 : minX / 32;
+    cache->maxX = maxX / 32 < man->mapMatrixWidth ? maxX / 32 : man->mapMatrixWidth - 1;
+    cache->minZ = minZ < 0 ? 0 : minZ / 32;
+    cache->maxZ = maxZ / 32 < man->mapMatrixHeight ? maxZ / 32 : man->mapMatrixHeight - 1;
+    for (int i = 0; i < PC_PREPARED_COUNT; i++) {
+        PCPreparedChunk *chunk = &cache->chunks[i];
+        int x = chunk->index % man->mapMatrixWidth, z = chunk->index / man->mapMatrixWidth;
+        chunk->pinned = chunk->index >= 0 && x >= cache->minX && x <= cache->maxX && z >= cache->minZ && z <= cache->maxZ;
+        for (int q = 0; q < QUADRANT_COUNT; q++) {
+            if (man->loadedMaps[q] && man->loadedMaps[q]->mapMatrixIndex == chunk->index) {
+                chunk->pinned = TRUE;
+            }
+        }
+    }
+}
+static BOOL PCPrepareIndex(LandDataManager *man, int index, BOOL drain)
+{
+    PCPreparedChunk *chunk = PCChunkFind(man, index, TRUE);
+    if (!chunk) {
+        if (man->prepared && index >= 0 && index < man->mapMatrixWidth * man->mapMatrixHeight && MapMatrix_GetLandDataIDByIndex(index, man->mapMatrix) != INVALID_LAND_DATA_ID) {
+            // Every slot is pinned. Treat this like memory exhaustion, rather
+            // than leaving a required loader destination waiting indefinitely.
+            SIM_ProfileAdd(SIM_PROFILE_PREPARE_FALLBACKS, 1);
+            PCCacheFree(man);
+            return FALSE;
+        }
+        return TRUE;
+    }
+    chunk->pinned = TRUE;
+    do {
+        if (!PCChunkStep(man, chunk)) {
+            // Allocation/budget failure must not leave movement waiting forever.
+            // Keep the original loader available for this field session.
+            SIM_ProfileAdd(SIM_PROFILE_PREPARE_FALLBACKS, 1);
+            PCCacheFree(man);
+            return FALSE;
+        }
+    } while (drain && chunk->stage < PC_CHUNK_READY);
+    return TRUE;
+}
+static void PCPrepareTick(LandDataManager *man, const FieldSystem *field, BOOL drain)
+{
+    if (!man->prepared || man->inDistortionWorld || man->ending) {
+        return;
+    }
+    int x = man->trackedTargetTileIndex % man->mapMatrixWidthTiles + man->offsetTileX;
+    int z = man->trackedTargetTileIndex / man->mapMatrixWidthTiles + man->offsetTileZ;
+    if (man->lazyLoaderTrackedTarget.position) {
+        LandData_ObjectPosToTilePos(man->lazyLoaderTrackedTarget.position->x, man->lazyLoaderTrackedTarget.position->z, &x, &z);
+    }
+    PCRequestBounds(man, field, x, z);
+    u64 start = PCPrepareClock();
+    // Required loader destinations always have priority over speculative scenery.
+    for (int loader = 0; loader < MAP_LAZY_LOADER_MANAGER_COUNT; loader++) {
+        if (man->mapLazyLoaderMan[loader].loading) {
+            for (int i = 0; i < MAP_LAZY_LOADER_SLOT_COUNT; i++) {
+                if (!PCPrepareIndex(man, man->mapLazyLoaderMan[loader].loader.mapMatrixIndexes[i], drain)) {
+                    return;
+                }
+            }
+        }
+    }
+    int cx = (x - man->offsetTileX) / 32, cz = (z - man->offsetTileZ) / 32;
+    // Nearby data first; expand only to the requested camera/movement footprint.
+    for (int radius = 0; radius < 8; radius++) {
+        for (int zz = man->prepared->minZ; zz <= man->prepared->maxZ; zz++) {
+            for (int xx = man->prepared->minX; xx <= man->prepared->maxX; xx++) {
+                if (abs(xx - cx) > radius || abs(zz - cz) > radius || (radius && abs(xx - cx) < radius && abs(zz - cz) < radius)) {
+                    continue;
+                }
+                if (!drain && PCPrepareClock() - start >= PCPrepareBudget()) {
+                    return;
+                }
+                PCPreparedChunk *chunk = PCChunkFind(man, xx + zz * man->mapMatrixWidth, TRUE);
+                if (chunk) {
+                    chunk->pinned = TRUE;
+                    if (drain) {
+                        if (!PCPrepareIndex(man, chunk->index, TRUE)) {
+                            return;
+                        }
+                    } else if (chunk->stage < PC_CHUNK_READY && !PCChunkStep(man, chunk)) {
+                        SIM_ProfileAdd(SIM_PROFILE_PREPARE_FALLBACKS, 1);
+                        PCCacheFree(man);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
 
 static BOOL LandData_AreMapsInSameColumn(const int lhsX, const int rhsX, const int mapMatrixWidth)
 {
@@ -556,6 +1043,19 @@ static void LandDataManager_Load(const int mapMatrixIndex, const u8 loadedMapInd
     int landDataID = MapMatrix_GetLandDataIDByIndex(mapMatrixIndex, mapMatrix);
     LAND_DATA_LOADER_ASSERT_LAND_DATA_ID(landDataID);
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (landDataMan->prepared) {
+        PCPrepareIndex((LandDataManager *)landDataMan, mapMatrixIndex, TRUE);
+        if (PCChunkActivate((LandDataManager *)landDataMan, landDataMan->loadedMaps[loadedMapIndex], mapMatrixIndex)) {
+            landDataMan->loadedMaps[loadedMapIndex]->mapMatrixIndex = mapMatrixIndex;
+            if (landDataMan->mapLoadedCb) {
+                landDataMan->mapLoadedCb(landDataMan->mapLoadedCbUserData, mapMatrixIndex, landDataMan->loadedMaps[loadedMapIndex]->mapPropManager);
+            }
+            return;
+        }
+    }
+#endif
+
     LandDataHeader landDataHeader;
     LandDataHeader_Load(landDataMan->landDataNARC, landDataID, &landDataHeader);
 
@@ -589,6 +1089,19 @@ static void LandDataManager_LoadWithoutAttributes(const int mapMatrixIndex, cons
 
     int landDataID = MapMatrix_GetLandDataIDByIndex(mapMatrixIndex, mapMatrix);
     LAND_DATA_LOADER_ASSERT_LAND_DATA_ID(landDataID);
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (landDataMan->prepared) {
+        PCPrepareIndex((LandDataManager *)landDataMan, mapMatrixIndex, TRUE);
+        if (PCChunkActivate((LandDataManager *)landDataMan, landDataMan->loadedMaps[loadedMapIndex], mapMatrixIndex)) {
+            landDataMan->loadedMaps[loadedMapIndex]->mapMatrixIndex = mapMatrixIndex;
+            if (landDataMan->mapLoadedCb) {
+                landDataMan->mapLoadedCb(landDataMan->mapLoadedCbUserData, mapMatrixIndex, landDataMan->loadedMaps[loadedMapIndex]->mapPropManager);
+            }
+            return;
+        }
+    }
+#endif
 
     LandDataHeader landDataHeader;
     LandDataHeader_Load(landDataMan->landDataNARC, landDataID, &landDataHeader);
@@ -752,11 +1265,24 @@ void LandDataManager_Tick(FieldSystem *fieldSystem, LandDataManager *landDataMan
         }
     }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCPrepareTick(landDataMan, fieldSystem, FALSE);
+#endif
     // Here, we run the logic for lazy loading maps.
     switch (landDataMan->lazyLoaderSubTask) {
     case LAZY_LOADER_SUBTASK_LOAD_MAP:
         if (landDataMan->mapQuadrantsToCancelLazyLoad[activeLazyLoader->quadrants[activeLazyLoader->nextIndexToLoad]] != TRUE) {
-            landDataMan->mapLoadFns->lazyLoad(activeLazyLoader->nextIndexToLoad, landDataMan->areaDataMan, landDataMan->mapMatrix, landDataMan->mapMatrixWidth, landDataMan->mapMatrixHeight, landDataMan, activeLazyLoader);
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+            if (landDataMan->prepared && !landDataMan->inDistortionWorld) {
+                int next = activeLazyLoader->nextIndexToLoad;
+                if (!PCChunkActivate(landDataMan, activeLazyLoader->loadSlots[next], activeLazyLoader->mapMatrixIndexes[next])) {
+                    break;
+                }
+                activeLazyLoader->mapLoadTasksState.mapModelTaskRunning = FALSE;
+                activeLazyLoader->mapLoadTasksState.bdhcTaskRunning = FALSE;
+            } else
+#endif
+                landDataMan->mapLoadFns->lazyLoad(activeLazyLoader->nextIndexToLoad, landDataMan->areaDataMan, landDataMan->mapMatrix, landDataMan->mapMatrixWidth, landDataMan->mapMatrixHeight, landDataMan, activeLazyLoader);
         }
 
         activeLazyLoader->nextIndexToLoad++;
@@ -871,6 +1397,25 @@ static void LandDataManager_QueueLazyLoadMapPair(const int firstMapMatrixIndex, 
 
 static void LandDataManager_ResetLoadedMap(const u8 index, LandDataManager *landDataMan)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    LoadedMap *live = landDataMan->loadedMaps[index];
+    PCPreparedChunk *chunk = PCChunkFind(landDataMan, live->mapMatrixIndex, FALSE);
+    if (live->valid && live->mapPropManager && chunk && chunk->map.mapPropManager) {
+        // Only copy appearance, never live animation objects or script instances.
+        // Removed/replaced authored props stay hidden in the scenery pass.
+        for (int i = 0; i < MAX_LOADED_MAP_PROPS; i++) {
+            MapProp *source = &live->mapPropManager->loadedProps[i];
+            MapProp *original = &chunk->map.mapPropManager->loadedProps[i];
+            PCPropAppearance *state = &chunk->appearance[i];
+            state->hidden = source->hidden || !source->loaded || source->modelID != original->modelID;
+            state->position = source->position;
+            state->rotation = source->rotation;
+            state->scale = source->scale;
+            state->applyRotation = source->applyRotation;
+        }
+        chunk->hasAppearance = TRUE;
+    }
+#endif
     landDataMan->loadedMaps[index]->valid = FALSE;
     BDHC_Reset(landDataMan->loadedMaps[index]->bdhc);
 
@@ -1613,14 +2158,52 @@ LandDataManager *LandDataManager_New(MapMatrix *mapMatrix, AreaDataManager *area
     landDataMan->lazyLoaderSubTask = LAZY_LOADER_SUBTASK_IDLE;
     landDataMan->landDataNARC = NARC_ctor(NARC_INDEX_FIELDDATA__LAND_DATA__LAND_DATA, HEAP_ID_FIELD1);
     landDataMan->mapLoadedCb = NULL;
-
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheCreate(landDataMan);
+#endif
     return landDataMan;
 }
 
 void LandDataManager_InitialLoad(LandDataManager *landDataMan, const int playerTileX, const int playerTileZ)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    LandDataManager_UpdateTrackedTargetValues(playerTileX, playerTileZ, landDataMan->offsetTileX, landDataMan->offsetTileZ, landDataMan);
+    PCPrepareTick(landDataMan, NULL, TRUE);
+#endif
     landDataMan->mapLoadFns->initialLoad(landDataMan, playerTileX, playerTileZ, landDataMan->offsetTileX, landDataMan->offsetTileZ, landDataMan->mapMatrixWidthTiles);
     LandDataManager_UpdateTrackedTargetValues(playerTileX, playerTileZ, landDataMan->offsetTileX, landDataMan->offsetTileZ, landDataMan);
+}
+
+BOOL LandDataManager_CanEnterTile(const LandDataManager *landDataMan, int tileX, int tileZ)
+{
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (landDataMan->prepared && !landDataMan->inDistortionWorld) {
+        int x = tileX - landDataMan->offsetTileX, z = tileZ - landDataMan->offsetTileZ;
+        if (x < 0 || z < 0 || x >= landDataMan->mapMatrixWidthTiles || z >= landDataMan->mapMatrixHeight * 32) {
+            return TRUE;
+        }
+        int index = x / 32 + (z / 32) * landDataMan->mapMatrixWidth;
+        if (MapMatrix_GetLandDataIDByIndex(index, landDataMan->mapMatrix) == INVALID_LAND_DATA_ID) {
+            return TRUE;
+        }
+        for (int q = 0; q < QUADRANT_COUNT; q++) {
+            const LoadedMap *map = landDataMan->loadedMaps[q];
+            if (map && map->mapMatrixIndex == index && map->valid && (!map->bdhc || map->bdhc->loaded)) {
+                return TRUE;
+            }
+        }
+        SIM_ProfileAdd(SIM_PROFILE_READY_MISSES, 1);
+        return FALSE;
+    }
+#endif
+    return TRUE;
+}
+
+void LandDataManager_PrepareInitialView(FieldSystem *fieldSystem, LandDataManager *landDataMan)
+{
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCPrepareTick(landDataMan, fieldSystem, TRUE);
+#endif
 }
 
 void LandDataManager_CheckLazyLoadNextMapPair(const u8 trackedTargetDirection, LandDataManager *landDataMan)
@@ -1648,6 +2231,50 @@ void LandDataManager_RenderLoadedMaps(const LandDataManager *landDataMan, ModelA
             LandDataManager_RenderLoadedMap(i, landDataMan, modelAttrs);
         }
     }
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (landDataMan->prepared && !landDataMan->inDistortionWorld) {
+        PCPreparedCache *cache = landDataMan->prepared;
+        for (int c = 0; c < PC_PREPARED_COUNT; c++) {
+            PCPreparedChunk *chunk = &cache->chunks[c];
+            if (chunk->stage != PC_CHUNK_READY || !chunk->pinned || chunk->landID != MapMatrix_GetLandDataIDByIndex(chunk->index, landDataMan->mapMatrix)) {
+                continue;
+            }
+            BOOL active = FALSE;
+            for (int q = 0; q < QUADRANT_COUNT; q++) {
+                if (landDataMan->loadedMaps[q]->mapMatrixIndex == chunk->index && landDataMan->loadedMaps[q]->valid) {
+                    active = TRUE;
+                }
+            }
+            if (active) {
+                continue;
+            }
+            VecFx32 position = { 0, 0, 0 }, scale = {FX32_ONE,FX32_ONE,FX32_ONE};
+            MtxFx33 rotation = {FX32_ONE, 0, 0, 0,FX32_ONE, 0, 0, 0,FX32_ONE};
+            LandDataManager_CalculateRenderingPosition(chunk->index, landDataMan->mapMatrixWidth, landDataMan->mapMatrix, &position);
+            position.x += landDataMan->offset.x;
+            position.y += landDataMan->offset.y;
+            position.z += landDataMan->offset.z;
+            if (GFXBoxTest_IsModelInView(chunk->map.mapRenderObj.resMdl, &position, &rotation, &scale)) {
+                Easy3D_DrawRenderObj(&chunk->map.mapRenderObj, &position, &rotation, &scale);
+            }
+            if (chunk->map.mapPropManager) {
+                MapPropManager preview = *chunk->map.mapPropManager;
+                if (chunk->hasAppearance) {
+                    for (int i = 0; i < MAX_LOADED_MAP_PROPS; i++) {
+                        PCPropAppearance *state = &chunk->appearance[i];
+                        MapProp *prop = &preview.loadedProps[i];
+                        prop->hidden = state->hidden;
+                        prop->position = state->position;
+                        prop->rotation = state->rotation;
+                        prop->scale = state->scale;
+                        prop->applyRotation = state->applyRotation;
+                    }
+                }
+                MapPropManager_Render(&position, landDataMan->areaDataMan, AreaDataManager_IsOutdoorsLighting(landDataMan->areaDataMan), modelAttrs, &preview);
+            }
+        }
+    }
+#endif
 }
 
 void LandData_ObjectPosToTilePos(fx32 objectPositionX, fx32 objectPositionZ, int *tileX, int *tileZ)
@@ -1658,6 +2285,9 @@ void LandData_ObjectPosToTilePos(fx32 objectPositionX, fx32 objectPositionZ, int
 
 void LandDataManager_End(LandDataManager *landDataMan)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheFree(landDataMan);
+#endif
     ClearUnusedSystemCache();
 
     NNS_GfdResetLnkTexVramState();
@@ -1991,6 +2621,7 @@ SysTask *LandDataManager_LazyLoadMapModel(NARC *landDataNARC, const int mapModel
 
 NNSG3dResMdl *LandDataManager_LoadMapModel(NARC *landDataNARC, const int mapModelFileSize, NNSG3dRenderObj *mapRenderObj, NNSG3dResFileHeader **mapModelFile, NNSG3dResTex *mapTexture)
 {
+    PC_PROFILE_BEGIN(chunkProfile);
     NARC_ReadFile(landDataNARC, mapModelFileSize, *mapModelFile);
 
     if (mapTexture != NULL) {
@@ -2008,6 +2639,7 @@ NNSG3dResMdl *LandDataManager_LoadMapModel(NARC *landDataNARC, const int mapMode
     GF_ASSERT(mapModel);
     NNS_G3dRenderObjInit(mapRenderObj, mapModel);
 
+    PC_PROFILE_END(chunkProfile, SIM_PROFILE_CHUNK_NS);
     return mapModel;
 }
 
@@ -2041,11 +2673,17 @@ LandDataManager *LandDataManager_DistortionWorldNew(MapMatrix *mapMatrix, AreaDa
         landDataMan->landDataNARC = NARC_ctor(NARC_INDEX_FIELDDATA__LAND_DATA__LAND_DATA, HEAP_ID_FIELD1);
     }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheCreate(landDataMan);
+#endif
     return landDataMan;
 }
 
 void LandDataManager_DistortionWorldInit(LandDataManager *landDataMan, MapMatrix *mapMatrix, AreaDataManager *areaDataMan, NARC *landDataNARC)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheFree(landDataMan);
+#endif
     landDataMan->areaDataMan = areaDataMan;
     landDataMan->mapMatrix = mapMatrix;
     landDataMan->mapMatrixWidth = MapMatrix_GetWidth(mapMatrix);
@@ -2062,10 +2700,16 @@ void LandDataManager_DistortionWorldInit(LandDataManager *landDataMan, MapMatrix
     if (landDataNARC == NULL) {
         landDataMan->landDataNARC = NARC_ctor(NARC_INDEX_FIELDDATA__LAND_DATA__LAND_DATA, HEAP_ID_FIELD1);
     }
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheCreate(landDataMan);
+#endif
 }
 
 void LandDataManager_DistortionWorldEnd(LandDataManager *landDataMan)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheFree(landDataMan);
+#endif
     for (u8 i = 0; i < QUADRANT_COUNT; i++) {
         landDataMan->loadedMaps[i]->valid = FALSE;
 
@@ -2138,6 +2782,16 @@ static void LandDataManager_DistortionWorldLoad(const int mapMatrixIndex, const 
     LAND_DATA_LOADER_ASSERT_MAP_MATRIX_INDEX(mapMatrixIndex, mapMatrixWidth, mapMatrixHeight);
 
     int landDataID = MapMatrix_GetLandDataIDByIndex(mapMatrixIndex, mapMatrix);
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (landDataMan->prepared) {
+        PCPrepareIndex(landDataMan, mapMatrixIndex, TRUE);
+        if (PCChunkActivate(landDataMan, landDataMan->loadedMaps[loadedMapIndex], mapMatrixIndex)) {
+            landDataMan->loadedMaps[loadedMapIndex]->mapMatrixIndex = mapMatrixIndex;
+            return;
+        }
+    }
+#endif
 
     LandDataHeader landDataHeader;
     LandDataHeader_Load(landDataMan->landDataNARC, landDataID, &landDataHeader);
@@ -2382,10 +3036,37 @@ void LandDataManager_DistortionWorldTick(FieldSystem *fieldSystem, LandDataManag
         }
     }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    // Fixed floors have a separate visibility and buffer-swap lifecycle. Only
+    // prepare their explicitly queued destinations; never expand camera bounds.
+    if (landDataMan->prepared && !landDataMan->ending) {
+        for (int loader = 0; loader < MAP_LAZY_LOADER_MANAGER_COUNT && landDataMan->prepared; loader++) {
+            if (!landDataMan->mapLazyLoaderMan[loader].loading) {
+                continue;
+            }
+            for (int slot = 0; slot < MAP_LAZY_LOADER_SLOT_COUNT; slot++) {
+                if (!PCPrepareIndex(landDataMan, landDataMan->mapLazyLoaderMan[loader].loader.mapMatrixIndexes[slot], FALSE)) {
+                    break;
+                }
+            }
+        }
+    }
+#endif
+
     switch (landDataMan->lazyLoaderSubTask) {
     case LAZY_LOADER_SUBTASK_LOAD_MAP:
         if (landDataMan->mapQuadrantsToCancelLazyLoad[activeLazyLoader->quadrants[activeLazyLoader->nextIndexToLoad]] != TRUE) {
-            LandDataManager_LazyLoadWithoutAttributesAndProps(activeLazyLoader->nextIndexToLoad, landDataMan->areaDataMan, landDataMan->mapMatrix, landDataMan->mapMatrixWidth, landDataMan->mapMatrixHeight, landDataMan, activeLazyLoader);
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+            if (landDataMan->prepared) {
+                int next = activeLazyLoader->nextIndexToLoad;
+                if (!PCChunkActivate(landDataMan, activeLazyLoader->loadSlots[next], activeLazyLoader->mapMatrixIndexes[next])) {
+                    break;
+                }
+                activeLazyLoader->mapLoadTasksState.mapModelTaskRunning = FALSE;
+                activeLazyLoader->mapLoadTasksState.bdhcTaskRunning = FALSE;
+            } else
+#endif
+                LandDataManager_LazyLoadWithoutAttributesAndProps(activeLazyLoader->nextIndexToLoad, landDataMan->areaDataMan, landDataMan->mapMatrix, landDataMan->mapMatrixWidth, landDataMan->mapMatrixHeight, landDataMan, activeLazyLoader);
         }
 
         activeLazyLoader->nextIndexToLoad++;
@@ -2471,6 +3152,9 @@ void LandDataManager_DistortionWorldTick(FieldSystem *fieldSystem, LandDataManag
 
 void LandDataManager_DistortionWorldInitWithoutNARC(LandDataManager *landDataMan, MapMatrix *mapMatrix, AreaDataManager *areaDataMan)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheFree(landDataMan);
+#endif
     landDataMan->areaDataMan = areaDataMan;
     landDataMan->mapMatrix = mapMatrix;
     landDataMan->mapMatrixWidth = MapMatrix_GetWidth(mapMatrix);
@@ -2481,6 +3165,9 @@ void LandDataManager_DistortionWorldInitWithoutNARC(LandDataManager *landDataMan
 
     landDataMan->ending = FALSE;
     landDataMan->lazyLoaderSubTask = LAZY_LOADER_SUBTASK_IDLE;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    PCCacheCreate(landDataMan);
+#endif
 }
 
 void LandDataManager_DistortionWorldInvalidateLoadedMaps(LandDataManager *landDataMan, const int trackedTargetTileX, const int trackedTargetTileZ, int *loadedMapMatrixIndexes)

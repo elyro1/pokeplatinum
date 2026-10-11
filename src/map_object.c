@@ -95,6 +95,7 @@ typedef struct MapObject {
     u8 unk_108[32];
 #ifdef SDK_PORT
     BOOL streamedNeighbor;
+    u16 trainerMovementScript;
 #endif
 } MapObject;
 
@@ -124,6 +125,10 @@ static void sub_020623D4(MapObject *mapObj);
 static void sub_0206243C(MapObject *mapObj);
 static int sub_0206244C(const MapObject *mapObj, int param1, int objEventCount, const ObjectEvent *objectEvent);
 static MapObject *sub_020624CC(const MapObjectManager *mapObjMan, int localID, int flag);
+#ifdef SDK_PORT
+static BOOL MapObject_MatchesSharedObjectSpawn(const MapObject *mapObj, const ObjectEvent *event, int mapHeaderID);
+static MapObject *MapObjectMan_FindSharedObjectSpawn(const MapObjectManager *mapObjMan, const ObjectEvent *event, int mapHeaderID);
+#endif
 static void sub_02062604(MapObject *mapObj);
 static void sub_02062618(MapObject *mapObj);
 static void sub_02062628(MapObject *mapObj);
@@ -240,6 +245,11 @@ MapObject *MapObjectMan_AddMapObjectFromHeader(const MapObjectManager *mapObjMan
 
     if (ObjectEvent_HasNoScript(v2) == FALSE) {
         mapObj = sub_02062154(mapObjMan, localID, mapHeaderID);
+#ifdef SDK_PORT
+        if (mapObj == NULL) {
+            mapObj = MapObjectMan_FindSharedObjectSpawn(mapObjMan, v2, mapHeaderID);
+        }
+#endif
 
         if (mapObj != NULL) {
             sub_020626D0(mapObj, v2, mapHeaderID);
@@ -251,6 +261,9 @@ MapObject *MapObjectMan_AddMapObjectFromHeader(const MapObjectManager *mapObjMan
         mapObj = sub_02062154(mapObjMan, localID, ObjectEvent_GetHiddenFlagNoScript(v2));
         if (mapObj == NULL) {
             mapObj = sub_020624CC(mapObjMan, localID, ObjectEvent_GetHiddenFlagNoScript(v2));
+        }
+        if (mapObj == NULL) {
+            mapObj = MapObjectMan_FindSharedObjectSpawn(mapObjMan, v2, mapHeaderID);
         }
 #else
         mapObj = sub_020624CC(mapObjMan, localID, ObjectEvent_GetHiddenFlagNoScript(v2));
@@ -550,6 +563,9 @@ static void MapObject_LoadSave(MapObject *mapObj, MapObjectSave *mapObjSave)
     MapObject_SetTrainerType(mapObj, mapObjSave->trainerType);
     MapObject_SetFlag(mapObj, mapObjSave->flag);
     MapObject_SetScript(mapObj, mapObjSave->script);
+#ifdef SDK_PORT
+    mapObj->trainerMovementScript = mapObjSave->script;
+#endif
     MapObject_SetInitialDir(mapObj, mapObjSave->initialDir);
     MapObject_Face(mapObj, mapObjSave->facingDir);
     MapObject_Turn(mapObj, mapObjSave->movingDir);
@@ -719,6 +735,11 @@ static void sub_020621E8(MapObject *mapObj, const ObjectEvent *objectEvent, Fiel
     MapObject_SetTrainerType(mapObj, ObjectEvent_GetTrainerType(objectEvent));
     MapObject_SetFlag(mapObj, ObjectEvent_GetHiddenFlag(objectEvent));
     MapObject_SetScript(mapObj, ObjectEvent_GetScript(objectEvent));
+#ifdef SDK_PORT
+    mapObj->trainerMovementScript = objectEvent->script == 0xFFFF
+        ? MapHeaderData_GetObjectSourceScript(fieldSystem, objectEvent->localID, objectEvent->hiddenFlag)
+        : objectEvent->script;
+#endif
     MapObject_SetInitialDir(mapObj, ObjectEvent_GetInitialDir(objectEvent));
     MapObject_SetDataAt(mapObj, ObjectEvent_GetDataAt(objectEvent, 0), 0);
     MapObject_SetDataAt(mapObj, ObjectEvent_GetDataAt(objectEvent, 1), 1);
@@ -822,6 +843,12 @@ static int sub_0206244C(const MapObject *mapObj, int param1, int objEventCount, 
 
     while (objEventCount) {
         localID = ObjectEvent_GetLocalID(objectEvent);
+#ifdef SDK_PORT
+        if (MapObject_MatchesSharedObjectSpawn(mapObj, objectEvent, param1)
+            && (ObjectEvent_HasNoScript(objectEvent) || !FieldSystem_CheckFlag(MapObjectMan_FieldSystem(MapObject_MapObjectManager(mapObj)), objectEvent->hiddenFlag))) {
+            return 2;
+        }
+#endif
 
         if (MapObject_GetLocalID(mapObj) == localID) {
             if (ObjectEvent_HasNoScript(objectEvent) == TRUE) {
@@ -852,13 +879,50 @@ static MapObject *sub_020624CC(const MapObjectManager *mapObjMan, int localID, i
     MapObject *mapObj;
 
     while (MapObjectMan_FindObjectWithStatus(mapObjMan, &mapObj, &v0, MAP_OBJ_STATUS_0) == TRUE) {
-        if (MapObject_GetLocalID(mapObj) == localID && MapObject_GetMapHeaderID(mapObj) == flag) {
+        if (MapObject_GetLocalID(mapObj) == localID && MapObject_GetMapHeaderID(mapObj) == flag
+#ifdef SDK_PORT
+            && !sub_02062E94(mapObj)
+#endif
+        ) {
             return mapObj;
         }
     }
 
     return NULL;
 }
+
+#ifdef SDK_PORT
+static BOOL MapObject_MatchesSharedObjectSpawn(const MapObject *mapObj, const ObjectEvent *event, int mapHeaderID)
+{
+    int owner = sub_02062E94(mapObj) ? sub_02062C18(mapObj) : MapObject_GetMapHeaderID(mapObj);
+    int eventOwner = event->script == 0xFFFF ? event->hiddenFlag : mapHeaderID;
+    if (owner == eventOwner || (unsigned)owner >= MAP_HEADER_COUNT || (unsigned)eventOwner >= MAP_HEADER_COUNT
+        || !MapHeader_IsOnMainMatrix(owner) || !MapHeader_IsOnMainMatrix(eventOwner)
+        || MapObject_CheckStatusFlag(mapObj, MAP_OBJ_STATUS_PERSISTENT)) {
+        return FALSE;
+    }
+    ObjectEvent spawn = {
+        .x = MapObject_GetXInitial(mapObj), .z = MapObject_GetZInitial(mapObj),
+        .graphicsID = MapObject_GetGraphicsID(mapObj), .trainerType = MapObject_GetTrainerType(mapObj),
+        .movementType = MapObject_GetMovementType(mapObj),
+        .movementRangeX = MapObject_GetMovementRangeX(mapObj), .movementRangeZ = MapObject_GetMovementRangeZ(mapObj),
+        .data = { MapObject_GetDataAt(mapObj, 0), MapObject_GetDataAt(mapObj, 1), MapObject_GetDataAt(mapObj, 2) }
+    };
+    return MapHeaderData_IsSameObjectSpawn(&spawn, event);
+}
+
+static MapObject *MapObjectMan_FindSharedObjectSpawn(const MapObjectManager *mapObjMan, const ObjectEvent *event, int mapHeaderID)
+{
+    int index = 0;
+    MapObject *mapObj;
+    while (MapObjectMan_FindObjectWithStatus(mapObjMan, &mapObj, &index, MAP_OBJ_STATUS_0)) {
+        if (MapObject_MatchesSharedObjectSpawn(mapObj, event, mapHeaderID)) {
+            return mapObj;
+        }
+    }
+    return NULL;
+}
+#endif
 
 MapObject *MapObjMan_LocalMapObjByIndex(const MapObjectManager *mapObjMan, int index)
 {
@@ -997,7 +1061,13 @@ int MapObject_HasNoScript(const MapObject *mapObj)
 
 static void sub_020626D0(MapObject *mapObj, const ObjectEvent *objectEvent, enum MapHeaderID mapHeaderID)
 {
+#ifdef SDK_PORT
+    GF_ASSERT(sub_02062E94(mapObj) || MapObject_MatchesSharedObjectSpawn(mapObj, objectEvent, mapHeaderID));
+    MapObject_SetLocalID(mapObj, ObjectEvent_GetLocalID(objectEvent));
+    MapObject_SetInitialDir(mapObj, ObjectEvent_GetInitialDir(objectEvent));
+#else
     GF_ASSERT(sub_02062E94(mapObj) == TRUE);
+#endif
 
     sub_02062E78(mapObj, 0);
     MapObject_SetMapHeaderID(mapObj, mapHeaderID);
@@ -1011,6 +1081,14 @@ static void sub_020626D0(MapObject *mapObj, const ObjectEvent *objectEvent, enum
 static void sub_02062714(MapObject *mapObj, enum MapHeaderID mapHeaderID, const ObjectEvent *objectEvent)
 {
     GF_ASSERT(ObjectEvent_HasNoScript(objectEvent) == TRUE);
+#ifdef SDK_PORT
+    u16 sourceScript = MapHeaderData_GetObjectSourceScript(MapObject_FieldSystem(mapObj), objectEvent->localID, objectEvent->hiddenFlag);
+    if (sourceScript != 0xFFFF || MapObject_GetEventOwner(mapObj) != objectEvent->hiddenFlag) {
+        mapObj->trainerMovementScript = sourceScript;
+    }
+    MapObject_SetLocalID(mapObj, ObjectEvent_GetLocalID(objectEvent));
+    MapObject_SetInitialDir(mapObj, ObjectEvent_GetInitialDir(objectEvent));
+#endif
 
     sub_02062E78(mapObj, 1);
     MapObject_SetScript(mapObj, ObjectEvent_GetScript(objectEvent));
@@ -1318,12 +1396,37 @@ u32 MapObject_GetFlag(const MapObject *mapObj)
 void MapObject_SetScript(MapObject *mapObj, u32 script)
 {
     mapObj->script = script;
+#ifdef SDK_PORT
+    if (script != 0xFFFF) {
+        mapObj->trainerMovementScript = script;
+    }
+#endif
 }
 
 u32 MapObject_GetScript(const MapObject *mapObj)
 {
     return mapObj->script;
 }
+
+#ifdef SDK_PORT
+u16 MapObject_GetTrainerMovementScript(const MapObject *mapObj)
+{
+    if (!sub_02062E94(mapObj)) {
+        return MapObject_GetScript(mapObj);
+    }
+    if (mapObj->trainerMovementScript != 0xFFFF) {
+        return mapObj->trainerMovementScript;
+    }
+    // Authored scriptless copies restored from the original save format have
+    // no extra metadata. Resolve them after the neighbor event list is ready.
+    return MapHeaderData_GetObjectSourceScript(MapObject_FieldSystem(mapObj), MapObject_GetLocalID(mapObj), sub_02062C18(mapObj));
+}
+
+enum MapHeaderID MapObject_GetEventOwner(const MapObject *mapObj)
+{
+    return sub_02062E94(mapObj) ? sub_02062C18(mapObj) : MapObject_GetMapHeaderID(mapObj);
+}
+#endif
 
 void MapObject_SetInitialDir(MapObject *mapObj, int initialDir)
 {
@@ -1821,6 +1924,11 @@ void sub_02062D80(MapObject *mapObj, int param1)
 
 int sub_02062D9C(MapObject *mapObj)
 {
+#ifdef SDK_PORT
+    if (sub_02062E94(mapObj)) {
+        return FALSE;
+    }
+#endif
     if (MapObject_CheckStatusFlag(mapObj, MAP_OBJ_STATUS_19) == TRUE) {
         return FALSE;
     }

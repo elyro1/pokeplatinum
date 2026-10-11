@@ -12,23 +12,24 @@
 #include "struct_decls/map_object.h"
 #include "struct_defs/player_data.h"
 
-#include "field/field_system.h"
-#include "global/utility.h"
-#include "overlay005/land_data_manager_decl.h"
-#include "overlay005/ov5_021DFB54.h"
 #include "overlay009/ov9_02249960.h"
+#include "field/field_system.h"
+#include "overlay005/ov5_021DFB54.h"
+#include "global/utility.h"
+#include "overlay005/land_data.h"
+#include "overlay005/land_data_manager_decl.h"
 
 #include "dynamic_map_features.h"
 #include "game_records.h"
 #include "inlines.h"
 #include "map_object.h"
 #include "map_object_move.h"
+#include "unk_020655F4.h"
 #include "map_tile_behavior.h"
 #include "persisted_map_features_init.h"
 #include "player_avatar.h"
 #include "sound_playback.h"
 #include "terrain_collision_manager.h"
-#include "unk_020655F4.h"
 
 #ifdef SDK_PORT
 #include "port/sim_config_prj.h"
@@ -164,6 +165,17 @@ void PlayerAvatar_MoveMain(PlayerAvatar *playerAvatar, const LandDataManager *la
         return;
     }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (dir >= 0 && dir < 4) {
+        static const int dx[] = { 0, 0, -1, 1 }, dz[] = { -1, 1, 0, 0 };
+        int x = PlayerAvatar_GetXPos(playerAvatar), z = PlayerAvatar_GetZPos(playerAvatar);
+        // Two tiles also cover jumping/fast-bike moves. Retry while the regular
+        // preparation queue completes; never enter unpublished collision data.
+        if (!LandDataManager_CanEnterTile(landManager, x + dx[dir], z + dz[dir]) || !LandDataManager_CanEnterTile(landManager, x + 2 * dx[dir], z + 2 * dz[dir])) {
+            return;
+        }
+    }
+#endif
     PlayerAvatar_StartMoveInit(playerAvatar, dir, keyPad, keyPress);
     PlayerAvatar_RequestChangeState(playerAvatar);
 

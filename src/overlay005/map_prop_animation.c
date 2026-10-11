@@ -326,6 +326,32 @@ BOOL MapPropAnimationManager_AddAllAnimationsToRenderObj(const int mapPropModelI
     return res;
 }
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+void MapPropAnimationManager_AddPreviewAnimations(int modelID, NNSG3dRenderObj *renderObj, MapPropAnimationManager *manager)
+{
+    if (!manager || modelID >= MapPropAnimationManager_GetAnimeListNARCFileCount(manager)) {
+        return;
+    }
+    MapPropAnimeListFile list;
+    NARC_ReadWholeMember(manager->animeListNARC, modelID, &list);
+    if (list.isBicycleSlope || MapPropAnimation_CheckDeferredAddToRenderObjFlag(list.flags)) {
+        return;
+    }
+    for (int i = 0; i < MAP_PROP_ANIME_LIST_FILE_ARCHIVE_IDS_COUNT; i++) {
+        int id = list.animeArchiveIDs[i];
+        if (id == ANIME_ARCHIVE_ID_NONE) {
+            break;
+        }
+        for (int j = 0; j < MAP_PROP_ANIMATION_MANAGER_MAX_ANIMATIONS; j++) {
+            if (manager->animations[j].animeArchiveID == id) {
+                NNS_G3dRenderObjAddAnmObj(renderObj, manager->animations[j].animationObj);
+                break;
+            }
+        }
+    }
+}
+#endif
+
 void MapPropAnimationManager_UnloadAllAnimations(MapPropAnimationManager *manager)
 {
     if (manager == NULL) {

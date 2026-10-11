@@ -9,6 +9,7 @@
 #include "fx_util.h"
 #include "heap.h"
 #include "narc.h"
+#include "pc_frame_profile.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
 
@@ -382,6 +383,7 @@ BDHC *BDHC_New(void)
 
 void BDHC_Load(NARC *narc, const int bdhcSize, BDHC *bdhc, u8 *buffer)
 {
+    PC_PROFILE_BEGIN(collisionProfile);
     BDHCHeader *bdhcHeader = Heap_AllocAtEnd(HEAP_ID_FIELD1, sizeof(BDHCHeader));
 
     BDHC_LoadHeader(narc, bdhcHeader);
@@ -397,6 +399,7 @@ void BDHC_Load(NARC *narc, const int bdhcSize, BDHC *bdhc, u8 *buffer)
 
     Heap_Free(bdhcHeader);
     bdhc->loaded = TRUE;
+    PC_PROFILE_END(collisionProfile, SIM_PROFILE_COLLISION_NS);
 }
 
 void BDHC_Free(BDHC *bdhc)

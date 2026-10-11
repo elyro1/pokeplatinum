@@ -67,6 +67,7 @@ typedef struct MapHeaderData {
 #ifdef SDK_PORT
     u32 originalObjectEventCount;
     ObjectEvent streamedObjectEvents[128];
+    u16 streamedObjectSourceScripts[128];
 #endif
 } MapHeaderData;
 
@@ -77,6 +78,8 @@ void sub_0203A418(FieldSystem *fieldSystem);
 #ifdef SDK_PORT
 void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem);
 BOOL MapHeaderData_IsStreamedObject(const FieldSystem *fieldSystem, const ObjectEvent *objectEvent);
+BOOL MapHeaderData_IsSameObjectSpawn(const ObjectEvent *a, const ObjectEvent *b);
+u16 MapHeaderData_GetObjectSourceScript(const FieldSystem *fieldSystem, int localID, int ownerHeaderID);
 #endif
 const BgEvent *MapHeaderData_GetBgEvents(const FieldSystem *fieldSystem);
 int MapHeaderData_GetNumBgEvents(const FieldSystem *fieldSystem);

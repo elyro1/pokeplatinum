@@ -15,6 +15,11 @@ typedef struct NARC {
     u32 fatbStart;
     u32 fimgStart;
     u16 numFiles;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    const void *resident;
+    u32 cursor;
+    u32 readEnd;
+#endif
 } NARC;
 
 /*
@@ -155,5 +160,12 @@ void NARC_Seek(NARC *narc, u32 offset);
  * @returns: Number of archive members
  */
 u16 NARC_GetFileCount(NARC *narc);
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+void NARC_PreloadFieldArchives(void);
+BOOL NARC_InvalidateFieldArchives(void); // Only succeeds when no cached handles are open.
+u32 NARC_FieldCacheBytes(void);
+u32 NARC_PCWorkingBudget(void);
+#endif
 
 #endif // POKEPLATINUM_NARC_H

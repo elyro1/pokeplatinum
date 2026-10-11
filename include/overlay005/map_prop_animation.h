@@ -106,4 +106,9 @@ MapPropAnimation *MapPropOneShotAnimationManager_GetCurrentAnimation(MapPropOneS
 const BOOL MapPropOneShotAnimationManager_IsAnimationLoopFinished(MapPropOneShotAnimationManager *const oneShotAnimMan, const int tag);
 const int MapPropOneShotAnimationManager_GetAnimationMapPropModelID(MapPropOneShotAnimationManager *const oneShotAnimMan, const int tag);
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+// Attach shared scenery loops without registering interactive bicycle slopes.
+void MapPropAnimationManager_AddPreviewAnimations(int modelID, NNSG3dRenderObj *renderObj, MapPropAnimationManager *manager);
+#endif
+
 #endif // POKEPLATINUM_OV5_MAP_PROP_ANIMATION_H

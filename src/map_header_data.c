@@ -8,6 +8,7 @@
 #include "constants/heap.h"
 #include "constants/versions.h"
 #include "generated/map_headers.h"
+#include "generated/trainer_types.h"
 
 #include "field/field_system.h"
 #include "overlay006/wild_encounters.h"
@@ -67,6 +68,19 @@ void sub_0203A418(FieldSystem *fieldSystem)
 }
 
 #ifdef SDK_PORT
+BOOL MapHeaderData_IsSameObjectSpawn(const ObjectEvent *a, const ObjectEvent *b)
+{
+    // Some route halves author the same ordinary NPC/sign twice, with different
+    // local IDs, dialogue, directions and even height hints (Route 204). Their
+    // spawn and movement bounds identify that shared object. Trainers retain
+    // their explicit event identity, as do separate spawns of the same sprite.
+    return a->trainerType == TRAINER_TYPE_NONE && b->trainerType == TRAINER_TYPE_NONE
+        && a->x == b->x && a->z == b->z && a->graphicsID == b->graphicsID
+        && a->movementType == b->movementType
+        && a->movementRangeX == b->movementRangeX && a->movementRangeZ == b->movementRangeZ
+        && memcmp(a->data, b->data, sizeof(a->data)) == 0;
+}
+
 // Cover the widest field view (448 pixels) plus movement and sprite margins.
 // Use the whole current zone so no objects need to be created while walking
 // within it. The existing scriptless-object handoff preserves NPC movement
@@ -135,6 +149,7 @@ void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem)
     }
     data->numObjectEvents = data->originalObjectEventCount;
     data->objectEvents = data->streamedObjectEvents;
+    memset(data->streamedObjectSourceScripts, 0xFF, sizeof(data->streamedObjectSourceScripts));
 
     MapHeaderData *neighbor = Heap_AllocAtEnd(HEAP_ID_FIELD2, sizeof(MapHeaderData));
     for (int i = 0; i < neighborCount; i++) {
@@ -149,6 +164,12 @@ void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem)
             for (int k = 0; k < data->numObjectEvents; k++) {
                 const ObjectEvent *existing = &data->objectEvents[k];
                 if (existing->localID == event.localID && existing->script == 0xFFFF && existing->hiddenFlag == neighbors[i]) {
+                    data->streamedObjectSourceScripts[k] = event.script;
+                    duplicate = TRUE;
+                    break;
+                }
+                if (MapHeaderData_IsSameObjectSpawn(existing, &event)
+                    && (existing->script == 0xFFFF || !FieldSystem_CheckFlag(fieldSystem, existing->hiddenFlag))) {
                     duplicate = TRUE;
                     break;
                 }
@@ -160,6 +181,7 @@ void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem)
             if (data->numObjectEvents >= NELEMS(data->streamedObjectEvents)) {
                 continue;
             }
+            data->streamedObjectSourceScripts[data->numObjectEvents] = event.script;
             event.script = 0xFFFF;
             event.hiddenFlag = neighbors[i];
             data->streamedObjectEvents[data->numObjectEvents++] = event;
@@ -180,6 +202,21 @@ BOOL MapHeaderData_IsStreamedObject(const FieldSystem *fieldSystem, const Object
         }
     }
     return FALSE;
+}
+
+u16 MapHeaderData_GetObjectSourceScript(const FieldSystem *fieldSystem, int localID, int ownerHeaderID)
+{
+    const MapHeaderData *data = fieldSystem->mapHeaderData;
+    if (!data || data->objectEvents != data->streamedObjectEvents) {
+        return 0xFFFF;
+    }
+    for (int i = 0; i < data->numObjectEvents; i++) {
+        const ObjectEvent *event = &data->objectEvents[i];
+        if (event->script == 0xFFFF && event->localID == localID && event->hiddenFlag == ownerHeaderID) {
+            return data->streamedObjectSourceScripts[i];
+        }
+    }
+    return 0xFFFF;
 }
 #endif
 

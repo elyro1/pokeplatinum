@@ -134,6 +134,10 @@ void MapObject_SetFlag(MapObject *mapObj, u32 flag);
 u32 MapObject_GetFlag(const MapObject *mapObj);
 void MapObject_SetScript(MapObject *mapObj, u32 script);
 u32 MapObject_GetScript(const MapObject *mapObj);
+#ifdef SDK_PORT
+u16 MapObject_GetTrainerMovementScript(const MapObject *mapObj);
+enum MapHeaderID MapObject_GetEventOwner(const MapObject *mapObj);
+#endif
 void MapObject_SetInitialDir(MapObject *mapObj, int initialDir);
 u32 MapObject_GetInitialDir(const MapObject *mapObj);
 void MapObject_Face(MapObject *mapObj, int dir);

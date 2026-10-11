@@ -318,6 +318,12 @@ MapObject *sub_02069EB8(MapObject *mapObj)
     int v0 = 0;
     int v1 = MapObject_GetTrainerType(mapObj);
     enum MapHeaderID mapHeaderID = MapObject_GetMapHeaderID(mapObj);
+#ifdef SDK_PORT
+    if (MapObject_GetTrainerMovementScript(mapObj) == 0xFFFF) {
+        return NULL;
+    }
+    mapHeaderID = MapObject_GetEventOwner(mapObj);
+#endif
     u32 v3 = MapObject_GetTrainerID(mapObj);
     const MapObjectManager *mapObjMan = MapObject_MapObjectManager(mapObj);
     MapObject *v5;
@@ -332,7 +338,15 @@ MapObject *sub_02069EB8(MapObject *mapObj)
     case 0x7:
     case 0x8:
         while (MapObjectMan_FindObjectWithStatus(mapObjMan, &v5, &v0, (1 << 0)) == 1) {
-            if ((mapObj != v5) && (MapObject_GetMapHeaderID(v5) == mapHeaderID)) {
+            if ((mapObj != v5)
+#ifdef SDK_PORT
+                && MapObject_GetEventOwner(v5) == mapHeaderID
+                && MapObject_GetTrainerType(v5) >= 1 && MapObject_GetTrainerType(v5) <= 8
+                && MapObject_GetTrainerMovementScript(v5) != 0xFFFF
+#else
+                && MapObject_GetMapHeaderID(v5) == mapHeaderID
+#endif
+            ) {
                 if (MapObject_GetTrainerID(v5) == v3) {
                     return v5;
                 }
@@ -345,6 +359,20 @@ MapObject *sub_02069EB8(MapObject *mapObj)
 
 static int sub_02069F48(MapObject *mapObj, UnkStruct_02069F48 *param1)
 {
+#ifdef SDK_PORT
+    MapObject *v3 = sub_02069EB8(mapObj);
+    if (v3 != NULL) {
+        // A previously selected actor can be removed/replaced on a zone change.
+        // Refresh the target instead of retaining the old slot's occupant.
+        if (!param1->unk_01 || param1->unk_08 != v3) {
+            sub_02069FC4(mapObj, param1, v3);
+        }
+        return 1;
+    }
+    param1->unk_01 = 0;
+    param1->unk_08 = NULL;
+    return 0;
+#else
     int v0;
     enum MapHeaderID v1;
     u32 v2;
@@ -367,6 +395,7 @@ static int sub_02069F48(MapObject *mapObj, UnkStruct_02069F48 *param1)
 
     param1->unk_01 = 0;
     return 0;
+#endif
 }
 
 static void sub_02069FC4(MapObject *mapObj, UnkStruct_02069F48 *param1, MapObject *param2)

@@ -125,7 +125,13 @@ static int ov5_021F184C(OverworldAnimManager *param0, void *param1)
     v1->unk_14 = *v2;
     v1->unk_10 = OverworldAnimManager_GetUserInt(param0);
     v1->unk_00 = MapObject_GetLocalID(v1->unk_14.unk_0C);
+#ifdef SDK_PORT
+    // Neighbor objects retain their event owner when they become scripted on
+    // entry to that route. The staging map changes, but the reflection survives.
+    v1->unk_04 = MapObject_GetEventOwner(v1->unk_14.unk_0C);
+#else
     v1->unk_04 = MapObject_GetMapHeaderID(v1->unk_14.unk_0C);
+#endif
     v1->unk_08 = MapObject_GetGraphicsID(v1->unk_14.unk_0C);
 
     if (BerryPatchGraphics_IsBerryPatch(v1->unk_08) == 1) {

@@ -15,6 +15,7 @@
 #include "gfx_box_test.h"
 #include "heap.h"
 #include "narc.h"
+#include "pc_frame_profile.h"
 
 static void MapPropManager_InitRenderObj(const int modelID, AreaDataManager *const areaDataManager, NNSG3dRenderObj *renderObj, NNSG3dResMdl **model);
 static void MapPropManager_RenderUsing1Mat1Shp(const NNSG3dResMdl *model, VecFx32 *position, MtxFx33 *rotation, VecFx32 *scale, const MapPropMaterialShape *propMatShp, const int modelID);
@@ -74,6 +75,7 @@ void MapPropManager_ClearOne(int index, MapPropManager *mapPropManager)
 
 void MapPropManager_Load(NARC *landDataNARC, const int mapPropFilesSize, AreaDataManager *const areaDataManager, MapPropManager *mapPropManager, MapPropAnimationManager *mapPropAnimMan)
 {
+    PC_PROFILE_BEGIN(propsProfile);
     MapPropFile *mapPropFiles = NULL;
     u32 mapPropFilesCount;
 
@@ -102,7 +104,9 @@ void MapPropManager_Load(NARC *landDataNARC, const int mapPropFilesSize, AreaDat
                 loadedProp->modelID = 0;
             }
 
-            MapPropAnimationManager_AddAllAnimationsToRenderObj(loadedProp->modelID, &loadedProp->renderObj, mapPropAnimMan);
+            if (mapPropAnimMan != NULL) {
+                MapPropAnimationManager_AddAllAnimationsToRenderObj(loadedProp->modelID, &loadedProp->renderObj, mapPropAnimMan);
+            }
         } else {
             VecFx32 nullVector = { 0, 0, 0 };
 
@@ -118,6 +122,7 @@ void MapPropManager_Load(NARC *landDataNARC, const int mapPropFilesSize, AreaDat
     if (mapPropFiles != NULL) {
         Heap_Free(mapPropFiles);
     }
+    PC_PROFILE_END(propsProfile, SIM_PROFILE_PROPS_NS);
 }
 
 void MapPropManager_Render(const VecFx32 *positionOffset, const AreaDataManager *areaDataManager, const BOOL applyAttrsToModel, ModelAttributes *const modelAttrs, MapPropManager *mapPropManager)

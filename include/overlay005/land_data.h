@@ -17,8 +17,10 @@
 
 typedef void (*MapLoadedCallback)(void *, const int, MapPropManager *const);
 
+BOOL LandDataManager_CanEnterTile(const LandDataManager *landDataMan, int tileX, int tileZ);
 void LandDataManager_Tick(FieldSystem *fieldSystem, LandDataManager *landDataMan);
 LandDataManager *LandDataManager_New(MapMatrix *mapMatrix, AreaDataManager *areaDataMan, MapPropAnimationManager *mapPropAnimMan, const BOOL skipAttributes);
+void LandDataManager_PrepareInitialView(FieldSystem *fieldSystem, LandDataManager *landDataMan);
 void LandDataManager_InitialLoad(LandDataManager *landDataMan, const int playerTileX, const int playerTileZ);
 void LandDataManager_CheckLazyLoadNextMapPair(const u8 trackedTargetDirection, LandDataManager *landDataMan);
 void LandDataManager_RenderLoadedMaps(const LandDataManager *landDataMan, ModelAttributes *const modelAttrs);

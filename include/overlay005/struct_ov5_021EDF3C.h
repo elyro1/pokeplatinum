@@ -12,6 +12,9 @@ typedef struct {
     s16 unk_00;
     s16 unk_02;
     vs16 unk_04;
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u64 textureLoadMicros;
+#endif
     vu16 unk_06;
     UnkStruct_ov5_021EE294 *unk_08;
     UnkStruct_ov5_021EDFBC *unk_0C;
