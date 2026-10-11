@@ -5722,7 +5722,7 @@
       "en_US": [
         "{STRVAR_1 14, 0, 0} {STRVAR_1 3, 1, 0} is\n",
         "about to send in {STRVAR_1 1, 2, 0}.\f",
-        "Will you switch your Pokémon?{YESNO 0}"
+        "Will you switch your Pokémon?"
       ]
     },
     {

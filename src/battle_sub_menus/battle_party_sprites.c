@@ -428,12 +428,15 @@ static void DrawSprite(ManagedSprite *sprite, const int x, const int y)
 
 static void InitializePartyPokemonSprites(BattleParty *battleParty)
 {
+    // Battle sprites retain their palette slots while the party menu is open.
+    u32 paletteSlot = SpriteManager_FindPlttResourceOffset(battleParty->spriteManager, PARTY_POKEMON_PLTT_RESOURCE_ID, NNS_G2D_VRAM_TYPE_2DMAIN);
+
     for (s32 i = 0; i < MAX_PARTY_SIZE; i++) {
         if (battleParty->partyPokemon[i].species == SPECIES_NONE) {
             continue;
         }
 
-        ManagedSprite_SetExplicitPalette(battleParty->sprites[PARTY_POKEMON_SPRITES_OFFSET + i], PokeIconPaletteIndex(battleParty->partyPokemon[i].species, battleParty->partyPokemon[i].form, battleParty->partyPokemon[i].isEgg));
+        ManagedSprite_SetExplicitPalette(battleParty->sprites[PARTY_POKEMON_SPRITES_OFFSET + i], paletteSlot + PokeIconPaletteIndex(battleParty->partyPokemon[i].species, battleParty->partyPokemon[i].form, battleParty->partyPokemon[i].isEgg));
     }
 }
 
@@ -442,7 +445,8 @@ static void InitializeTypeIcon(BattleParty *battleParty, ManagedSprite *sprite, 
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
 
     SpriteSystem_ReplaceCharResObj(spriteSystem, battleParty->spriteManager, TypeIcon_GetNARC(), TypeIcon_GetChar(type), TRUE, resourceID);
-    ManagedSprite_SetExplicitPalette(sprite, TypeIcon_GetPltt(type) + 4);
+    u32 paletteSlot = SpriteManager_FindPlttResourceOffset(battleParty->spriteManager, POKEMON_TYPES_PLTT_RESOURCE_ID, NNS_G2D_VRAM_TYPE_2DMAIN);
+    ManagedSprite_SetExplicitPalette(sprite, paletteSlot + TypeIcon_GetPltt(type));
 }
 
 static void InitializeMoveClassIcon(BattleParty *battleParty, ManagedSprite *sprite, enum MoveClass moveClass)
@@ -450,7 +454,8 @@ static void InitializeMoveClassIcon(BattleParty *battleParty, ManagedSprite *spr
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
 
     SpriteSystem_ReplaceCharResObj(spriteSystem, battleParty->spriteManager, CategoryIcon_GetNARC(), CategoryIcon_GetChar(moveClass), TRUE, MOVE_CLASSES_CHAR_RESOURCE_ID);
-    ManagedSprite_SetExplicitPalette(sprite, CategoryIcon_GetPltt(moveClass) + 4);
+    u32 paletteSlot = SpriteManager_FindPlttResourceOffset(battleParty->spriteManager, MOVE_CLASSES_PLTT_RESOURCE_ID, NNS_G2D_VRAM_TYPE_2DMAIN);
+    ManagedSprite_SetExplicitPalette(sprite, paletteSlot + CategoryIcon_GetPltt(moveClass));
 }
 
 static void DrawSummaryStatusIcon(enum SummaryStatus summaryStatus, ManagedSprite *sprite, const int x, const int y)
