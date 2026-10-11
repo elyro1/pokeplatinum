@@ -21,7 +21,8 @@ MtCoronet2F_CoordEvent_Looker:
     LockAll
     GetPlayerMapPos VAR_0x8004, VAR_0x8005
     SetVar VAR_MT_CORONET_2F_STATE, 2
-    SetObjectEventPos LOCALID_LOOKER, 20, 25
+    @ Stage on the flat corridor before the stairs into the lower passage.
+    SetObjectEventPos LOCALID_LOOKER, 22, 33
     SetObjectEventMovementType LOCALID_LOOKER, MOVEMENT_TYPE_LOOK_WEST
     SetObjectEventDir LOCALID_LOOKER, DIR_WEST
     ClearFlag FLAG_HIDE_MT_CORONET_2F_LOOKER
@@ -87,6 +88,9 @@ MtCoronet2F_LookerWalkToPlayerZ26:
 
     .balign 4, 0
 MtCoronet2F_Movement_LookerNoticePlayer:
+    WalkFastNorth 2
+    WalkFastWest 2
+    WalkFastNorth 6
     WalkFastWest 4
     Delay8
     EmoteExclamationMark
