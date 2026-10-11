@@ -1576,7 +1576,7 @@ static void ov5_021D6EC8(UnkStruct_ov5_021D6FA8 *param0, int param1)
 {
     GF_ASSERT(param0->unk_08 == NULL);
     GF_ASSERT(param1 > 0);
-    GF_ASSERT(param1 <= (sizeof(s32) * 10));
+    GF_ASSERT(param1 <= sizeof(param0->unk_0C));
 
     param0->unk_08 = param0->unk_0C;
 }
@@ -1584,7 +1584,7 @@ static void ov5_021D6EC8(UnkStruct_ov5_021D6FA8 *param0, int param1)
 static void ov5_021D6EF0(UnkStruct_ov5_021D6FA8 *param0)
 {
     param0->unk_08 = NULL;
-    memset(param0->unk_0C, 0, (sizeof(s32) * 10));
+    memset(param0->unk_0C, 0, sizeof(param0->unk_0C));
 }
 
 static UnkStruct_ov5_021D6FA8 *ov5_021D6F00(UnkStruct_ov5_021DB4B8 *param0, int param1)
@@ -4559,7 +4559,11 @@ static void ov5_021DA5A0(UnkStruct_ov5_021DB4B8 *param0, int param1)
     UnkStruct_ov5_021D6FA8 *v2;
     UnkStruct_ov5_021D9984 *v3;
     int v4;
+    #ifdef SDK_BUILD_ARM
     s32 *v5;
+    #else
+    s64 *v5;
+    #endif
 
     v3 = param0->unk_B98;
 
@@ -4568,13 +4572,13 @@ static void ov5_021DA5A0(UnkStruct_ov5_021DB4B8 *param0, int param1)
     }
 
     for (v0 = 0; v0 < param1; v0++) {
-        v2 = ov5_021D6F00(param0, sizeof(s32) * 8);
+        v2 = ov5_021D6F00(param0, sizeof(*v5) * 8);
 
         if (v2 == NULL) {
             break;
         }
 
-        v5 = (s32 *)v2->unk_08;
+        v5 = v2->unk_08;
         v4 = MTRNG_Next() % 4;
 
         Sprite_SetAnimFrame(v2->unk_04, v4);
@@ -4591,8 +4595,13 @@ static void ov5_021DA5A0(UnkStruct_ov5_021DB4B8 *param0, int param1)
         }
 
         v5[3] = 1 + (MTRNG_Next() % 1);
+        #ifdef SDK_BUILD_ARM
         v5[0] = (s32)&v3->unk_B4[1];
         v5[6] = (s32)&v3->unk_B4[5];
+        #else
+        v5[0] = (s64)&v3->unk_B4[1];
+        v5[6] = (s64)&v3->unk_B4[5];
+        #endif
         v5[7] = 10 + (MTRNG_Next() % 20);
 
         {
@@ -4637,7 +4646,7 @@ static void ov5_021DA6BC(UnkStruct_ov5_021D6FA8 *param0)
     v2.y >>= FX32_SHIFT;
 
     if (*(
-        #ifdef SDK_BUILD_ARMs
+        #ifdef SDK_BUILD_ARM
         (s32 *)v1[6]
         #else
         (s64 *)v1[6]
