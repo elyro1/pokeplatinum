@@ -3092,6 +3092,11 @@ static void InitSkyClouds(DistWorldSystem *system, DistWorldSkyClouds *clouds, N
     for (i = 0; i < SKY_CLOUD_RESOURCE_COUNT; i++) {
         clouds->charRes[i] = SpriteResourceCollection_AddTilesFrom(clouds->charResColl, etcNARC, sSkyCloudsCharNARCIndexes[i], FALSE, SKY_CLOUD_RESOURCE_BASE_ID + i, NNS_G2D_VRAM_TYPE_2DMAIN, HEAP_ID_FIELD1);
         SpriteTransfer_RequestCharAtEnd(clouds->charRes[i]);
+#ifdef SDK_PORT
+        const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(clouds->charRes[i]);
+        SIM_SetFieldWideSpriteRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN),
+            SpriteResource_GetTileData(clouds->charRes[i])->szByte, TRUE);
+#endif
     }
 
     clouds->plttRes = SpriteResourceCollection_AddPaletteFrom(clouds->plttResColl, etcNARC, sSkyCloudsPlttNARCIndexes[0], FALSE, SKY_CLOUD_RESOURCE_BASE_ID, NNS_G2D_VRAM_TYPE_2DMAIN, 5, HEAP_ID_FIELD1);
@@ -3127,6 +3132,10 @@ static void FreeSkyClouds(DistWorldSkyClouds *clouds)
 
     for (int i = 0; i < SKY_CLOUD_RESOURCE_COUNT; i++) {
         if (clouds->charRes[i] != NULL) {
+#ifdef SDK_PORT
+            const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(clouds->charRes[i]);
+            SIM_SetFieldWideSpriteRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN), 0, FALSE);
+#endif
             SpriteTransfer_ResetCharTransfer(clouds->charRes[i]);
         }
     }
