@@ -53,7 +53,6 @@ map_data_files = copy_gen.process(files(
     'map_data_051.bin',
     'map_data_052.bin',
     'map_data_053.bin',
-    'map_data_054.bin',
     'map_data_055.bin',
     'map_data_056.bin',
     'map_data_057.bin',
@@ -666,6 +665,20 @@ map_data_files = copy_gen.process(files(
     'map_data_664.bin',
     'map_data_665.bin'
 ))
+
+iron_island_source = files('map_data_054.bin')
+# Keep the original ROM asset; complete its decorative mesh for port builds.
+if build_target != 'arm'
+    iron_island_source = custom_target('iron_island_widescreen',
+        input: iron_island_source,
+        output: 'map_data_054.bin',
+        command: [
+            find_program('../../../../tools/scripts/extend_iron_island.py', native: true),
+            '@INPUT@', '@OUTPUT@',
+        ],
+    )
+endif
+map_data_files = [map_data_files, copy_gen.process(iron_island_source)]
 
 map_data_narc = custom_target('land_data.narc',
     output: [
