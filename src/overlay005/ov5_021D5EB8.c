@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
+
 #include "constants/heap.h"
 
 #include "field/field_system.h"
@@ -903,6 +907,9 @@ void ov5_021D63A4(UnkStruct_ov5_021D6594 **param0)
         GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG2, 0);
 
         ov5_021D62BC(&(*param0)->unk_08);
+#ifdef SDK_PORT
+        SIM_SetFieldOverlayTiled(FALSE);
+#endif
 
         NARC_dtor((*param0)->unk_144);
         Heap_FreeExplicit(HEAP_ID_FIELD1, *param0);
@@ -1531,6 +1538,11 @@ static void ov5_021D6E20(UnkStruct_ov5_021D6594 *param0, int param1)
 
     if (param1 != 0xffff) {
         GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG2, 0);
+#ifdef SDK_PORT
+        // Eterna Forest's scrolling overlay is a seamless 256-pixel tilemap.
+        // Other overlays retain edge extension, including the dark cave mask.
+        SIM_SetFieldOverlayTiled(param1 == 9);
+#endif
 
         v0.unk_08 = NARC_AllocAndReadWholeMember(param0->unk_144, param0->unk_04[param1].unk_08, 4);
         GF_ASSERT(v0.unk_08);
