@@ -24,9 +24,21 @@ G3DPipelineBuffers *G3DPipeline_InitEx(enum HeapID heapID, enum VramManagerType 
     G3_SwapBuffers(GX_SORTMODE_AUTO, GX_BUFFERMODE_W);
 
     if (texVramManagerType == VRAM_MANAGER_TYPE_LINKED_LIST) {
-        int bufferSize = NNS_GfdGetLnkTexVramManagerWorkSize(128 * texVramSize);
-        buffers->textureBuffer = Heap_Alloc(buffers->heapID, bufferSize);
-        NNS_GfdInitLnkTexVramManager(texVramSize * TEXTURE_VRAM_BLOCK_SIZE, 0, buffers->textureBuffer, bufferSize, TRUE);
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+        // Widescreen field traversal keeps more map/NPC textures resident than
+        // the DS bank budget permits. Preserve its physical banks and use the
+        // simulator's extended storage for the additional textures.
+        if (heapID == HEAP_ID_FIELD1) {
+            int bufferSize = NNS_GfdGetLnkTexVramManagerWorkSize(512);
+            buffers->textureBuffer = Heap_Alloc(buffers->heapID, bufferSize);
+            NNS_GfdInitLnkTexVramManagerEx(4 * 1024 * 1024, texVramSize * TEXTURE_VRAM_BLOCK_SIZE, 0, buffers->textureBuffer, bufferSize, TRUE);
+        } else
+#endif
+        {
+            int bufferSize = NNS_GfdGetLnkTexVramManagerWorkSize(128 * texVramSize);
+            buffers->textureBuffer = Heap_Alloc(buffers->heapID, bufferSize);
+            NNS_GfdInitLnkTexVramManager(texVramSize * TEXTURE_VRAM_BLOCK_SIZE, 0, buffers->textureBuffer, bufferSize, TRUE);
+        }
     } else {
         NNS_GfdInitFrmTexVramManager(texVramSize, TRUE);
     }

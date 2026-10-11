@@ -6,6 +6,9 @@
 
 #ifdef SDK_PORT
 #include "port/sim_config_prj.h"
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+#include <simulator/sim.h>
+#endif
 #endif
 
 enum BillboardAnimStatus {
@@ -689,8 +692,16 @@ static void UpdateMaterialTextureAddresses(NNSG3dResMat *material, const NNSG3dR
 
     for (int i = 0; i < texToMatDict->numIdx; i++) {
         NNSG3dResMatData *materialData = NNS_G3dGetMatDataByIdx(material, *(texMaterials + i));
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+        // An extended address is encoded as an ID, so frame offsets must be
+        // applied to the decoded byte address rather than to that ID.
+        u32 parameter = materialData->texImageParam;
+        u32 address = SIM_DecodeTextureAddress(&parameter);
+        materialData->texImageParam = SIM_EncodeTextureAddress(parameter & ~NNS_G3D_TEXIMAGE_PARAM_TEX_ADDR_MASK, address + (textureAddress << 3));
+#else
         GF_ASSERT((materialData->texImageParam & NNS_G3D_TEXIMAGE_PARAM_TEX_ADDR_MASK) + textureAddress <= NNS_G3D_TEXIMAGE_PARAM_TEX_ADDR_MASK);
         materialData->texImageParam += textureAddress;
+#endif
     }
 }
 
