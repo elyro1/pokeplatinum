@@ -34,6 +34,9 @@ jobs:
       - name: Build (Linux)
         run: ./drun.sh make linux
 
+      - name: Verify embedded map patches
+        run: ./drun.sh python3 tools/scripts/test_map_patches.py
+
       - name: Package release artifact (linux)
         run: ./tools/scripts/package_artifacts_linux.sh
 

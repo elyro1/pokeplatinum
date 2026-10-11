@@ -35,6 +35,9 @@
 
 #ifdef SDK_PORT
 #include "port/sim_config_prj.h"
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+#include "port/map_patches.h"
+#endif
 #ifdef SDK_BUILD_LINUX
 #include "port/sim_icon.h"
 #endif
@@ -77,6 +80,9 @@ void NitroMain(void)
     #endif
 #endif
     InitSystem();
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    MapPatches_Ensure();
+#endif
     InitVRAM();
     InitKeypadAndTouchpad();
 

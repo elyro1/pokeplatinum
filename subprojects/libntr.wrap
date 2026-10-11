@@ -1,5 +1,5 @@
 [wrap-git]
-url = https://github.com/cybervisi0n/libntr.git
+url = https://github.com/elyro1/libntr.git
 revision = main
 depth = 1
 directory = libntr
