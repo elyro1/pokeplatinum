@@ -3,9 +3,11 @@
 #include <nitro.h>
 
 #include "constants/moves.h"
+#include "constants/charcode.h"
 #include "generated/genders.h"
 #include "generated/moves.h"
 #include "generated/pokemon_types.h"
+#include "generated/text_banks.h"
 
 #include "struct_decls/battle_system.h"
 #include "struct_decls/font_oam.h"
@@ -59,6 +61,17 @@ static void BattleSubscreen_OpenFirstBattleMenu(BattleSubscreen *btlSubscreen, i
 static void BattleSubscreen_DrawFirstBattleMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
 static void BattleSubscreen_OpenPalParkMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
 static void BattleSubscreen_DrawPalParkMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
+static BOOL BattleSubscreen_IsMainActionMenu(int menuConfigIndex);
+static BOOL BattleSubscreen_IsMainMoveMenu(int menuConfigIndex);
+static BOOL BattleSubscreen_IsMainBattleMenu(int menuConfigIndex);
+static void BattleSubscreen_InitMainMenuWindow(BattleSubscreen *btlSubscreen, Window *unk_04);
+static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *unk_04, int moveType);
+static void BattleSubscreen_DrawMainMenuCursor(Window *unk_04, int x, int y);
+static void BattleSubscreen_DrawMainMenuText(Window *unk_04, String *string, int x, int y, int maxWidth, TextColor color);
+static void BattleSubscreen_DrawMainActionMenu(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_ClearMainActionMenu(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_RestoreMainMovePrompt(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawStopMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
 static int BattleSubscreen_ProcessActionInput(BattleSubscreen *btlSubscreen, int selectedAction, int unused);
 static int BattleSubscreen_ProcessMoveInput(BattleSubscreen *btlSubscreen, int selectedMove, int unused);
@@ -249,6 +262,34 @@ static const TouchScreenRect sActionMenuTouchRects[] = {
     { 0xFF, 0x0, 0x0, 0x0 }
 };
 
+static const TouchScreenRect sMainActionMenuTouchRects[] = {
+    { 152, 168, 128, 192 },
+    { 152, 168, 192, 232 },
+    { 168, 184, 128, 192 },
+    { 168, 184, 192, 232 },
+    { 0xFF, 0, 0, 0 }
+};
+
+static const TouchScreenRect sMainFirstBattleTouchRects[] = {
+    { 152, 184, 128, 232 },
+    { 0xFF, 0, 0, 0 }
+};
+
+static const TouchScreenRect sMainPalParkTouchRects[] = {
+    { 152, 168, 128, 232 },
+    { 168, 184, 128, 232 },
+    { 0xFF, 0, 0, 0 }
+};
+
+static const TouchScreenRect sMainMoveSelectMenuTouchRects[] = {
+    { 184, 192, 160, 256 },
+    { 152, 168, 16, 88 },
+    { 152, 168, 88, 160 },
+    { 168, 184, 16, 88 },
+    { 168, 184, 88, 160 },
+    { 0xFF, 0, 0, 0 }
+};
+
 static const int sActionMenuButtonResults[NELEMS(sActionMenuTouchRects) - 1] = {
     0x1,
     0x2,
@@ -263,9 +304,9 @@ __attribute__((aligned(4))) static const u8 Unused_ov16_02270A08[NELEMS(sActionM
     0x4
 };
 
-__attribute__((aligned(4))) static const u8 sBattleMenuButtonLayout[2][3] = {
-    { 0x0, 0x0, 0x0 },
-    { 0x1, 0x3, 0x2 }
+__attribute__((aligned(4))) static const u8 sBattleMenuButtonLayout[2][2] = {
+    { 0, 1 },
+    { 2, 3 }
 };
 
 static const TouchScreenRect sFirstBattleMenuTouchRects[] = {
@@ -319,10 +360,9 @@ __attribute__((aligned(4))) static const u8 sMoveSelectButtonSlots[NELEMS(sMoveS
     0xB
 };
 
-__attribute__((aligned(4))) static const u8 sMoveMenuButtonLayout[3][2] = {
+__attribute__((aligned(4))) static const u8 sMoveMenuButtonLayout[2][2] = {
     { 0x1, 0x2 },
-    { 0x3, 0x4 },
-    { 0x0, 0x0 }
+    { 0x3, 0x4 }
 };
 
 static const TouchScreenRect sYesNoMenuTouchRects[] = {
@@ -855,6 +895,7 @@ void BattleSubscreenBg_Init(BgConfig *bgConfig)
         Bg_SetOffset(bgConfig, BG_LAYER_SUB_0 + i, 0, 0);
         Bg_SetOffset(bgConfig, BG_LAYER_SUB_0 + i, 3, 0);
     }
+    ResetSubscreenBgLayers();
 }
 
 void BattleSubscreenBg_Free(BgConfig *bgConfig)
@@ -914,6 +955,9 @@ void *BattleSubscreen_New(NARC *unused1, NARC *unused2, BattleSystem *battleSys,
         PaletteData_LoadBufferFromFileStart(pltData, NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_BG, sSubscreenBgPlttIndices[bg].bgPlttIndex, HEAP_ID_BATTLE, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES, PLTT_DEST(0));
     }
 
+    // With the decorative background hidden, color zero is the backdrop.
+    const u16 backdrop = GX_RGB(0, 0, 0);
+    PaletteData_LoadBuffer(pltData, &backdrop, PLTTBUF_SUB_BG, 0, sizeof(backdrop));
     u16 *unfadedPltBuf = PaletteData_GetUnfadedBuffer(pltData, 1);
     MI_CpuCopy16(unfadedPltBuf, btlSubscreen->subscreenPaletteBuf, 0x200);
 
@@ -954,6 +998,7 @@ void *BattleSubscreen_New(NARC *unused1, NARC *unused2, BattleSystem *battleSys,
         MI_CpuCopy16(paletteData->pRawData, btlSubscreen->speedUpMovePalBuf, 0x20);
     }
 
+    btlSubscreen->speedUpMovePalBuf[0] = GX_RGB(0, 0, 0);
     Heap_Free(plttAlloc);
     RenderControlFlags_ZeroSpeedUpBattle();
     RenderControlFlags_ZeroWaitBattle();
@@ -1249,17 +1294,8 @@ void BattleSubscreen_SetBallStatus(BattleSubscreen *btlSubscreen, u8 playerBallS
 
 void BattleSubscreen_ShowBallSprites(BattleSubscreen *btlSubscreen)
 {
-    GF_ASSERT(btlSubscreen->playerPartyBallSprites[0] && btlSubscreen->opponentPartyBallSprites[0]);
-
-    for (int i = 0; i < SNELEMS(btlSubscreen->playerPartyBallSprites); i++) {
-        Sprite_SetDrawFlag2(btlSubscreen->playerPartyBallSprites[i]->sprite, 1);
-    }
-
-    if (BattleSystem_GetBattleType(btlSubscreen->battleSys) & BATTLE_TYPE_TRAINER) {
-        for (int i = 0; i < SNELEMS(btlSubscreen->opponentPartyBallSprites); i++) {
-            Sprite_SetDrawFlag2(btlSubscreen->opponentPartyBallSprites[i]->sprite, 1);
-        }
-    }
+    // Keep the resources for status updates, but omit the team indicators.
+    BattleSubscreen_HideBallSprites(btlSubscreen);
 }
 
 void BattleSubscreen_HideBallSprites(BattleSubscreen *btlSubscreen)
@@ -1290,7 +1326,19 @@ int BattleSystem_MenuInput(BattleSubscreen *btlSubscreen)
     if (BattleSystem_GetBattleType(btlSubscreen->battleSys) & BATTLE_TYPE_CATCH_TUTORIAL) {
         buttonIndex = GetCatchTutorialInput(btlSubscreen);
     } else {
-        buttonIndex = TouchScreen_CheckRectanglePressed(battleMenuConfig->touchScreenRects);
+        if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+            if (btlSubscreen->activeMenuConfigIndex == 5 || btlSubscreen->activeMenuConfigIndex == 6) {
+                buttonIndex = TouchScreen_CheckRectanglePressed(sMainFirstBattleTouchRects);
+            } else if (btlSubscreen->activeMenuConfigIndex == 9 || btlSubscreen->activeMenuConfigIndex == 10) {
+                buttonIndex = TouchScreen_CheckRectanglePressed(sMainPalParkTouchRects);
+            } else {
+                buttonIndex = TouchScreen_CheckRectanglePressed(sMainActionMenuTouchRects);
+            }
+        } else if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
+            buttonIndex = TouchScreen_CheckRectanglePressed(sMainMoveSelectMenuTouchRects);
+        } else {
+            buttonIndex = TouchScreen_CheckRectanglePressed(battleMenuConfig->touchScreenRects);
+        }
 
         if (buttonIndex == TOUCHSCREEN_INPUT_NONE) {
             buttonIndex = BattleSystem_MenuKeys(btlSubscreen);
@@ -1312,6 +1360,17 @@ int BattleSystem_MenuInput(BattleSubscreen *btlSubscreen)
         if (buttonResult != 0xffffffff) {
             if (battleMenuConfig->saveCursorPos) {
                 battleMenuConfig->saveCursorPos(btlSubscreen, buttonIndex);
+            }
+
+            if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+                // Keep ordinary action selection visible until the next menu
+                // or battle message replaces it.
+                u32 battleType = BattleSystem_GetBattleType(btlSubscreen->battleSys);
+                if (battleType & (BATTLE_TYPE_SAFARI | BATTLE_TYPE_PAL_PARK)) {
+                    BattleSubscreen_ClearMainActionMenu(btlSubscreen);
+                }
+            } else if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex) && buttonResult != 0xFF) {
+                BattleSubscreen_RestoreMainMovePrompt(btlSubscreen);
             }
 
             MI_CpuClear8(&btlSubscreen->cursor, sizeof(MenuCursor));
@@ -1447,10 +1506,22 @@ static void BattleSubscreen_SlideInPanel(BattleSubscreen *btlSubscreen, int dire
 
 static void BattleSubscreen_OpenActionMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
-    int direction = btlSubscreen->activeMenuData.actionData.battlerType;
-
     BattleSubscreen_DrawActionMenu(btlSubscreen, unused1, unused2);
-    BattleSubscreen_SlideInPanel(btlSubscreen, direction);
+}
+
+static BOOL BattleSubscreen_IsMainActionMenu(int menuConfigIndex)
+{
+    return menuConfigIndex >= 1 && menuConfigIndex <= 10;
+}
+
+static BOOL BattleSubscreen_IsMainMoveMenu(int menuConfigIndex)
+{
+    return menuConfigIndex == 11;
+}
+
+static BOOL BattleSubscreen_IsMainBattleMenu(int menuConfigIndex)
+{
+    return BattleSubscreen_IsMainActionMenu(menuConfigIndex) || BattleSubscreen_IsMainMoveMenu(menuConfigIndex);
 }
 
 static void BattleSubscreen_DrawActionMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
@@ -1462,6 +1533,12 @@ static void BattleSubscreen_DrawActionMenu(BattleSubscreen *btlSubscreen, int un
     btlSubscreen->isWaitingForPartner = actionData->isWaitingForPartner;
     MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
     btlSubscreen->battlerType = battlerType;
+    if (btlSubscreen->activeMenuConfigIndex != 9 && btlSubscreen->activeMenuConfigIndex != 10) {
+        int battler = BattleSystem_GetBattlerOfType(btlSubscreen->battleSys, battlerType);
+        SavedCursorPosition *savedCursorPos = BattlerData_GetSavedCursorPosition(BattleSystem_GetBattlerData(btlSubscreen->battleSys, battler));
+        btlSubscreen->cursor.x = savedCursorPos->actionMenuX;
+        btlSubscreen->cursor.y = savedCursorPos->actionMenuY;
+    }
 
     if (BattleSystem_GetBattleType(btlSubscreen->battleSys) & BATTLE_TYPE_SAFARI) {
         fightOrBallText = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Ball);
@@ -1485,77 +1562,262 @@ static void BattleSubscreen_DrawActionMenu(BattleSubscreen *btlSubscreen, int un
         btlSubscreen->hasCancelButton = FALSE;
     }
 
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[0], fightOrBallText, FONT_SUBSCREEN, TEXT_COLOR(1, 2, 3), 2, 20023, 128, 84, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[1], bagOrBaitText, FONT_SUBSCREEN, TEXT_COLOR(4, 5, 6), 2, 20023, 40, 170, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[2], pokemonOrMudText, FONT_SUBSCREEN, TEXT_COLOR(7, 8, 9), 2, 20023, 216, 170, 1, NULL);
-    BattleSubscreen_NewFontOAM(btlSubscreen, &btlSubscreen->fontOAMEntry[3], runOrCancelText, FONT_SUBSCREEN, TEXT_COLOR(10, 11, 12), 2, 20023, 128, 178, 1, NULL);
+    BattleSubscreen_DrawMainActionMenu(btlSubscreen);
 
     String_Free(fightOrBallText);
     String_Free(bagOrBaitText);
     String_Free(pokemonOrMudText);
     String_Free(runOrCancelText);
+}
 
-    if (!(BattleSystem_GetBattleType(btlSubscreen->battleSys) & (BATTLE_TYPE_SAFARI | BATTLE_TYPE_PAL_PARK))) {
-        Pokemon *partyMon = BattleSystem_GetPartyPokemon(btlSubscreen->battleSys, actionData->battler, actionData->partySlot);
-        BattleSubscreen_LoadPokeIconResources(btlSubscreen);
-        ManagedSprite *manSprite = BattleSubscreen_NewPokeIconSprite(btlSubscreen, partyMon, battlerType, actionData->curHp, actionData->maxHp, actionData->ballStatusBattler);
+// Keep both the message window and its scroll-cursor tiles intact.
+#define MAIN_MENU_BASE_TILE 160
+#define MAIN_MENU_TEXT_PALETTE 13
 
-        int x, y;
+static void BattleSubscreen_TransferMainMenuWindow(BattleSubscreen *btlSubscreen, Window *window)
+{
+    // This slot initially contains battlefield colors. The immediate tilemap
+    // upload must not expose it before the usual VBlank palette transfer.
+    const u16 *palette = PaletteData_GetFadedBuffer(BattleSystem_GetPaletteData(btlSubscreen->battleSys), PLTTBUF_MAIN_BG);
+    Bg_LoadPalette(BG_LAYER_MAIN_1, palette + PLTT_DEST(MAIN_MENU_TEXT_PALETTE), PALETTE_SIZE_BYTES, PLTT_OFFSET(MAIN_MENU_TEXT_PALETTE));
+    Window_CopyToVRAM(window);
+}
 
-        FontOAM_GetXY(btlSubscreen->fontOAMEntry[0].fontOAM, &x, &y);
+static void BattleSubscreen_InitMainMenuWindow(BattleSubscreen *btlSubscreen, Window *window)
+{
+    BattleSystem *battleSys = btlSubscreen->battleSys;
+    BgConfig *bgConfig = BattleSystem_GetBgConfig(battleSys);
 
-        if (battlerType == 4) {
-            x += btlSubscreen->fontOAMEntry[0].textWidth + 32 / 2;
-        } else {
-            x -= 32 / 2;
+    // Dialogue colors plus the existing battle font's low-PP colors.
+    PaletteData_LoadBufferFromFileStart(BattleSystem_GetPaletteData(battleSys), NARC_INDEX_GRAPHIC__PL_FONT, 7, HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(MAIN_MENU_TEXT_PALETTE));
+    PaletteData_LoadBufferFromFile(BattleSystem_GetPaletteData(battleSys), NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_OBJ, 72, HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, 6 * sizeof(u16), PLTT_DEST(MAIN_MENU_TEXT_PALETTE) + 3, PLTT_DEST(4) + 3);
+    Window_Init(window);
+    Window_Add(bgConfig, window, BG_LAYER_MAIN_1, 2, 19, 27, 4, MAIN_MENU_TEXT_PALETTE, MAIN_MENU_BASE_TILE);
+    Window_FillTilemap(window, 15);
+    Window_DrawMessageBox(window, 1, 10);
+}
+
+static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *window, int moveType)
+{
+    NNSG2dCharacterData *charData;
+    NNSG2dPaletteData *paletteData;
+    void *charAllocation = Graphics_GetCharData(TypeIcon_GetNARC(), TypeIcon_GetChar(moveType), TRUE, &charData, HEAP_ID_BATTLE);
+    void *paletteAllocation = Graphics_GetPlttData(TypeIcon_GetNARC(), TypeIcon_GetPlttSrc(), &paletteData, HEAP_ID_BATTLE);
+    const u16 *iconPalette = (const u16 *)paletteData->pRawData + PLTT_DEST(TypeIcon_GetPltt(moveType));
+    u8 *pixels = charData->pRawData;
+    u8 colorMap[16] = { 15 };
+    u16 iconColors[6];
+    int colorCount = 0;
+
+    // Type badges use at most six colors. Put these in the dialogue palette's
+    // unused slots and replace transparency with the dialogue background.
+    GF_ASSERT(charData->szByte >= 32 * 16 / 2);
+    for (int i = 0; i < 32 * 16 / 2; i++) {
+        u8 original = pixels[i];
+        u8 remapped = 0;
+        for (int shift = 0; shift < 8; shift += 4) {
+            int color = (original >> shift) & 15;
+            if (colorMap[color] == 0) {
+                GF_ASSERT(colorCount < NELEMS(iconColors));
+                iconColors[colorCount] = iconPalette[color];
+                colorMap[color] = 9 + colorCount++;
+            }
+            remapped |= colorMap[color] << shift;
         }
-
-        ManagedSprite_SetPositionXYWithSubscreenOffset(manSprite, x, y - (((192 + 80) << FX32_SHIFT) >> FX32_SHIFT), (192 + 80) << FX32_SHIFT);
+        pixels[i] = remapped;
     }
+
+    PaletteData_LoadBuffer(BattleSystem_GetPaletteData(btlSubscreen->battleSys), iconColors, PLTTBUF_MAIN_BG, PLTT_DEST(MAIN_MENU_TEXT_PALETTE) + 9, colorCount * sizeof(u16));
+    Window_BlitBitmapRect(window, pixels, 0, 0, 32, 16, 168, 16, 32, 16);
+    Heap_Free(paletteAllocation);
+    Heap_Free(charAllocation);
+}
+
+static void BattleSubscreen_DrawMainMenuCursor(Window *window, int x, int y)
+{
+    for (int row = 0; row < 9; row++) {
+        int width = row < 5 ? row + 1 : 9 - row;
+        Window_FillRectWithColor(window, 1, x, y + row, width, 1);
+    }
+}
+
+static void BattleSubscreen_DrawMainMenuText(Window *window, String *string, int x, int y, int maxWidth, TextColor color)
+{
+    int width = Font_CalcStringWidth(FONT_SYSTEM, string, 0);
+    if (width <= maxWidth) {
+        Text_AddPrinterWithParamsColorAndSpacing(window, FONT_SYSTEM, string, x, y, TEXT_SPEED_NO_TRANSFER, color, 0, 0, NULL);
+        return;
+    }
+
+    // Fit long labels without painting across the separator.
+    Window textWindow;
+    Window_Init(&textWindow);
+    Window_AddToTopLeftCorner(Window_GetBgConfig(window), &textWindow, (width + 7) / 8, 2, 0, GET_TEXT_BG_COLOR(color));
+    Text_AddPrinterWithParamsColorAndSpacing(&textWindow, FONT_SYSTEM, string, 0, 0, TEXT_SPEED_NO_TRANSFER, color, 0, 0, NULL);
+    for (int column = 0; column < maxWidth; column++) {
+        Window_BlitBitmapRect(window, textWindow.pixels, column * width / maxWidth, 0, textWindow.width * 8, 16, x + column, y, 1, 16);
+    }
+    Window_Remove(&textWindow);
+}
+
+static void BattleSubscreen_DrawMainActionMenu(BattleSubscreen *btlSubscreen)
+{
+    BattleSystem *battleSys = btlSubscreen->battleSys;
+    Window window;
+    String *options[4] = { NULL, NULL, NULL, NULL };
+    MessageLoader *msgLoader = BattleSystem_GetMessageLoader(battleSys);
+    BOOL isFirstBattle = btlSubscreen->activeMenuConfigIndex == 5 || btlSubscreen->activeMenuConfigIndex == 6;
+    BOOL isPalPark = btlSubscreen->activeMenuConfigIndex == 9 || btlSubscreen->activeMenuConfigIndex == 10;
+    BOOL isSafari = (BattleSystem_GetBattleType(battleSys) & BATTLE_TYPE_SAFARI) != 0;
+    int selectedButton = isPalPark
+        ? palParkMenuButtonLayout[btlSubscreen->cursor.y][btlSubscreen->cursor.x]
+        : sBattleMenuButtonLayout[btlSubscreen->cursor.y][btlSubscreen->cursor.x];
+
+    if (isPalPark) {
+        options[0] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_BallPalPark);
+        options[1] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Run);
+    } else if (isSafari) {
+        options[0] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Ball);
+        options[1] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Bait);
+        options[2] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Mud);
+        options[3] = MessageLoader_GetNewString(msgLoader, btlSubscreen->isWaitingForPartner ? BattleStrings_Text_Cancel : BattleStrings_Text_Run);
+    } else {
+        options[0] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Fight);
+        if (!isFirstBattle) {
+            options[1] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Bag);
+            options[2] = MessageLoader_GetNewString(msgLoader, BattleStrings_Text_Pokemon);
+            options[3] = MessageLoader_GetNewString(msgLoader, btlSubscreen->isWaitingForPartner ? BattleStrings_Text_Cancel : BattleStrings_Text_Run);
+        }
+    }
+
+    BattleSubscreen_InitMainMenuWindow(btlSubscreen, &window);
+
+    // The localized prompt is already formatted; wrap after its second word.
+    // Omit printer controls (including the original yes/no indicator).
+    String *prompt = String_Init(String_Length(BattleSystem_GetMsgBuffer(battleSys)) + 1, HEAP_ID_BATTLE);
+    const charcode_t *message = String_GetData(BattleSystem_GetMsgBuffer(battleSys));
+    int spaces = 0;
+    int promptY = 0;
+    while (*message != CHAR_EOS) {
+        if (*message == CHAR_FORMAT_ARG) {
+            message = CharCode_SkipFormatArg(message);
+            continue;
+        }
+        charcode_t c = *message++;
+        if (c == CHAR_SPACE && ++spaces == 2) {
+            c = CHAR_CR;
+        }
+        if (c == CHAR_CR) {
+            BattleSubscreen_DrawMainMenuText(&window, prompt, 0, promptY, 100, TEXT_COLOR(1, 2, 15));
+            String_Clear(prompt);
+            promptY += 16;
+        } else {
+            String_AppendChar(prompt, c);
+        }
+    }
+    BattleSubscreen_DrawMainMenuText(&window, prompt, 0, promptY, 100, TEXT_COLOR(1, 2, 15));
+    Window_FillRectWithColor(&window, 2, 104, 0, 1, 32);
+    String_Free(prompt);
+
+    static const int optionX[4] = { 120, 180, 120, 180 };
+    static const int optionY[4] = { 0, 0, 16, 16 };
+    for (int i = 0; i < 4; i++) {
+        if (options[i] == NULL) {
+            continue;
+        }
+        int x = isPalPark ? 120 : optionX[i];
+        int y = isPalPark ? i * 16 : optionY[i];
+        BattleSubscreen_DrawMainMenuText(&window, options[i], x, y, isPalPark ? 96 : (x == 120 ? 52 : 36), TEXT_COLOR(1, 2, 15));
+        if (i == selectedButton) {
+            BattleSubscreen_DrawMainMenuCursor(&window, x - 6, y + 3);
+        }
+        String_Free(options[i]);
+    }
+    BattleSubscreen_TransferMainMenuWindow(btlSubscreen, &window);
+    Window_Remove(&window);
+}
+
+static void BattleSubscreen_ClearMainActionMenu(BattleSubscreen *btlSubscreen)
+{
+    BgConfig *bgConfig = BattleSystem_GetBgConfig(btlSubscreen->battleSys);
+    Window *window = BattleSystem_GetWindow(btlSubscreen->battleSys, 0);
+
+    Bg_FillTilemapRect(bgConfig, BG_LAYER_MAIN_1, 0, 0, 18, 32, 6, 0);
+    Window_DrawMessageBoxWithScrollCursor(window, TRUE, 1, 10);
+    Window_CopyToVRAM(window);
+}
+
+static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen)
+{
+    BattleSystem *battleSys = btlSubscreen->battleSys;
+    Window window;
+    MoveSelectData *moveData = &btlSubscreen->activeMenuData.moveData;
+    int selectedMove = sMoveMenuButtonLayout[btlSubscreen->cursor.y][btlSubscreen->cursor.x] - 1;
+
+    BattleSubscreen_InitMainMenuWindow(btlSubscreen, &window);
+
+    for (int i = 0; i < LEARNED_MOVES_MAX; i++) {
+        if (moveData->moveIDs[i] == MOVE_NONE) {
+            continue;
+        }
+        String *moveName = MessageUtil_MoveName(moveData->moveIDs[i], HEAP_ID_BATTLE);
+        int x = 6 + (i % 2) * 72;
+        int y = (i / 2) * 16;
+        BattleSubscreen_DrawMainMenuText(&window, moveName, x, y, 62, TEXT_COLOR(1, 2, 15));
+        if (i == selectedMove) {
+            BattleSubscreen_DrawMainMenuCursor(&window, x - 6, y + 3);
+        }
+        String_Free(moveName);
+    }
+
+    MessageLoader *battleMsgLoader = BattleSystem_GetMessageLoader(battleSys);
+    String *ppLabel = MessageLoader_GetNewString(battleMsgLoader, BattleStrings_Text_PP);
+    String *ppFormat = MessageLoader_GetNewString(battleMsgLoader, BattleStrings_Text_CurPPOutOfMaxPP);
+    String *ppCount = String_Init(32, HEAP_ID_BATTLE);
+    StringTemplate *strTemplate = BattleSystem_GetStringTemplate(battleSys);
+    StringTemplate_SetNumber(strTemplate, 0, moveData->currPP[selectedMove], 2, 1, 0);
+    StringTemplate_SetNumber(strTemplate, 1, moveData->maxPP[selectedMove], 2, 1, 0);
+    StringTemplate_Format(strTemplate, ppCount, ppFormat);
+    TextColor ppColor = GetPPTextColor(moveData->currPP[selectedMove], moveData->maxPP[selectedMove]);
+    ppColor = TEXT_COLOR(GET_TEXT_FG_COLOR(ppColor), GET_TEXT_SHADOW_COLOR(ppColor), 15);
+    Text_AddPrinterWithParamsColorAndSpacing(&window, FONT_SYSTEM, ppLabel, 152, 0, TEXT_SPEED_NO_TRANSFER, ppColor, 0, 0, NULL);
+    int ppCountX = 152 + Font_CalcStringWidth(FONT_SYSTEM, ppLabel, 0) + Font_TryLoadGlyph(FONT_SYSTEM, CHAR_SPACE)->width;
+    Text_AddPrinterWithParamsColorAndSpacing(&window, FONT_SYSTEM, ppCount, ppCountX, 0, TEXT_SPEED_NO_TRANSFER, ppColor, 0, 0, NULL);
+
+    int moveType = MoveTable_LoadParam(moveData->moveIDs[selectedMove], MOVEATTRIBUTE_TYPE);
+    BattleSubscreen_DrawMainMenuTypeIcon(btlSubscreen, &window, moveType);
+    Window_FillRectWithColor(&window, 2, 144, 0, 1, 32);
+
+    BattleSubscreen_TransferMainMenuWindow(btlSubscreen, &window);
+    Window_Remove(&window);
+    String_Free(ppCount);
+    String_Free(ppFormat);
+    String_Free(ppLabel);
+}
+
+static void BattleSubscreen_RestoreMainMovePrompt(BattleSubscreen *btlSubscreen)
+{
+    BattleSubscreen_ClearMainActionMenu(btlSubscreen);
 }
 
 static void BattleSubscreen_OpenFirstBattleMenu(BattleSubscreen *btlSubscreen, int unsed1, int unused2)
 {
-    int direction = btlSubscreen->activeMenuData.actionData.battlerType;
-
     BattleSubscreen_DrawFirstBattleMenu(btlSubscreen, unsed1, unused2);
-    BattleSubscreen_SlideInPanel(btlSubscreen, direction);
 }
 
 static void BattleSubscreen_DrawFirstBattleMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
     BattleSubscreen_DrawActionMenu(btlSubscreen, unused1, unused2);
-
-    BgConfig *bgConfig = BattleSystem_GetBgConfig(btlSubscreen->battleSys);
-
-    Bg_FillTilemapRect(bgConfig, 4, 0x6000 / 0x20 - 1, 0, 0x10, 32, 8, 17);
-    Bg_ScheduleTilemapTransfer(bgConfig, 5);
-
-    sub_020129D0(btlSubscreen->fontOAMEntry[1].fontOAM, 0);
-    sub_020129D0(btlSubscreen->fontOAMEntry[2].fontOAM, 0);
-    sub_020129D0(btlSubscreen->fontOAMEntry[3].fontOAM, 0);
 }
 
 static void BattleSubscreen_OpenPalParkMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
-    int direction = btlSubscreen->activeMenuData.actionData.battlerType;
-
     BattleSubscreen_DrawPalParkMenu(btlSubscreen, unused1, unused2);
-    BattleSubscreen_SlideInPanel(btlSubscreen, direction);
 }
 
 static void BattleSubscreen_DrawPalParkMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
 {
     BattleSubscreen_DrawActionMenu(btlSubscreen, unused1, unused2);
-
-    BgConfig *bgConfig = BattleSystem_GetBgConfig(btlSubscreen->battleSys);
-
-    Bg_FillTilemapRect(bgConfig, 4, 0x6000 / 0x20 - 1, 0, 0x10, 10, 8, 17);
-    Bg_FillTilemapRect(bgConfig, 4, 0x6000 / 0x20 - 1, 0x16, 0x10, 10, 8, 17);
-    Bg_ScheduleTilemapTransfer(bgConfig, 5);
-
-    sub_020129D0(btlSubscreen->fontOAMEntry[1].fontOAM, 0);
-    sub_020129D0(btlSubscreen->fontOAMEntry[2].fontOAM, 0);
 }
 
 static void BattleSubscreen_DrawMoveSelectMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2)
@@ -1567,6 +1829,11 @@ static void BattleSubscreen_DrawMoveSelectMenu(BattleSubscreen *btlSubscreen, in
     GF_ASSERT(moveData);
 
     btlSubscreen->battlerType = moveData->battlerType;
+
+    if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
+        BattleSubscreen_DrawMainMoveSelectMenu(btlSubscreen);
+        return;
+    }
 
     MessageLoader *msgLoader = BattleSystem_GetMessageLoader(btlSubscreen->battleSys);
     MoveDisplayData *moveDisplayData = GetMoveDisplayData(btlSubscreen, moveData->battlerType);
@@ -1855,6 +2122,10 @@ static int BattleSubscreen_ProcessActionInput(BattleSubscreen *btlSubscreen, int
         break;
     }
 
+    if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+        return selectedAction;
+    }
+
     ov16_Dummy2(btlSubscreen, unused);
     StartMenuTransitionTask(SysTask_AnimateMenuButtonPress, btlSubscreen);
 
@@ -1885,6 +2156,11 @@ static int BattleSubscreen_ProcessMoveInput(BattleSubscreen *btlSubscreen, int s
         if (moveData->moveIDs[selectedMove - 1] == 0) {
             return 0xffffffff;
         }
+    }
+
+    if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
+        BattleSubscreen_Cleanup(btlSubscreen, TRUE, TRUE);
+        return selectedMove;
     }
 
     u32 unusedVar = selectedMove - 1;
@@ -2540,11 +2816,7 @@ static void ClearMenuSlotBg(BattleSubscreen *btlSubscreen, int slotIndex)
 static void ResetSubscreenBgLayers(void)
 {
     for (int i = 0; i < 4; i++) {
-        if (4 + i != 6) {
-            Bg_ToggleLayer(BG_LAYER_SUB_0 + i, FALSE);
-        } else {
-            Bg_ToggleLayer(BG_LAYER_SUB_0 + i, TRUE);
-        }
+        Bg_ToggleLayer(BG_LAYER_SUB_0 + i, FALSE);
     }
 }
 
@@ -3064,8 +3336,17 @@ static void SysTask_ConfigureBgLayers(SysTask *task, void *subscreen)
     const BattleMenuConfig *battleMenuConfig = &sBattleMenuConfigs[btlSubscreen->activeMenuConfigIndex];
     int i;
 
+    if (BattleSubscreen_IsMainBattleMenu(btlSubscreen->activeMenuConfigIndex)) {
+        for (i = 0; i < 4; i++) {
+            Bg_ToggleLayer(BG_LAYER_SUB_0 + i, FALSE);
+        }
+
+        SysTask_Done(task);
+        return;
+    }
+
     for (i = 0; i < SNELEMS(battleMenuConfig->bgTilemapBufIndices); i++) {
-        if (battleMenuConfig->bgTilemapBufIndices[i] == 0xffff) {
+        if (BG_LAYER_SUB_0 + i == BG_LAYER_SUB_2 || battleMenuConfig->bgTilemapBufIndices[i] == 0xffff) {
             Bg_ToggleLayer(BG_LAYER_SUB_0 + i, 0);
         } else {
             Bg_ToggleLayer(BG_LAYER_SUB_0 + i, 1);
@@ -3168,6 +3449,14 @@ static int BattleSystem_MenuKeys(BattleSubscreen *btlSubscreen)
         return 0xffffffff;
     }
 
+    if (!cursor->isActive && BattleSubscreen_IsMainBattleMenu(btlSubscreen->activeMenuConfigIndex)) {
+        // The main-screen cursor is already visible; activation must not eat
+        // the first confirmation or direction key.
+        cursor->isActive = TRUE;
+        btlSubscreen->suppressActivationSfx = 0;
+        battleMenuConfig->handleCursorInput(btlSubscreen, TRUE);
+    }
+
     if (!cursor->isActive) { // Check if the cursor is inactive
         if (btlSubscreen->suppressActivationSfx == TRUE || gSystem.pressedKeys & (PAD_BUTTON_A | PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_Y | PAD_KEY_RIGHT | PAD_KEY_LEFT | PAD_KEY_UP | PAD_KEY_DOWN)) {
             if (btlSubscreen->suppressActivationSfx == 0) { // If a key was pressed, play sfx
@@ -3201,7 +3490,11 @@ static int BattleSystem_Cursor_Menu(BattleSubscreen *btlSubscreen, BOOL cursorHi
         cursor->x = savedCursorPos->actionMenuX;
         cursor->y = savedCursorPos->actionMenuY;
         buttonId = sBattleMenuButtonLayout[cursor->y][cursor->x];
-        BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonId].rect.left + 8, battleMenuConfig->touchScreenRects[buttonId].rect.right - 8, battleMenuConfig->touchScreenRects[buttonId].rect.top + 8, battleMenuConfig->touchScreenRects[buttonId].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+            BattleSubscreen_DrawMainActionMenu(btlSubscreen);
+        } else {
+            BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonId].rect.left + 8, battleMenuConfig->touchScreenRects[buttonId].rect.right - 8, battleMenuConfig->touchScreenRects[buttonId].rect.top + 8, battleMenuConfig->touchScreenRects[buttonId].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        }
         return 0xffffffff;
     }
 
@@ -3210,26 +3503,8 @@ static int BattleSystem_Cursor_Menu(BattleSubscreen *btlSubscreen, BOOL cursorHi
     case 5: // fight menus where bag, run and pokemon aren't available
         button = BattleSystem_MoveCursor(cursor, 1, 1, sBattleMenuButtonLayout[0]);
         break;
-    default: // normal fight menu, with bag, run and pokemon
-        buttonId = sBattleMenuButtonLayout[cursor->y][cursor->x];
-
-        if (!(buttonId == 3 && gSystem.pressedKeys & PAD_KEY_UP)) {
-            button = BattleSystem_MoveCursor(cursor, 3, 2, sBattleMenuButtonLayout[0]); // temporarily set button to the id of the new button
-
-            if (!button && !buttonId) { // if fight is selected, and is still selected
-                if (gSystem.pressedKeys & PAD_KEY_LEFT) { // Move to bag on the bottom row
-                    cursor->x = 0;
-                    cursor->y = 1;
-                    Sound_PlayEffect(SE_CONFIRM_sseq_3);
-                    button = PAD_KEY_LEFT;
-                } else if (gSystem.pressedKeys & PAD_KEY_RIGHT) { // Move to pokemon on the bottom row
-                    cursor->x = 2;
-                    cursor->y = 1;
-                    Sound_PlayEffect(SE_CONFIRM_sseq_3);
-                    button = PAD_KEY_RIGHT;
-                }
-            }
-        }
+    default:
+        button = BattleSystem_MoveCursor(cursor, 2, 2, sBattleMenuButtonLayout[0]);
         break;
     }
 
@@ -3239,7 +3514,11 @@ static int BattleSystem_Cursor_Menu(BattleSubscreen *btlSubscreen, BOOL cursorHi
     case PAD_KEY_LEFT:
     case PAD_KEY_RIGHT:
         buttonId = sBattleMenuButtonLayout[cursor->y][cursor->x];
-        BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonId].rect.left + 8, battleMenuConfig->touchScreenRects[buttonId].rect.right - 8, battleMenuConfig->touchScreenRects[buttonId].rect.top + 8, battleMenuConfig->touchScreenRects[buttonId].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+            BattleSubscreen_DrawMainActionMenu(btlSubscreen);
+        } else {
+            BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonId].rect.left + 8, battleMenuConfig->touchScreenRects[buttonId].rect.right - 8, battleMenuConfig->touchScreenRects[buttonId].rect.top + 8, battleMenuConfig->touchScreenRects[buttonId].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        }
         break;
     case PAD_BUTTON_A:
         return sBattleMenuButtonLayout[cursor->y][cursor->x];
@@ -3290,7 +3569,11 @@ static int BattleSystem_Cursor_PalPark(BattleSubscreen *btlSubscreen, BOOL isCur
         cursor->x = 0;
         cursor->y = 0;
         buttonIndex = palParkMenuButtonLayout[cursor->y][cursor->x];
-        BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+            BattleSubscreen_DrawMainActionMenu(btlSubscreen);
+        } else {
+            BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        }
         return 0xffffffff;
     }
 
@@ -3302,7 +3585,11 @@ static int BattleSystem_Cursor_PalPark(BattleSubscreen *btlSubscreen, BOOL isCur
     case PAD_KEY_LEFT:
     case PAD_KEY_RIGHT:
         buttonIndex = palParkMenuButtonLayout[cursor->y][cursor->x];
-        BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
+            BattleSubscreen_DrawMainActionMenu(btlSubscreen);
+        } else {
+            BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        }
         break;
     case PAD_BUTTON_A:
         return palParkMenuButtonLayout[cursor->y][cursor->x];
@@ -3317,7 +3604,7 @@ static int BattleSystem_Cursor_Moves(BattleSubscreen *btlSubscreen, BOOL cursorH
 {
     u32 button;
     int buttonIndex, i;
-    u8 buttonLayout[3][2];
+    u8 buttonLayout[2][2];
     SavedCursorPosition *savedCursorPos = BattlerData_GetSavedCursorPosition(BattleSystem_GetBattlerData(btlSubscreen->battleSys, BattleSystem_GetBattlerOfType(btlSubscreen->battleSys, btlSubscreen->battlerType)));
     MenuCursor *cursor = &btlSubscreen->cursor;
     const BattleMenuConfig *battleMenuConfig = &sBattleMenuConfigs[btlSubscreen->activeMenuConfigIndex];
@@ -3326,22 +3613,36 @@ static int BattleSystem_Cursor_Moves(BattleSubscreen *btlSubscreen, BOOL cursorH
     if (cursorHidden == TRUE) {
         cursor->x = savedCursorPos->moveMenuX;
         cursor->y = savedCursorPos->moveMenuY;
+        if (cursor->x < 0 || cursor->x >= 2 || cursor->y < 0 || cursor->y >= 2) {
+            cursor->x = 0;
+            cursor->y = 0;
+        }
         buttonIndex = sMoveMenuButtonLayout[cursor->y][cursor->x];
 
         if (buttonIndex && !moveData->moveIDs[buttonIndex - 1]) {
-            savedCursorPos->moveMenuX = 0;
-            savedCursorPos->moveMenuY = 0;
-            cursor->x = 0;
-            cursor->y = 0;
-            buttonIndex = sMoveMenuButtonLayout[cursor->y][cursor->x];
+            for (i = 0; i < LEARNED_MOVES_MAX; i++) {
+                if (moveData->moveIDs[i]) {
+                    cursor->x = i % 2;
+                    cursor->y = i / 2;
+                    break;
+                }
+            }
         }
 
-        BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        savedCursorPos->moveMenuX = cursor->x;
+        savedCursorPos->moveMenuY = cursor->y;
+
+        if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
+            BattleSubscreen_DrawMainMoveSelectMenu(btlSubscreen);
+        } else {
+            buttonIndex = sMoveMenuButtonLayout[cursor->y][cursor->x];
+            BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        }
         return 0xffffffff;
     }
 
-    MI_CpuCopy8(sMoveMenuButtonLayout, buttonLayout, 3 * 2);
-    button = BattleSystem_MoveCursor(cursor, 2, 3, buttonLayout[0]);
+    MI_CpuCopy8(sMoveMenuButtonLayout, buttonLayout, sizeof(buttonLayout));
+    button = BattleSystem_MoveCursor(cursor, 2, 2, buttonLayout[0]);
 
     switch (button) {
     case PAD_KEY_UP:
@@ -3349,7 +3650,11 @@ static int BattleSystem_Cursor_Moves(BattleSubscreen *btlSubscreen, BOOL cursorH
     case PAD_KEY_LEFT:
     case PAD_KEY_RIGHT:
         buttonIndex = sMoveMenuButtonLayout[cursor->y][cursor->x];
-        BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
+            BattleSubscreen_DrawMainMoveSelectMenu(btlSubscreen);
+        } else {
+            BattleSystem_DrawCursor(btlSubscreen->cursorRenderer, battleMenuConfig->touchScreenRects[buttonIndex].rect.left + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.right - 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.top + 8, battleMenuConfig->touchScreenRects[buttonIndex].rect.bottom - 8, (192 + 80) << FX32_SHIFT);
+        }
         break;
     case PAD_BUTTON_A:
         return sMoveMenuButtonLayout[cursor->y][cursor->x];

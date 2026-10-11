@@ -346,6 +346,7 @@ static u8 BattlePartyTask_Initialize(BattleParty *battleParty)
 {
     u8 nextState;
 
+    G2_BlendNone();
     G2S_BlendNone();
 
     if (battleParty->context->battlePartyMode == BATTLE_PARTY_MODE_LEARN_MOVE) {
@@ -384,7 +385,7 @@ static u8 BattlePartyTask_Initialize(BattleParty *battleParty)
     BattlePartySprites_SetupCursor(battleParty, battleParty->currentScreen);
     DrawXPBar(battleParty, battleParty->currentScreen);
 
-    PaletteData_StartFade(battleParty->palette, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xffff, -8, 16, 0, 0);
+    PaletteData_StartFade(battleParty->palette, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xffff, -8, 16, 0, 0);
 
     return nextState;
 }
@@ -1037,7 +1038,7 @@ static u8 BattlePartyTask_UseAllMovePPRestorationItem(BattleParty *battleParty)
 
 static u8 BattlePartyTask_Exit(BattleParty *battleParty)
 {
-    PaletteData_StartFade(battleParty->palette, (0x2 | 0x8), 0xffff, -8, 0, 16, 0);
+    PaletteData_StartFade(battleParty->palette, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xffff, -8, 0, 16, 0);
     return TASK_STATE_FINISH_TASK;
 }
 
@@ -1070,10 +1071,10 @@ static void InitializeBackground(BattleParty *battleParty)
             GX_DISPMODE_GRAPHICS,
             GX_BGMODE_0,
             GX_BGMODE_0,
-            GX_BG0_AS_3D,
+            GX_BG0_AS_2D,
         };
 
-        SetScreenGraphicsModes(&graphicsMode, DS_SCREEN_SUB);
+        SetScreenGraphicsModes(&graphicsMode, DS_SCREEN_MAIN);
     }
 
     {
@@ -1092,7 +1093,7 @@ static void InitializeBackground(BattleParty *battleParty)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleParty->background, BG_LAYER_SUB_3, &background, BG_TYPE_STATIC);
+        Bg_InitFromTemplate(battleParty->background, BG_LAYER_MAIN_3, &background, BG_TYPE_STATIC);
     }
 
     {
@@ -1111,7 +1112,7 @@ static void InitializeBackground(BattleParty *battleParty)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleParty->background, BG_LAYER_SUB_2, &background, BG_TYPE_STATIC);
+        Bg_InitFromTemplate(battleParty->background, BG_LAYER_MAIN_2, &background, BG_TYPE_STATIC);
     }
 
     {
@@ -1130,8 +1131,8 @@ static void InitializeBackground(BattleParty *battleParty)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleParty->background, BG_LAYER_SUB_1, &background, BG_TYPE_STATIC);
-        Bg_ClearTilemap(battleParty->background, BG_LAYER_SUB_1);
+        Bg_InitFromTemplate(battleParty->background, BG_LAYER_MAIN_1, &background, BG_TYPE_STATIC);
+        Bg_ClearTilemap(battleParty->background, BG_LAYER_MAIN_1);
     }
 
     {
@@ -1150,29 +1151,29 @@ static void InitializeBackground(BattleParty *battleParty)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleParty->background, BG_LAYER_SUB_0, &background, BG_TYPE_STATIC);
-        Bg_ClearTilemap(battleParty->background, BG_LAYER_SUB_0);
+        Bg_InitFromTemplate(battleParty->background, BG_LAYER_MAIN_0, &background, BG_TYPE_STATIC);
+        Bg_ClearTilemap(battleParty->background, BG_LAYER_MAIN_0);
     }
 
-    Bg_ClearTilesRange(BG_LAYER_SUB_1, PALETTE_SIZE_BYTES, 0, battleParty->context->heapID);
-    Bg_ClearTilesRange(BG_LAYER_SUB_0, PALETTE_SIZE_BYTES, 0, battleParty->context->heapID);
-    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_1);
-    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_0);
+    Bg_ClearTilesRange(BG_LAYER_MAIN_1, PALETTE_SIZE_BYTES, 0, battleParty->context->heapID);
+    Bg_ClearTilesRange(BG_LAYER_MAIN_0, PALETTE_SIZE_BYTES, 0, battleParty->context->heapID);
+    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_1);
+    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_0);
 }
 
 static void CleanupBackground(BgConfig *battleParty)
 {
-    GXLayers_EngineBToggleLayers(GX_PLANEMASK_BG0 | GX_PLANEMASK_BG1 | GX_PLANEMASK_BG2 | GX_PLANEMASK_BG3 | GX_PLANEMASK_OBJ, FALSE);
-    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_SUB_0);
-    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_SUB_1);
-    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_SUB_2);
-    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_SUB_3);
+    GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG0 | GX_PLANEMASK_BG1 | GX_PLANEMASK_BG2 | GX_PLANEMASK_BG3 | GX_PLANEMASK_OBJ, FALSE);
+    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_MAIN_0);
+    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_MAIN_1);
+    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_MAIN_2);
+    Bg_FreeTilemapBuffer(battleParty, BG_LAYER_MAIN_3);
 }
 
 static void LoadGraphicsData(BattleParty *battleParty)
 {
     NARC *narc = NARC_ctor(NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, battleParty->context->heapID);
-    Graphics_LoadTilesToBgLayerFromOpenNARC(narc, 22, battleParty->background, BG_LAYER_SUB_3, 0, 0, FALSE, battleParty->context->heapID);
+    Graphics_LoadTilesToBgLayerFromOpenNARC(narc, 22, battleParty->background, BG_LAYER_MAIN_3, 0, 0, FALSE, battleParty->context->heapID);
 
     NNSG2dScreenData *screenData;
     void *buffer = NARC_AllocAndReadWholeMember(narc, 20, battleParty->context->heapID);
@@ -1186,28 +1187,28 @@ static void LoadGraphicsData(BattleParty *battleParty)
     BattlePartyButtons_InitializeAdditionalButtonData(battleParty, (u16 *)screenData->rawData);
     Heap_Free(buffer);
 
-    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 23, battleParty->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES * 16, PLTT_DEST(0));
+    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 23, battleParty->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES * 16, PLTT_DEST(0));
     NARC_dtor(narc);
 
-    u16 *swappedPaletteData = PaletteData_GetUnfadedBuffer(battleParty->palette, PLTTBUF_SUB_BG);
+    u16 *swappedPaletteData = PaletteData_GetUnfadedBuffer(battleParty->palette, PLTTBUF_MAIN_BG);
     memcpy(battleParty->screenPaletteData, &swappedPaletteData[192], PALETTE_SIZE_BYTES * 2);
 
-    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_GRAPHIC__PL_FONT, 6, battleParty->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES, PLTT_DEST(13));
-    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_GRAPHIC__PL_FONT, 7, battleParty->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES, PLTT_DEST(15));
+    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_GRAPHIC__PL_FONT, 6, battleParty->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(13));
+    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_GRAPHIC__PL_FONT, 7, battleParty->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(15));
 
     int optionsFrame = BattleSystem_GetOptionsFrame(battleParty->context->battleSys);
 
-    Graphics_LoadTilesToBgLayer(NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxTilesNARCMember(optionsFrame), battleParty->background, BG_LAYER_SUB_0, 1, 0, FALSE, battleParty->context->heapID);
-    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxPaletteNARCMember(optionsFrame), battleParty->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES, PLTT_DEST(14));
+    Graphics_LoadTilesToBgLayer(NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxTilesNARCMember(optionsFrame), battleParty->background, BG_LAYER_MAIN_0, 1, 0, FALSE, battleParty->context->heapID);
+    PaletteData_LoadBufferFromFileStart(battleParty->palette, NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxPaletteNARCMember(optionsFrame), battleParty->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(14));
 
-    u16 *rawPaletteData = PaletteData_GetUnfadedBuffer(battleParty->palette, PLTTBUF_SUB_BG);
+    u16 *rawPaletteData = PaletteData_GetUnfadedBuffer(battleParty->palette, PLTTBUF_MAIN_BG);
     u16 *paletteData = Heap_Alloc(battleParty->context->heapID, PALETTE_SIZE_BYTES);
 
     memcpy(paletteData, &rawPaletteData[208], PALETTE_SIZE_BYTES);
     memcpy(&paletteData[7], &rawPaletteData[154], 4);
     memcpy(&paletteData[3], &rawPaletteData[156], 4);
 
-    PaletteData_LoadBuffer(battleParty->palette, paletteData, PLTTBUF_SUB_BG, PLTT_DEST(13), PALETTE_SIZE_BYTES);
+    PaletteData_LoadBuffer(battleParty->palette, paletteData, PLTTBUF_MAIN_BG, PLTT_DEST(13), PALETTE_SIZE_BYTES);
     Heap_Free(paletteData);
 }
 
@@ -1517,20 +1518,20 @@ static void DrawXPBar(BattleParty *battleParty, enum BattlePartyScreen screen)
         }
     }
 
-    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_3);
+    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_3);
 }
 
 static void DrawXPBarSegment(BattleParty *battleParty, u16 fillVal, u16 x, u16 y)
 {
-    Bg_FillTilemapRect(battleParty->background, BG_LAYER_SUB_3, fillVal, x, y, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
+    Bg_FillTilemapRect(battleParty->background, BG_LAYER_MAIN_3, fillVal, x, y, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
 }
 
 static void DrawAppealPt(BattleParty *battleParty, u16 fillVal, u8 pointSlot)
 {
-    Bg_FillTilemapRect(battleParty->background, BG_LAYER_SUB_3, fillVal, 2 + pointSlot * 2, 14, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
-    Bg_FillTilemapRect(battleParty->background, BG_LAYER_SUB_3, fillVal + 1, 3 + pointSlot * 2, 14, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
-    Bg_FillTilemapRect(battleParty->background, BG_LAYER_SUB_3, fillVal + TILE_SIZE_4BPP, 2 + pointSlot * 2, 15, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
-    Bg_FillTilemapRect(battleParty->background, BG_LAYER_SUB_3, fillVal + TILE_SIZE_4BPP + 1, 3 + pointSlot * 2, 15, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
+    Bg_FillTilemapRect(battleParty->background, BG_LAYER_MAIN_3, fillVal, 2 + pointSlot * 2, 14, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
+    Bg_FillTilemapRect(battleParty->background, BG_LAYER_MAIN_3, fillVal + 1, 3 + pointSlot * 2, 14, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
+    Bg_FillTilemapRect(battleParty->background, BG_LAYER_MAIN_3, fillVal + TILE_SIZE_4BPP, 2 + pointSlot * 2, 15, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
+    Bg_FillTilemapRect(battleParty->background, BG_LAYER_MAIN_3, fillVal + TILE_SIZE_4BPP + 1, 3 + pointSlot * 2, 15, 1, 1, TILEMAP_FILL_VAL_KEEP_PALETTE);
 }
 
 static void DrawEmptyAppealPts(BattleParty *battleParty)
@@ -1567,15 +1568,15 @@ static void DrawMoveContestStats(BattleParty *battleParty, enum BattlePartyScree
         DrawAppealPt(battleParty, 320, i);
     }
 
-    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_3);
+    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_3);
 }
 
 static void ChangeBattlePartyScreen(BattleParty *battleParty, enum BattlePartyScreen screen)
 {
     DrawScreenBackground(battleParty, screen);
 
-    Bg_ScheduleFillTilemap(battleParty->background, BG_LAYER_SUB_0, 0);
-    Bg_ScheduleFillTilemap(battleParty->background, BG_LAYER_SUB_1, 0);
+    Bg_ScheduleFillTilemap(battleParty->background, BG_LAYER_MAIN_0, 0);
+    Bg_ScheduleFillTilemap(battleParty->background, BG_LAYER_MAIN_1, 0);
 
     BattlePartySprites_SetupScreen(battleParty, screen);
     BattlePartyText_ClearScreenWindows(battleParty);
@@ -1609,8 +1610,8 @@ static void DrawScreenBackground(BattleParty *battleParty, enum BattlePartyScree
         void *buffer = NARC_AllocAndReadWholeMemberByIndexPair(NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, ScreenBackgroundDataMemberIndexes[screen][i], battleParty->context->heapID);
         NNSG2dScreenData *screenData;
         NNS_G2dGetUnpackedScreenData(buffer, &screenData);
-        Bg_LoadToTilemapRect(battleParty->background, BG_LAYER_SUB_2 + i, (u16 *)screenData->rawData, 0, 0, 32, 24);
-        Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_2 + i);
+        Bg_LoadToTilemapRect(battleParty->background, BG_LAYER_MAIN_2 + i, (u16 *)screenData->rawData, 0, 0, 32, 24);
+        Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_2 + i);
         Heap_Free(buffer);
     }
 }
@@ -1745,7 +1746,7 @@ static void ClearMoveStats(BattleParty *battleParty)
 static void ClearMoveContestStats(BattleParty *battleParty)
 {
     DrawEmptyAppealPts(battleParty);
-    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_3);
+    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_3);
 }
 
 static void UseBagItem(BattleSystem *battleSys, u16 item, u16 category, enum HeapID heapID)

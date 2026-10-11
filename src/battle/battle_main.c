@@ -385,6 +385,21 @@ void BattleSystem_SetupBattleScreen(BattleSystem *battleSys)
 {
     battleSys->pendingBlendReset = 1;
 
+    GraphicsModes graphicsMode = {
+        GX_DISPMODE_GRAPHICS,
+        GX_BGMODE_0,
+        GX_BGMODE_0,
+        GX_BG0_AS_3D,
+    };
+
+    SetScreenGraphicsModes(&graphicsMode, DS_SCREEN_MAIN);
+    GX_SetBGScrOffset(GX_BGSCROFFSET_0x00000);
+    GX_SetBGCharOffset(GX_BGCHAROFFSET_0x00000);
+
+    // Bag/party graphics reuse bank A. In particular, tile zero must be blank
+    // on the message and animation layers before their tilemaps are restored.
+    MI_CpuClear32((void *)HW_BG_VRAM, 128 * 1024);
+
     BgTemplate bgTemplates[] = {
         {
             .x = 0,
@@ -443,8 +458,14 @@ void BattleSystem_SetupBattleScreen(BattleSystem *battleSys)
     int frame = BattleSystem_GetOptionsFrame(battleSys);
 
     ReplaceTransparentTiles(battleSys->bgConfig, 1, 1, 10, frame, HEAP_ID_BATTLE);
-    Graphics_LoadTilesToBgLayer(NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_BG, 3 + battleSys->background, battleSys->bgConfig, BG_LAYER_MAIN_3, 0, 0, 1, HEAP_ID_BATTLE);
-    PaletteData_LoadBufferFromFileStart(battleSys->paletteData, NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_BG, 172 + battleSys->background * 3 + BattleSystem_GetBackgroundTimeOffset(battleSys), HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, 0, PLTT_DEST(0));
+    if (battleSys->bgTileSnapshot != NULL) {
+        // Terrain sprites are baked into this background before being freed.
+        Bg_LoadTiles(battleSys->bgConfig, BG_LAYER_MAIN_3, battleSys->bgTileSnapshot, 0x10000, 0);
+        PaletteData_LoadBuffer(battleSys->paletteData, battleSys->bgPaletteSnapshot, PLTTBUF_MAIN_BG, 0, HW_BG_PLTT_SIZE);
+    } else {
+        Graphics_LoadTilesToBgLayer(NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_BG, 3 + battleSys->background, battleSys->bgConfig, BG_LAYER_MAIN_3, 0, 0, 1, HEAP_ID_BATTLE);
+        PaletteData_LoadBufferFromFileStart(battleSys->paletteData, NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_BG, 172 + battleSys->background * 3 + BattleSystem_GetBackgroundTimeOffset(battleSys), HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, 0, PLTT_DEST(0));
+    }
     PaletteData_LoadBufferFromFileStart(battleSys->paletteData, NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxPaletteNARCMember(frame), HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(10));
     PaletteData_LoadBufferFromFileStart(battleSys->paletteData, NARC_INDEX_GRAPHIC__PL_FONT, 7, HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(11));
     Graphics_LoadTilemapToBgLayer(NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_BG, 2, battleSys->bgConfig, 3, 0, 0, 1, HEAP_ID_BATTLE);

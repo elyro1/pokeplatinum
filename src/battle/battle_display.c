@@ -33,6 +33,7 @@
 #include "battle/idle_bounce_anim.h"
 #include "battle/message_defs.h"
 #include "battle/party_gauge.h"
+#include "battle/terrain.h"
 #include "battle/trainer_ai.h"
 #include "battle_anim/battle_anim_system.h"
 #include "battle_anim/const_ov12_0223B0A0.h"
@@ -843,6 +844,22 @@ void BattleDisplay_InitTaskShowTargetSelectMenu(BattleSystem *battleSys, Battler
 
 #include "battle_sub_menus/battle_party.h"
 
+typedef struct BattleMenuSceneVisibility {
+    void *objTiles;
+    GXOBJVRamModeChar objMapping;
+    u16 objPalettes[14 * 16];
+    u8 pokemonSpritePresent[MAX_BATTLERS];
+    u8 pokemonWasHidden[MAX_BATTLERS];
+    u8 trainerSpritePresent[MAX_BATTLERS];
+    u8 trainerWasVisible[MAX_BATTLERS];
+    u8 healthboxMainSpritePresent[MAX_BATTLERS];
+    u8 healthboxMainWasVisible[MAX_BATTLERS];
+    u8 healthboxArrowSpritePresent[MAX_BATTLERS];
+    u8 healthboxArrowWasVisible[MAX_BATTLERS];
+    u8 terrainSpritePresent[2];
+    u8 terrainWasVisible[2];
+} BattleMenuSceneVisibility;
+
 typedef struct PartyMenuData {
     BattleSystem *battleSys;
     BattlePartyContext *battlePartyCtx;
@@ -858,6 +875,7 @@ typedef struct PartyMenuData {
     u8 battlersSwitchingMask;
     u8 unused[3];
     u8 partyOrder[MAX_BATTLERS][MAX_PARTY_SIZE];
+    BattleMenuSceneVisibility sceneVisibility;
 } PartyMenuData;
 
 typedef struct BagMenuData {
@@ -877,7 +895,113 @@ typedef struct BagMenuData {
     u8 delay;
     u8 partyOrder[MAX_BATTLERS][MAX_PARTY_SIZE];
     u8 embargoTurns[MAX_BATTLERS];
+    BattleMenuSceneVisibility sceneVisibility;
 } BagMenuData;
+
+static void BattleDisplay_HideBattleScene(BattleSystem *battleSys, BattleMenuSceneVisibility *visibility);
+static void BattleDisplay_RestoreBattleScene(BattleSystem *battleSys, const BattleMenuSceneVisibility *visibility);
+
+static BOOL BattleDisplay_IsSceneFadeComplete(BattleSystem *battleSys)
+{
+    for (int i = 0; i < BattleSystem_GetMaxBattlers(battleSys); i++) {
+        PokemonSprite *sprite = BattlerData_GetPokemonSprite(BattleSystem_GetBattlerData(battleSys, i));
+        if (sprite != NULL && PokemonSprite_IsFadeActive(sprite)) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+static void BattleDisplay_HideBattleScene(BattleSystem *battleSys, BattleMenuSceneVisibility *visibility)
+{
+    memset(visibility, 0, sizeof(*visibility));
+
+    // Main-screen menus load their own object tiles and can change mapping.
+    // Preserve the live tiles, including text painted into healthbox objects.
+    visibility->objTiles = Heap_Alloc(HEAP_ID_BATTLE, 64 * 1024);
+    MI_CpuCopy32(G2_GetOBJCharPtr(), visibility->objTiles, 64 * 1024);
+    visibility->objMapping = GX_GetOBJVRamModeChar();
+    MI_CpuCopy16(PaletteData_GetUnfadedBuffer(BattleSystem_GetPaletteData(battleSys), PLTTBUF_MAIN_OBJ), visibility->objPalettes, sizeof(visibility->objPalettes));
+
+    for (int i = 0; i < BattleSystem_GetMaxBattlers(battleSys); i++) {
+        BattlerData *battlerData = BattleSystem_GetBattlerData(battleSys, i);
+        PokemonSprite *pokemonSprite = BattlerData_GetPokemonSprite(battlerData);
+
+        if (pokemonSprite != NULL) {
+            visibility->pokemonSpritePresent[i] = TRUE;
+            visibility->pokemonWasHidden[i] = PokemonSprite_GetAttribute(pokemonSprite, MON_SPRITE_HIDE);
+            PokemonSprite_SetAttribute(pokemonSprite, MON_SPRITE_HIDE, TRUE);
+        }
+
+        if (battlerData->managedSprite != NULL) {
+            visibility->trainerSpritePresent[i] = TRUE;
+            visibility->trainerWasVisible[i] = ManagedSprite_GetDrawFlag(battlerData->managedSprite);
+            ManagedSprite_SetDrawFlag(battlerData->managedSprite, FALSE);
+        }
+
+        HealthBox *healthbox = BattleSystem_GetHealthBox(battleSys, i);
+
+        if (healthbox->mainSprite != NULL) {
+            visibility->healthboxMainSpritePresent[i] = TRUE;
+            visibility->healthboxMainWasVisible[i] = ManagedSprite_GetDrawFlag(healthbox->mainSprite);
+        }
+
+        if (healthbox->arrowSprite != NULL) {
+            visibility->healthboxArrowSpritePresent[i] = TRUE;
+            visibility->healthboxArrowWasVisible[i] = ManagedSprite_GetDrawFlag(healthbox->arrowSprite);
+        }
+    }
+
+    for (int i = 0; i < 2; i++) {
+        Terrain *terrain = BattleSystem_GetTerrainForSide(battleSys, i);
+
+        if (terrain->managedSprite != NULL) {
+            visibility->terrainSpritePresent[i] = TRUE;
+            visibility->terrainWasVisible[i] = ManagedSprite_GetDrawFlag(terrain->managedSprite);
+            Terrain_SetVisibility(terrain, FALSE);
+        }
+    }
+}
+
+static void BattleDisplay_RestoreBattleScene(BattleSystem *battleSys, const BattleMenuSceneVisibility *visibility)
+{
+    PaletteData *paletteData = BattleSystem_GetPaletteData(battleSys);
+    GX_SetOBJVRamModeChar(visibility->objMapping);
+    MI_CpuCopy32(visibility->objTiles, G2_GetOBJCharPtr(), 64 * 1024);
+    Heap_Free(visibility->objTiles);
+    PaletteData_LoadBuffer(paletteData, visibility->objPalettes, PLTTBUF_MAIN_OBJ, 0, sizeof(visibility->objPalettes));
+
+    for (int i = 0; i < BattleSystem_GetMaxBattlers(battleSys); i++) {
+        BattlerData *battlerData = BattleSystem_GetBattlerData(battleSys, i);
+        PokemonSprite *pokemonSprite = BattlerData_GetPokemonSprite(battlerData);
+
+        if (visibility->pokemonSpritePresent[i] && pokemonSprite != NULL) {
+            PokemonSprite_SetAttribute(pokemonSprite, MON_SPRITE_HIDE, visibility->pokemonWasHidden[i]);
+        }
+
+        if (visibility->trainerSpritePresent[i] && battlerData->managedSprite != NULL) {
+            ManagedSprite_SetDrawFlag(battlerData->managedSprite, visibility->trainerWasVisible[i]);
+        }
+
+        HealthBox *healthbox = BattleSystem_GetHealthBox(battleSys, i);
+
+        if (visibility->healthboxMainSpritePresent[i] && healthbox->mainSprite != NULL) {
+            ManagedSprite_SetDrawFlag(healthbox->mainSprite, visibility->healthboxMainWasVisible[i]);
+        }
+
+        if (visibility->healthboxArrowSpritePresent[i] && healthbox->arrowSprite != NULL) {
+            ManagedSprite_SetDrawFlag(healthbox->arrowSprite, visibility->healthboxArrowWasVisible[i]);
+        }
+    }
+
+    for (int i = 0; i < 2; i++) {
+        Terrain *terrain = BattleSystem_GetTerrainForSide(battleSys, i);
+
+        if (visibility->terrainSpritePresent[i] && terrain->managedSprite != NULL) {
+            Terrain_SetVisibility(terrain, visibility->terrainWasVisible[i]);
+        }
+    }
+}
 
 void BattleDisplay_InitTaskShowBagMenu(BattleSystem *battleSys, BattlerData *battlerData, BagMenuMessage *message)
 {
@@ -3236,7 +3360,8 @@ static void Task_PlayerSetCommandSelection(SysTask *task, void *data)
                 battleMsg.tags = TAG_NICKNAME;
                 battleMsg.params[0] = commandSetData->battler | (commandSetData->partySlot << 8);
                 battleMsg.id = BattleStrings_Text_WhatWillPokemonDo;
-                BattleMessage_Print(commandSetData->battleSys, msgLoader, &battleMsg, 0);
+                // Prepare the prompt while the preceding dialogue stays on screen.
+                BattleMessage_Print(commandSetData->battleSys, msgLoader, &battleMsg, TEXT_SPEED_NO_TRANSFER);
                 commandSetData->state = 3;
                 break;
             case TRUE:
@@ -3261,7 +3386,8 @@ static void Task_PlayerSetCommandSelection(SysTask *task, void *data)
                 battleMsg.id = BattleStrings_Text_WhatWillPokemonDo;
             }
 
-            BattleMessage_Print(commandSetData->battleSys, msgLoader, &battleMsg, 0);
+            // The action menu presents this prompt together with its choices.
+            BattleMessage_Print(commandSetData->battleSys, msgLoader, &battleMsg, TEXT_SPEED_NO_TRANSFER);
             commandSetData->state = 3;
         }
     } break;
@@ -3554,7 +3680,8 @@ static void Task_PlayerShowMoveSelectMenu(SysTask *task, void *data)
         battleMsg.params[0] = moveSelectMenuData->battler | (moveSelectMenuData->partySlot << 8);
         battleMsg.id = BattleStrings_Text_WhatWillPokemonDo;
 
-        BattleMessage_Print(moveSelectMenuData->battleSys, msgLoader, &battleMsg, 0);
+        // Keep the action menu visible until the move menu replaces it.
+        BattleMessage_Print(moveSelectMenuData->battleSys, msgLoader, &battleMsg, TEXT_SPEED_NO_TRANSFER);
 
         BattleSubscreen_HideBallSprites(btlSubscreen);
 
@@ -3855,12 +3982,15 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
     case 0:
         bagMenuData->isCursorEnabled = BattleSubscreen_GetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(bagMenuData->battleSys));
         sub_02015738(BattleSystem_GetPaletteAnimator(bagMenuData->battleSys), 1);
-        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xC00, -8, 0, 7, 0);
+        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 0, 16, 0);
+        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(bagMenuData->battleSys), 0, 16, 0, 0);
         PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 0, 16, 0);
         bagMenuData->state++;
         break;
     case 1:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(bagMenuData->battleSys)) {
+            BattleDisplay_HideBattleScene(bagMenuData->battleSys, &bagMenuData->sceneVisibility);
+            BattleSystem_HideBattleScreen(bagMenuData->battleSys);
             BattleSystem_EnterSubMenu(bagMenuData->battleSys);
 
             bagMenuData->battleBagCtx = Heap_Alloc(HEAP_ID_BATTLE, sizeof(BattleBagContext));
@@ -3963,13 +4093,16 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
         break;
     case 6:
         BattleSystem_ExitSubMenu(bagMenuData->battleSys);
+        BattleSystem_SetupBattleScreen(bagMenuData->battleSys);
+        BattleDisplay_RestoreBattleScene(bagMenuData->battleSys, &bagMenuData->sceneVisibility);
         BattleSubscreen_SetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(bagMenuData->battleSys), bagMenuData->isCursorEnabled);
-        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xC00, -8, 7, 0, 0);
+        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
+        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(bagMenuData->battleSys), 16, 0, 0, 0);
         PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 16, 0, 0);
         bagMenuData->state++;
         break;
     case 7:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(bagMenuData->battleSys)) {
             sub_02015738(BattleSystem_GetPaletteAnimator(bagMenuData->battleSys), 0);
 
             if (bagMenuData->battleBagCtx->selectedBattleBagItem) {
@@ -4441,24 +4574,22 @@ static void Task_PlayerShowPartyMenu(SysTask *task, void *data)
 
     switch (partyMenuData->state) {
     case 0:
-        Window *window = BattleSystem_GetWindow(partyMenuData->battleSys, 0);
-
-        Window_FillTilemap(window, 0xFF);
-        Window_LoadTiles(window);
-
         partyMenuData->isCursorEnabled = BattleSubscreen_GetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(partyMenuData->battleSys));
         sub_02015738(BattleSystem_GetPaletteAnimator(partyMenuData->battleSys), 1);
-        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xC00, -8, 0, 7, 0);
+        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 0, 16, 0);
+        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(partyMenuData->battleSys), 0, 16, 0, 0);
         PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 0, 16, 0);
         partyMenuData->state++;
         break;
     case 1:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(partyMenuData->battleSys)) {
             int i;
             int battler;
             int battler1, battler2;
             Pokemon *monSrc, *monDst;
 
+            BattleDisplay_HideBattleScene(partyMenuData->battleSys, &partyMenuData->sceneVisibility);
+            BattleSystem_HideBattleScreen(partyMenuData->battleSys);
             BattleSystem_EnterSubMenu(partyMenuData->battleSys);
 
             partyMenuData->battlePartyCtx = Heap_Alloc(HEAP_ID_BATTLE, sizeof(BattlePartyContext));
@@ -4555,14 +4686,17 @@ static void Task_PlayerShowPartyMenu(SysTask *task, void *data)
     case 2:
         if (partyMenuData->battlePartyCtx->battlePartyExited) {
             BattleSystem_ExitSubMenu(partyMenuData->battleSys);
+            BattleSystem_SetupBattleScreen(partyMenuData->battleSys);
+            BattleDisplay_RestoreBattleScene(partyMenuData->battleSys, &partyMenuData->sceneVisibility);
             BattleSubscreen_SetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(partyMenuData->battleSys), partyMenuData->battlePartyCtx->isCursorEnabled);
-            PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xC00, -8, 7, 0, 0);
+            PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
+            PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(partyMenuData->battleSys), 16, 0, 0, 0);
             PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 16, 0, 0);
             partyMenuData->state++;
         }
         break;
     case 3:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(partyMenuData->battleSys)) {
             sub_02015738(BattleSystem_GetPaletteAnimator(partyMenuData->battleSys), 0);
 
             if (partyMenuData->battlePartyCtx->selectedPartyIndex == 6) {

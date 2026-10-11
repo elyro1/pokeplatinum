@@ -295,7 +295,7 @@ void BattlePartySprites_InitializeSprites(BattleParty *battleParty)
     LoadContestStatsSpriteData(battleParty);
     InitializeSprites(battleParty);
     InitializeCursor(battleParty);
-    GXLayers_EngineBToggleLayers(GX_PLANEMASK_OBJ, TRUE);
+    GXLayers_EngineAToggleLayers(GX_PLANEMASK_OBJ, TRUE);
 }
 
 static void InitializeSpriteManager(BattleParty *battleParty)
@@ -314,15 +314,15 @@ static void LoadPartyPokemonSpriteData(BattleParty *battleParty)
     NARC *narc = NARC_ctor(NARC_INDEX_POKETOOL__ICONGRA__PL_POKE_ICON, battleParty->context->heapID);
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
 
-    SpriteSystem_LoadPaletteBufferFromOpenNarc(battleParty->palette, PLTTBUF_SUB_OBJ, spriteSystem, battleParty->spriteManager, narc, PokeIconPalettesFileIndex(), FALSE, 3, NNS_G2D_VRAM_TYPE_2DSUB, PARTY_POKEMON_PLTT_RESOURCE_ID);
+    SpriteSystem_LoadPaletteBufferFromOpenNarc(battleParty->palette, PLTTBUF_MAIN_OBJ, spriteSystem, battleParty->spriteManager, narc, PokeIconPalettesFileIndex(), FALSE, 3, NNS_G2D_VRAM_TYPE_2DMAIN, PARTY_POKEMON_PLTT_RESOURCE_ID);
     SpriteSystem_LoadCellResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokeIcon32KCellsFileIndex(), FALSE, PARTY_POKEMON_CELL_RESOURCE_ID);
     SpriteSystem_LoadAnimResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokeIcon32KAnimationFileIndex(), FALSE, PARTY_POKEMON_ANIM_RESOURCE_ID);
 
     for (u32 i = 0; i < MAX_PARTY_SIZE; i++) {
         if (battleParty->partyPokemon[i].species != SPECIES_NONE) {
-            SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, Pokemon_IconSpriteIndex(battleParty->partyPokemon[i].mon), FALSE, NNS_G2D_VRAM_TYPE_2DSUB, PARTY_POKEMON_CHAR_RESOURCE_ID_OFFSET + i);
+            SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, Pokemon_IconSpriteIndex(battleParty->partyPokemon[i].mon), FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, PARTY_POKEMON_CHAR_RESOURCE_ID_OFFSET + i);
         } else {
-            SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokeIconSpriteIndex(SPECIES_NONE, FALSE, 0), FALSE, NNS_G2D_VRAM_TYPE_2DSUB, PARTY_POKEMON_CHAR_RESOURCE_ID_OFFSET + i);
+            SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokeIconSpriteIndex(SPECIES_NONE, FALSE, 0), FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, PARTY_POKEMON_CHAR_RESOURCE_ID_OFFSET + i);
         }
     }
 
@@ -334,10 +334,10 @@ static void LoadSummaryStatusesSpriteData(BattleParty *battleParty)
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
     NARC *narc = NARC_ctor(NARC_INDEX_GRAPHIC__PL_PST_GRA, battleParty->context->heapID);
 
-    SpriteSystem_LoadPaletteBufferFromOpenNarc(battleParty->palette, PLTTBUF_SUB_OBJ, spriteSystem, battleParty->spriteManager, narc, PokemonSummaryScreen_StatusIconPltt(), FALSE, 1, NNS_G2D_VRAM_TYPE_2DSUB, SUMMARY_STATUSES_PLTT_RESOURCE_ID);
+    SpriteSystem_LoadPaletteBufferFromOpenNarc(battleParty->palette, PLTTBUF_MAIN_OBJ, spriteSystem, battleParty->spriteManager, narc, PokemonSummaryScreen_StatusIconPltt(), FALSE, 1, NNS_G2D_VRAM_TYPE_2DMAIN, SUMMARY_STATUSES_PLTT_RESOURCE_ID);
     SpriteSystem_LoadCellResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokemonSummaryScreen_StatusIconCell(), FALSE, SUMMARY_STATUSES_CELL_RESOURCE_ID);
     SpriteSystem_LoadAnimResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokemonSummaryScreen_StatusIconAnim(), FALSE, SUMMARY_STATUSES_ANIM_RESOURCE_ID);
-    SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokemonSummaryScreen_StatusIconChar(), FALSE, NNS_G2D_VRAM_TYPE_2DSUB, SUMMARY_STATUSES_CHAR_RESOURCE_ID);
+    SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, PokemonSummaryScreen_StatusIconChar(), FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, SUMMARY_STATUSES_CHAR_RESOURCE_ID);
     NARC_dtor(narc);
 }
 
@@ -345,14 +345,14 @@ static void LoadTypesAndMovesSpriteData(BattleParty *battleParty)
 {
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
 
-    TypeIcon_LoadPltt(battleParty->palette, PLTTBUF_SUB_OBJ, spriteSystem, battleParty->spriteManager, NNS_G2D_VRAM_TYPE_2DSUB, MOVE_TYPES_PLTT_RESOURCE_ID);
+    TypeIcon_LoadPltt(battleParty->palette, PLTTBUF_MAIN_OBJ, spriteSystem, battleParty->spriteManager, NNS_G2D_VRAM_TYPE_2DMAIN, MOVE_TYPES_PLTT_RESOURCE_ID);
     TypeIcon_LoadAnim(spriteSystem, battleParty->spriteManager, MOVE_TYPES_CELL_RESOURCE_ID, MOVE_TYPES_ANIM_RESOURCE_ID);
 
     for (u32 i = POKEMON_TYPES_CHAR_RESOURCE_ID_OFFSET; i <= MOVE_TYPES_CHAR_RESOURCE_ID_OFFSET + MOVE_TO_LEARN_SLOT; i++) {
-        TypeIcon_LoadChar(spriteSystem, battleParty->spriteManager, NNS_G2D_VRAM_TYPE_2DSUB, TYPE_NORMAL, i);
+        TypeIcon_LoadChar(spriteSystem, battleParty->spriteManager, NNS_G2D_VRAM_TYPE_2DMAIN, TYPE_NORMAL, i);
     }
 
-    CategoryIcon_LoadChar(spriteSystem, battleParty->spriteManager, NNS_G2D_VRAM_TYPE_2DSUB, CLASS_PHYSICAL, MOVE_CLASSES_CHAR_RESOURCE_ID);
+    CategoryIcon_LoadChar(spriteSystem, battleParty->spriteManager, NNS_G2D_VRAM_TYPE_2DMAIN, CLASS_PHYSICAL, MOVE_CLASSES_CHAR_RESOURCE_ID);
 }
 
 static void LoadHeldMailSpriteData(BattleParty *battleParty)
@@ -360,10 +360,10 @@ static void LoadHeldMailSpriteData(BattleParty *battleParty)
     NARC *narc = NARC_ctor(NARC_INDEX_GRAPHIC__PL_PLIST_GRA, battleParty->context->heapID);
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
 
-    SpriteSystem_LoadPaletteBufferFromOpenNarc(battleParty->palette, PLTTBUF_SUB_OBJ, spriteSystem, battleParty->spriteManager, narc, sub_02081934(), FALSE, 1, NNS_G2D_VRAM_TYPE_2DSUB, HELD_MAIL_PLTT_RESOURCE_ID);
+    SpriteSystem_LoadPaletteBufferFromOpenNarc(battleParty->palette, PLTTBUF_MAIN_OBJ, spriteSystem, battleParty->spriteManager, narc, sub_02081934(), FALSE, 1, NNS_G2D_VRAM_TYPE_2DMAIN, HELD_MAIL_PLTT_RESOURCE_ID);
     SpriteSystem_LoadCellResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, sub_02081938(), FALSE, HELD_MAIL_CELL_RESOURCE_ID);
     SpriteSystem_LoadAnimResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, sub_0208193C(), FALSE, HELD_MAIL_ANIM_RESOURCE_ID);
-    SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, sub_02081930(), FALSE, NNS_G2D_VRAM_TYPE_2DSUB, HELD_MAIL_CHAR_RESOURCE_ID);
+    SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleParty->spriteManager, narc, sub_02081930(), FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, HELD_MAIL_CHAR_RESOURCE_ID);
     NARC_dtor(narc);
 }
 
@@ -371,10 +371,10 @@ static void LoadContestStatsSpriteData(BattleParty *battleParty)
 {
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
 
-    SpriteSystem_LoadPaletteBuffer(battleParty->palette, PLTTBUF_SUB_OBJ, spriteSystem, battleParty->spriteManager, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 27, FALSE, 1, NNS_G2D_VRAM_TYPE_2DSUB, CONTEST_STATS_PLTT_RESOURCE_ID);
+    SpriteSystem_LoadPaletteBuffer(battleParty->palette, PLTTBUF_MAIN_OBJ, spriteSystem, battleParty->spriteManager, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 27, FALSE, 1, NNS_G2D_VRAM_TYPE_2DMAIN, CONTEST_STATS_PLTT_RESOURCE_ID);
     SpriteSystem_LoadCellResObj(spriteSystem, battleParty->spriteManager, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 25, FALSE, CONTEST_STATS_CELL_RESOURCE_ID);
     SpriteSystem_LoadAnimResObj(spriteSystem, battleParty->spriteManager, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 24, FALSE, CONTEST_STATS_ANIM_RESOURCE_ID);
-    SpriteSystem_LoadCharResObj(spriteSystem, battleParty->spriteManager, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 26, FALSE, NNS_G2D_VRAM_TYPE_2DSUB, CONTEST_STATS_CHAR_RESOURCE_ID);
+    SpriteSystem_LoadCharResObj(spriteSystem, battleParty->spriteManager, NARC_INDEX_BATTLE__GRAPHIC__PL_B_PLIST_GRA, 26, FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, CONTEST_STATS_CHAR_RESOURCE_ID);
 }
 
 static ManagedSprite *CreateSprite(BattleParty *battleParty, u32 spriteIndex)
@@ -388,7 +388,7 @@ static ManagedSprite *CreateSprite(BattleParty *battleParty, u32 spriteIndex)
     template.animIdx = 0;
     template.priority = sBattlePartySpriteResourcesAndPriority[spriteIndex].priority;
     template.plttIdx = 0;
-    template.vramType = NNS_G2D_VRAM_TYPE_2DSUB;
+    template.vramType = NNS_G2D_VRAM_TYPE_2DMAIN;
     template.resources[SPRITE_RESOURCE_CHAR] = sBattlePartySpriteResourcesAndPriority[spriteIndex].charResID;
     template.resources[SPRITE_RESOURCE_PLTT] = sBattlePartySpriteResourcesAndPriority[spriteIndex].plttResID;
     template.resources[SPRITE_RESOURCE_CELL] = sBattlePartySpriteResourcesAndPriority[spriteIndex].cellResID;
@@ -806,8 +806,8 @@ static void InitializeCursor(BattleParty *battleParty)
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleParty->context->battleSys);
     CursorRenderer *cursorSprites;
 
-    CursorRenderer_LoadResources(spriteSystem, battleParty->spriteManager, battleParty->palette, battleParty->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID);
-    cursorSprites = CursorRenderer_New(spriteSystem, battleParty->spriteManager, battleParty->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID, 0, 1);
+    CursorRenderer_LoadResourcesOnMainScreen(spriteSystem, battleParty->spriteManager, battleParty->palette, battleParty->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID);
+    cursorSprites = CursorRenderer_NewOnMainScreen(spriteSystem, battleParty->spriteManager, battleParty->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID, 0, 1);
 
     SetBattleSubMenuCursorSprites(battleParty->cursor, cursorSprites);
 }

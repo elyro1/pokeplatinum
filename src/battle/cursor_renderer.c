@@ -10,6 +10,8 @@
 #include "sys_task_manager.h"
 
 static void SysTask_AnimateCursorSprites(SysTask *task, void *cursorRendererPtr);
+static void CursorRenderer_LoadResourcesForScreen(SpriteSystem *spriteSys, SpriteManager *spriteMan, PaletteData *plttData, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID, enum PaletteBufferID paletteBuffer, enum NNS_G2D_VRAM_TYPE vramType);
+static CursorRenderer *CursorRenderer_NewForScreen(SpriteSystem *spriteSys, SpriteManager *spriteMan, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID, u32 priority, u32 bgPriority, enum NNS_G2D_VRAM_TYPE vramType);
 void CursorRenderer_UnloadResources(SpriteManager *spriteMan, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID);
 void CursorRenderer_Delete(CursorRenderer *cursorRenderer);
 void CursorRenderer_DrawOnSubscreen(CursorRenderer *cursorRenderer, int x1, int x2, int y1, int y2);
@@ -30,10 +32,20 @@ static const SpriteTemplate sCursorRendererSpriteTemplate = {
 
 void CursorRenderer_LoadResources(SpriteSystem *spriteSys, SpriteManager *spriteMan, PaletteData *plttData, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID)
 {
+    CursorRenderer_LoadResourcesForScreen(spriteSys, spriteMan, plttData, heapID, charResID, plttResID, cellResID, animResID, PLTTBUF_SUB_OBJ, NNS_G2D_VRAM_TYPE_2DSUB);
+}
+
+void CursorRenderer_LoadResourcesOnMainScreen(SpriteSystem *spriteSys, SpriteManager *spriteMan, PaletteData *plttData, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID)
+{
+    CursorRenderer_LoadResourcesForScreen(spriteSys, spriteMan, plttData, heapID, charResID, plttResID, cellResID, animResID, PLTTBUF_MAIN_OBJ, NNS_G2D_VRAM_TYPE_2DMAIN);
+}
+
+static void CursorRenderer_LoadResourcesForScreen(SpriteSystem *spriteSys, SpriteManager *spriteMan, PaletteData *plttData, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID, enum PaletteBufferID paletteBuffer, enum NNS_G2D_VRAM_TYPE vramType)
+{
     NARC *narc = NARC_ctor(NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_OBJ, heapID);
 
-    SpriteSystem_LoadPaletteBufferFromOpenNarc(plttData, PLTTBUF_SUB_OBJ, spriteSys, spriteMan, narc, 80, FALSE, 1, NNS_G2D_VRAM_TYPE_2DSUB, plttResID);
-    SpriteSystem_LoadCharResObjFromOpenNarc(spriteSys, spriteMan, narc, 250, TRUE, NNS_G2D_VRAM_TYPE_2DSUB, charResID);
+    SpriteSystem_LoadPaletteBufferFromOpenNarc(plttData, paletteBuffer, spriteSys, spriteMan, narc, 80, FALSE, 1, vramType, plttResID);
+    SpriteSystem_LoadCharResObjFromOpenNarc(spriteSys, spriteMan, narc, 250, TRUE, vramType, charResID);
     SpriteSystem_LoadCellResObjFromOpenNarc(spriteSys, spriteMan, narc, 251, TRUE, cellResID);
     SpriteSystem_LoadAnimResObjFromOpenNarc(spriteSys, spriteMan, narc, 252, TRUE, animResID);
     NARC_dtor(narc);
@@ -49,11 +61,22 @@ void CursorRenderer_UnloadResources(SpriteManager *spriteMan, u32 charResID, u32
 
 CursorRenderer *CursorRenderer_New(SpriteSystem *spriteSys, SpriteManager *spriteMan, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID, u32 priority, u32 bgPriority)
 {
+    return CursorRenderer_NewForScreen(spriteSys, spriteMan, heapID, charResID, plttResID, cellResID, animResID, priority, bgPriority, NNS_G2D_VRAM_TYPE_2DSUB);
+}
+
+CursorRenderer *CursorRenderer_NewOnMainScreen(SpriteSystem *spriteSys, SpriteManager *spriteMan, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID, u32 priority, u32 bgPriority)
+{
+    return CursorRenderer_NewForScreen(spriteSys, spriteMan, heapID, charResID, plttResID, cellResID, animResID, priority, bgPriority, NNS_G2D_VRAM_TYPE_2DMAIN);
+}
+
+static CursorRenderer *CursorRenderer_NewForScreen(SpriteSystem *spriteSys, SpriteManager *spriteMan, enum HeapID heapID, u32 charResID, u32 plttResID, u32 cellResID, u32 animResID, u32 priority, u32 bgPriority, enum NNS_G2D_VRAM_TYPE vramType)
+{
     CursorRenderer *cursorRenderer;
     SpriteTemplate spriteTemplate;
     int i;
 
     spriteTemplate = sCursorRendererSpriteTemplate;
+    spriteTemplate.vramType = vramType;
     spriteTemplate.resources[0] = charResID;
     spriteTemplate.resources[1] = plttResID;
     spriteTemplate.resources[2] = cellResID;
@@ -112,6 +135,11 @@ void CursorRenderer_DrawSpritesOnSubscreen(CursorRenderer *cursorRenderer, int x
 void CursorRenderer_DrawOnSubscreen(CursorRenderer *cursorRenderer, int x1, int x2, int y1, int y2)
 {
     CursorRenderer_DrawSpritesOnSubscreen(cursorRenderer, x1, y1, x2, y1, x1, y2, x2, y2);
+}
+
+void CursorRenderer_DrawOnMainScreen(CursorRenderer *cursorRenderer, int x1, int x2, int y1, int y2)
+{
+    BattleSystem_DrawCursorSprites(cursorRenderer, x1, y1, x2, y1, x1, y2, x2, y2, 0);
 }
 
 void BattleSystem_DrawCursor(CursorRenderer *cursorRenderer, int x1, int x2, int y1, int y2, fx32 subscreenOffset)

@@ -81,13 +81,13 @@ static void RenderConfirmLearnMoveContestStatsScreen(BattleParty *battleParty);
 static void PrintSelectedPokemonName(BattleParty *battleParty, u32 partyIndex);
 
 static const WindowTemplate sMessageBoxWindowTemplates[] = {
-    [BATTLE_PARTY_MESSAGE_BOX_SELECT_OPTION] = { .bgLayer = BG_LAYER_SUB_0, .tilemapLeft = 2, .tilemapTop = 21, .width = 22, .height = 2, .palette = 15, .baseTile = 31 },
-    [BATTLE_PARTY_MESSAGE_BOX_ERROR] = { .bgLayer = BG_LAYER_SUB_0, .tilemapLeft = 2, .tilemapTop = 19, .width = 27, .height = 4, .palette = 15, .baseTile = 31 }
+    [BATTLE_PARTY_MESSAGE_BOX_SELECT_OPTION] = { .bgLayer = BG_LAYER_MAIN_0, .tilemapLeft = 2, .tilemapTop = 21, .width = 22, .height = 2, .palette = 15, .baseTile = 31 },
+    [BATTLE_PARTY_MESSAGE_BOX_ERROR] = { .bgLayer = BG_LAYER_MAIN_0, .tilemapLeft = 2, .tilemapTop = 19, .width = 27, .height = 4, .palette = 15, .baseTile = 31 }
 };
 
 static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
     [BATTLE_POKEMON_PARTY_SCREEN_WINDOW_PARTY_SLOT_1] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 0,
         .tilemapTop = 0,
         .width = 15,
@@ -96,7 +96,7 @@ static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
         .baseTile = 133,
     },
     [BATTLE_POKEMON_PARTY_SCREEN_WINDOW_PARTY_SLOT_2] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 16,
         .tilemapTop = 1,
         .width = 15,
@@ -105,7 +105,7 @@ static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
         .baseTile = 208,
     },
     [BATTLE_POKEMON_PARTY_SCREEN_WINDOW_PARTY_SLOT_3] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 0,
         .tilemapTop = 6,
         .width = 15,
@@ -114,7 +114,7 @@ static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
         .baseTile = 283,
     },
     [BATTLE_POKEMON_PARTY_SCREEN_WINDOW_PARTY_SLOT_4] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 16,
         .tilemapTop = 7,
         .width = 15,
@@ -123,7 +123,7 @@ static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
         .baseTile = 358,
     },
     [BATTLE_POKEMON_PARTY_SCREEN_WINDOW_PARTY_SLOT_5] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 0,
         .tilemapTop = 12,
         .width = 15,
@@ -132,7 +132,7 @@ static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
         .baseTile = 433,
     },
     [BATTLE_POKEMON_PARTY_SCREEN_WINDOW_PARTY_SLOT_6] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 16,
         .tilemapTop = 13,
         .width = 15,
@@ -144,7 +144,7 @@ static const WindowTemplate sPartyPokemonScreenWindowTemplates[] = {
 
 static const WindowTemplate sSelectPokemonScreenWindowTemplates[] = {
     [BATTLE_SELECT_POKEMON_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 10,
         .tilemapTop = 4,
         .width = 12,
@@ -153,7 +153,7 @@ static const WindowTemplate sSelectPokemonScreenWindowTemplates[] = {
         .baseTile = 1,
     },
     [BATTLE_SELECT_POKEMON_SCREEN_WINDOW_SHIFT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 11,
         .tilemapTop = 12,
         .width = 10,
@@ -162,7 +162,7 @@ static const WindowTemplate sSelectPokemonScreenWindowTemplates[] = {
         .baseTile = 37,
     },
     [BATTLE_SELECT_POKEMON_SCREEN_WINDOW_SUMMARY] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 20,
         .width = 11,
@@ -171,7 +171,7 @@ static const WindowTemplate sSelectPokemonScreenWindowTemplates[] = {
         .baseTile = 67,
     },
     [BATTLE_SELECT_POKEMON_SCREEN_WINDOW_CHECK_MOVES] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 14,
         .tilemapTop = 20,
         .width = 11,
@@ -183,7 +183,7 @@ static const WindowTemplate sSelectPokemonScreenWindowTemplates[] = {
 
 static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -192,7 +192,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 293,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ABILITY_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 9,
         .width = 11,
@@ -201,7 +201,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 329,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ABILITY_DESC] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 11,
         .width = 18,
@@ -210,7 +210,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 351,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_HELD_ITEM] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 4,
         .tilemapTop = 16,
         .width = 12,
@@ -219,7 +219,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 423,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_HP] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 4,
         .width = 7,
@@ -228,7 +228,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 447,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ATTACK] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 7,
         .width = 3,
@@ -237,7 +237,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 461,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_DEFENSE] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 9,
         .width = 3,
@@ -246,7 +246,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 467,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_SPEED] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 15,
         .width = 3,
@@ -255,7 +255,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 473,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_SP_ATK] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 11,
         .width = 3,
@@ -264,7 +264,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 479,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_SP_DEF] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 13,
         .width = 3,
@@ -273,7 +273,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 485,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_HEALTH_BAR] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 25,
         .tilemapTop = 6,
         .width = 6,
@@ -282,7 +282,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 491,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_LEVEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 4,
         .width = 3,
@@ -291,7 +291,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 497,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_EXP_TO_NEXT_LVL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 13,
         .tilemapTop = 6,
         .width = 6,
@@ -300,7 +300,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 503,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_HP_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 21,
         .tilemapTop = 4,
         .width = 2,
@@ -309,7 +309,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 133,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ATTACK_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 21,
         .tilemapTop = 7,
         .width = 6,
@@ -318,7 +318,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 137,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_DEFENSE_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 21,
         .tilemapTop = 9,
         .width = 6,
@@ -327,7 +327,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 149,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_SPEED_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 21,
         .tilemapTop = 15,
         .width = 6,
@@ -336,7 +336,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 161,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_SP_ATK_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 21,
         .tilemapTop = 11,
         .width = 6,
@@ -345,7 +345,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 173,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_SP_DEF_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 21,
         .tilemapTop = 13,
         .width = 6,
@@ -354,7 +354,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 185,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_LEVEL_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 4,
         .width = 4,
@@ -363,7 +363,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 197,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_EXP_TO_NEXT_LVL_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 6,
         .width = 11,
@@ -372,7 +372,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 205,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_CHECK_MOVES] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 13,
         .tilemapTop = 20,
         .width = 11,
@@ -381,7 +381,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 227,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -390,7 +390,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 311,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_ABILITY_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 9,
         .width = 11,
@@ -399,7 +399,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 609,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_ABILITY_DESC] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 11,
         .width = 18,
@@ -408,7 +408,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 631,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_HELD_ITEM] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 4,
         .tilemapTop = 16,
         .width = 12,
@@ -417,7 +417,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 703,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_HP] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 4,
         .width = 7,
@@ -426,7 +426,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 727,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_ATTACK] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 7,
         .width = 3,
@@ -435,7 +435,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 741,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_DEFENSE] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 9,
         .width = 3,
@@ -444,7 +444,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 747,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_SPEED] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 15,
         .width = 3,
@@ -453,7 +453,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 753,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_SP_ATK] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 11,
         .width = 3,
@@ -462,7 +462,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 759,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_SP_DEF] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 28,
         .tilemapTop = 13,
         .width = 3,
@@ -471,7 +471,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 765,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_HEALTH_BAR] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 25,
         .tilemapTop = 6,
         .width = 6,
@@ -480,7 +480,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 771,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_LEVEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 4,
         .width = 3,
@@ -489,7 +489,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
         .baseTile = 777,
     },
     [BATTLE_POKEMON_SUMMARY_SCREEN_WINDOW_ALT_EXP_TO_NEXT_LVL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 13,
         .tilemapTop = 6,
         .width = 6,
@@ -501,7 +501,7 @@ static const WindowTemplate sPokemonSummaryScreenWindowTemplates[] = {
 
 static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -510,7 +510,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 293,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_MOVE_1] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 6,
         .width = 14,
@@ -519,7 +519,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 329,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_MOVE_2] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 6,
         .width = 14,
@@ -528,7 +528,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 399,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_MOVE_3] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 12,
         .width = 14,
@@ -537,7 +537,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 469,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_MOVE_4] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 12,
         .width = 14,
@@ -546,7 +546,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 539,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_SUMMARY] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 13,
         .tilemapTop = 20,
         .width = 11,
@@ -555,7 +555,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 260,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_ALT_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -564,7 +564,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 311,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_ALT_MOVE_1] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 6,
         .width = 14,
@@ -573,7 +573,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 609,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_ALT_MOVE_2] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 6,
         .width = 14,
@@ -582,7 +582,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 679,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_ALT_MOVE_3] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 12,
         .width = 14,
@@ -591,7 +591,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
         .baseTile = 749,
     },
     [BATTLE_POKEMON_MOVES_SCREEN_WINDOW_ALT_MOVE_4] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 12,
         .width = 14,
@@ -603,7 +603,7 @@ static const WindowTemplate sPokemonMovesScreenWindowTemplates[] = {
 
 static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_MOVE_NAME] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 4,
         .tilemapTop = 5,
         .width = 11,
@@ -612,7 +612,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 157,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_PP] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 23,
         .tilemapTop = 5,
         .width = 5,
@@ -621,7 +621,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 183,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ACCURACY] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 10,
         .tilemapTop = 16,
         .width = 3,
@@ -630,7 +630,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 225,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_POWER] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 10,
         .tilemapTop = 13,
         .width = 3,
@@ -639,7 +639,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 231,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_DESCRIPTION] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 16,
         .tilemapTop = 8,
         .width = 15,
@@ -648,7 +648,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 237,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_CATEGORY] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 6,
         .tilemapTop = 10,
         .width = 8,
@@ -657,7 +657,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 411,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -666,7 +666,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 139,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_PP_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 20,
         .tilemapTop = 5,
         .width = 2,
@@ -675,7 +675,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 179,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ACCURACY_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 16,
         .width = 8,
@@ -684,7 +684,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 193,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_POWER_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 13,
         .width = 8,
@@ -693,7 +693,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 209,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_CATEGORY_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 8,
         .width = 12,
@@ -702,7 +702,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 387,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ALT_MOVE_NAME] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 4,
         .tilemapTop = 5,
         .width = 11,
@@ -711,7 +711,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 427,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ALT_PP] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 23,
         .tilemapTop = 5,
         .width = 5,
@@ -720,7 +720,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 449,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ALT_ACCURACY] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 10,
         .tilemapTop = 16,
         .width = 3,
@@ -729,7 +729,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 459,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ALT_POWER] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 10,
         .tilemapTop = 13,
         .width = 3,
@@ -738,7 +738,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 465,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ALT_DESCRIPTION] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 16,
         .tilemapTop = 8,
         .width = 15,
@@ -747,7 +747,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
         .baseTile = 471,
     },
     [BATTLE_MOVE_SUMMARY_SCREEN_WINDOW_ALT_CATEGORY] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 6,
         .tilemapTop = 10,
         .width = 8,
@@ -759,7 +759,7 @@ static const WindowTemplate sMoveSummaryScreenWindowTemplates[] = {
 
 static const WindowTemplate sRestoreMovePPScreenWindowTemplates[] = {
     [BATTLE_RESTORE_MOVE_PP_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -768,7 +768,7 @@ static const WindowTemplate sRestoreMovePPScreenWindowTemplates[] = {
         .baseTile = 139,
     },
     [BATTLE_RESTORE_MOVE_PP_SCREEN_WINDOW_MOVE_1] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 6,
         .width = 14,
@@ -777,7 +777,7 @@ static const WindowTemplate sRestoreMovePPScreenWindowTemplates[] = {
         .baseTile = 157,
     },
     [BATTLE_RESTORE_MOVE_PP_SCREEN_WINDOW_MOVE_2] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 17,
         .tilemapTop = 6,
         .width = 14,
@@ -786,7 +786,7 @@ static const WindowTemplate sRestoreMovePPScreenWindowTemplates[] = {
         .baseTile = 227,
     },
     [BATTLE_RESTORE_MOVE_PP_SCREEN_WINDOW_MOVE_3] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 12,
         .width = 14,
@@ -795,7 +795,7 @@ static const WindowTemplate sRestoreMovePPScreenWindowTemplates[] = {
         .baseTile = 297,
     },
     [BATTLE_RESTORE_MOVE_PP_SCREEN_WINDOW_MOVE_4] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 17,
         .tilemapTop = 12,
         .width = 14,
@@ -807,7 +807,7 @@ static const WindowTemplate sRestoreMovePPScreenWindowTemplates[] = {
 
 static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
     [BATTLE_LEARN_MOVE_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -816,7 +816,7 @@ static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
         .baseTile = 133,
     },
     [BATTLE_LEARN_MOVE_SCREEN_WINDOW_MOVE_1] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 6,
         .width = 14,
@@ -825,7 +825,7 @@ static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
         .baseTile = 151,
     },
     [BATTLE_LEARN_MOVE_SCREEN_WINDOW_MOVE_2] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 17,
         .tilemapTop = 6,
         .width = 14,
@@ -834,7 +834,7 @@ static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
         .baseTile = 221,
     },
     [BATTLE_LEARN_MOVE_SCREEN_WINDOW_MOVE_3] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 1,
         .tilemapTop = 12,
         .width = 14,
@@ -843,7 +843,7 @@ static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
         .baseTile = 291,
     },
     [BATTLE_LEARN_MOVE_SCREEN_WINDOW_MOVE_4] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 17,
         .tilemapTop = 12,
         .width = 14,
@@ -852,7 +852,7 @@ static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
         .baseTile = 361,
     },
     [BATTLE_LEARN_MOVE_SCREEN_WINDOW_MOVE_TO_LEARN] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 9,
         .tilemapTop = 18,
         .width = 14,
@@ -864,7 +864,7 @@ static const WindowTemplate sLearnMoveScreenWindowTemplates[] = {
 
 static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -873,7 +873,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 1,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_MOVE_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 4,
         .tilemapTop = 5,
         .width = 11,
@@ -882,7 +882,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 19,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_PP_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 20,
         .tilemapTop = 5,
         .width = 2,
@@ -891,7 +891,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 41,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_PP] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 23,
         .tilemapTop = 5,
         .width = 5,
@@ -900,7 +900,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 45,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_ACCURACY_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 16,
         .width = 8,
@@ -909,7 +909,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 91,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_POWER_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 13,
         .width = 8,
@@ -918,7 +918,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 107,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_ACCURACY] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 10,
         .tilemapTop = 16,
         .width = 3,
@@ -927,7 +927,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 123,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_POWER] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 10,
         .tilemapTop = 13,
         .width = 3,
@@ -936,7 +936,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 129,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_DESCRIPTION] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 16,
         .tilemapTop = 8,
         .width = 15,
@@ -945,7 +945,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 135,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_CATEGORY_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 8,
         .width = 12,
@@ -954,7 +954,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 285,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_CATEGORY] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 6,
         .tilemapTop = 10,
         .width = 8,
@@ -963,7 +963,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
         .baseTile = 309,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_SCREEN_WINDOW_CONFIRM] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 7,
         .tilemapTop = 20,
         .width = 12,
@@ -975,7 +975,7 @@ static const WindowTemplate sConfirmLearnMoveScreenWindowTemplates[] = {
 
 static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_POKEMON_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 5,
         .tilemapTop = 1,
         .width = 9,
@@ -984,7 +984,7 @@ static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
         .baseTile = 1,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_MOVE_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 4,
         .tilemapTop = 8,
         .width = 11,
@@ -993,7 +993,7 @@ static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
         .baseTile = 19,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_PP_LABEL] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 20,
         .tilemapTop = 8,
         .width = 2,
@@ -1002,7 +1002,7 @@ static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
         .baseTile = 41,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_PP] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 23,
         .tilemapTop = 8,
         .width = 5,
@@ -1011,7 +1011,7 @@ static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
         .baseTile = 45,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_APPEAL_PTS] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 2,
         .tilemapTop = 11,
         .width = 12,
@@ -1020,7 +1020,7 @@ static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
         .baseTile = 325,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_CONTEST_EFFECT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 16,
         .tilemapTop = 11,
         .width = 15,
@@ -1029,7 +1029,7 @@ static const WindowTemplate sConfirmLearnMoveContestStatsWindowTemplates[] = {
         .baseTile = 349,
     },
     [BATTLE_CONFIRM_LEARN_MOVE_CONTEST_STATS_SCREEN_WINDOW_CONFIRM] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 7,
         .tilemapTop = 20,
         .width = 12,

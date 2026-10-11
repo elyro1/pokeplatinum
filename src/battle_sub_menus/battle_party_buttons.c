@@ -481,8 +481,8 @@ static void DrawButton(BattleParty *battleParty, u8 button, u8 buttonState, u8 i
 
     RetrieveButtonData(battleParty, buttonData, button, buttonState, isAltButton);
 
-    Bg_LoadToTilemapRect(battleParty->background, BG_LAYER_SUB_2, buttonData, sButtonDimensions[button].xCoord, sButtonDimensions[button].yCoord, sButtonDimensions[button].width, sButtonDimensions[button].height);
-    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_SUB_2);
+    Bg_LoadToTilemapRect(battleParty->background, BG_LAYER_MAIN_2, buttonData, sButtonDimensions[button].xCoord, sButtonDimensions[button].yCoord, sButtonDimensions[button].width, sButtonDimensions[button].height);
+    Bg_ScheduleTilemapTransfer(battleParty->background, BG_LAYER_MAIN_2);
     Heap_Free(buttonData);
 }
 
@@ -737,9 +737,9 @@ void BattlePartyButtons_InitializeButtons(BattleParty *battleParty, enum BattleP
 void BattlePartyButtons_LoadScreenPaletteData(BattleParty *battleParty, enum BattlePartyScreen screen)
 {
     if (screen == BATTLE_PARTY_SCREEN_POKEMON_MOVES) {
-        PaletteData_LoadBuffer(battleParty->palette, &battleParty->screenPaletteData[PALETTE_SIZE], PLTTBUF_SUB_BG, PLTT_DEST(12), PALETTE_SIZE_BYTES);
+        PaletteData_LoadBuffer(battleParty->palette, &battleParty->screenPaletteData[PALETTE_SIZE], PLTTBUF_MAIN_BG, PLTT_DEST(12), PALETTE_SIZE_BYTES);
     } else {
-        PaletteData_LoadBuffer(battleParty->palette, &battleParty->screenPaletteData[0], PLTTBUF_SUB_BG, PLTT_DEST(12), PALETTE_SIZE_BYTES);
+        PaletteData_LoadBuffer(battleParty->palette, &battleParty->screenPaletteData[0], PLTTBUF_MAIN_BG, PLTT_DEST(12), PALETTE_SIZE_BYTES);
     }
 }
 

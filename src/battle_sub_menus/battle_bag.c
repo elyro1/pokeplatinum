@@ -209,6 +209,7 @@ static void BattleBagTask_Tick(SysTask *task, void *taskParam)
 
 static u8 BattleBagTask_Initialize(BattleBag *battleBag)
 {
+    G2_BlendNone();
     G2S_BlendNone();
 
     battleBag->cursor = MakeBattleSubMenuCursor(battleBag->context->heapID);
@@ -234,7 +235,7 @@ static u8 BattleBagTask_Initialize(BattleBag *battleBag)
 
     BattleBagSprites_SetupCursor(battleBag, battleBag->currentScreen);
     BattleBagSprites_SetupCatchTutorialCursor(battleBag, battleBag->currentScreen);
-    PaletteData_StartFade(battleBag->palette, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xffff, -8, 16, 0, 0);
+    PaletteData_StartFade(battleBag->palette, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xffff, -8, 16, 0, 0);
 
     if (battleBag->context->isInCatchTutorial == TRUE) {
         return TASK_STATE_CATCH_TUTORIAL;
@@ -539,7 +540,7 @@ static u8 BattleBagTask_ScreenTransition(BattleBag *battleBag)
 
 static u8 BattleBagTask_Exit(BattleBag *battleBag)
 {
-    PaletteData_StartFade(battleBag->palette, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xffff, -8, 0, 16, 0);
+    PaletteData_StartFade(battleBag->palette, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xffff, -8, 0, 16, 0);
     return TASK_STATE_FINISH_TASK;
 }
 
@@ -639,10 +640,10 @@ static void InitializeBackground(BattleBag *battleBag)
             .displayMode = GX_DISPMODE_GRAPHICS,
             .mainBgMode = GX_BGMODE_0,
             .subBgMode = GX_BGMODE_0,
-            .bg0As2DOr3D = GX_BG0_AS_3D,
+            .bg0As2DOr3D = GX_BG0_AS_2D,
         };
 
-        SetScreenGraphicsModes(&graphicsMode, DS_SCREEN_SUB);
+        SetScreenGraphicsModes(&graphicsMode, DS_SCREEN_MAIN);
     }
 
     {
@@ -661,7 +662,7 @@ static void InitializeBackground(BattleBag *battleBag)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleBag->background, BG_LAYER_SUB_2, &background, BG_TYPE_STATIC);
+        Bg_InitFromTemplate(battleBag->background, BG_LAYER_MAIN_2, &background, BG_TYPE_STATIC);
     }
 
     {
@@ -680,8 +681,8 @@ static void InitializeBackground(BattleBag *battleBag)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleBag->background, BG_LAYER_SUB_1, &background, BG_TYPE_STATIC);
-        Bg_ClearTilemap(battleBag->background, BG_LAYER_SUB_1);
+        Bg_InitFromTemplate(battleBag->background, BG_LAYER_MAIN_1, &background, BG_TYPE_STATIC);
+        Bg_ClearTilemap(battleBag->background, BG_LAYER_MAIN_1);
     }
 
     {
@@ -700,30 +701,30 @@ static void InitializeBackground(BattleBag *battleBag)
             .mosaic = FALSE
         };
 
-        Bg_InitFromTemplate(battleBag->background, BG_LAYER_SUB_0, &background, BG_TYPE_STATIC);
-        Bg_ClearTilemap(battleBag->background, BG_LAYER_SUB_0);
+        Bg_InitFromTemplate(battleBag->background, BG_LAYER_MAIN_0, &background, BG_TYPE_STATIC);
+        Bg_ClearTilemap(battleBag->background, BG_LAYER_MAIN_0);
     }
 
-    Bg_ClearTilesRange(BG_LAYER_SUB_1, PALETTE_SIZE_BYTES, 0, battleBag->context->heapID);
-    Bg_ClearTilesRange(BG_LAYER_SUB_0, PALETTE_SIZE_BYTES, 0, battleBag->context->heapID);
-    Bg_ScheduleTilemapTransfer(battleBag->background, BG_LAYER_SUB_1);
-    Bg_ScheduleTilemapTransfer(battleBag->background, BG_LAYER_SUB_0);
+    Bg_ClearTilesRange(BG_LAYER_MAIN_1, PALETTE_SIZE_BYTES, 0, battleBag->context->heapID);
+    Bg_ClearTilesRange(BG_LAYER_MAIN_0, PALETTE_SIZE_BYTES, 0, battleBag->context->heapID);
+    Bg_ScheduleTilemapTransfer(battleBag->background, BG_LAYER_MAIN_1);
+    Bg_ScheduleTilemapTransfer(battleBag->background, BG_LAYER_MAIN_0);
 }
 
 static void CleanupBackground(BgConfig *background)
 {
-    GXLayers_EngineBToggleLayers(GX_PLANEMASK_BG0 | GX_PLANEMASK_BG1 | GX_PLANEMASK_BG2 | GX_PLANEMASK_OBJ, FALSE);
-    Bg_FreeTilemapBuffer(background, BG_LAYER_SUB_0);
-    Bg_FreeTilemapBuffer(background, BG_LAYER_SUB_1);
-    Bg_FreeTilemapBuffer(background, BG_LAYER_SUB_2);
+    GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG0 | GX_PLANEMASK_BG1 | GX_PLANEMASK_BG2 | GX_PLANEMASK_OBJ, FALSE);
+    Bg_FreeTilemapBuffer(background, BG_LAYER_MAIN_0);
+    Bg_FreeTilemapBuffer(background, BG_LAYER_MAIN_1);
+    Bg_FreeTilemapBuffer(background, BG_LAYER_MAIN_2);
 }
 
 static void LoadGraphicsData(BattleBag *battleBag)
 {
     NARC *narc = NARC_ctor(NARC_INDEX_BATTLE__GRAPHIC__B_BAG_GRA, battleBag->context->heapID);
 
-    Graphics_LoadTilesToBgLayerFromOpenNARC(narc, 2, battleBag->background, BG_LAYER_SUB_2, 0, 0, FALSE, battleBag->context->heapID);
-    Graphics_LoadTilemapToBgLayerFromOpenNARC(narc, 0, battleBag->background, BG_LAYER_SUB_2, 0, 0, FALSE, battleBag->context->heapID);
+    Graphics_LoadTilesToBgLayerFromOpenNARC(narc, 2, battleBag->background, BG_LAYER_MAIN_2, 0, 0, FALSE, battleBag->context->heapID);
+    Graphics_LoadTilemapToBgLayerFromOpenNARC(narc, 0, battleBag->background, BG_LAYER_MAIN_2, 0, 0, FALSE, battleBag->context->heapID);
 
     NNSG2dScreenData *screenData;
 
@@ -733,12 +734,12 @@ static void LoadGraphicsData(BattleBag *battleBag)
     Heap_Free(buffer);
 
     NARC_dtor(narc);
-    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_BATTLE__GRAPHIC__B_BAG_GRA, 3, battleBag->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES * 12, PLTT_DEST(0));
-    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_GRAPHIC__PL_FONT, 7, battleBag->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES, PLTT_DEST(15));
+    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_BATTLE__GRAPHIC__B_BAG_GRA, 3, battleBag->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES * 12, PLTT_DEST(0));
+    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_GRAPHIC__PL_FONT, 7, battleBag->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(15));
 
     int optionsFrame = BattleSystem_GetOptionsFrame(battleBag->context->battleSys);
-    Graphics_LoadTilesToBgLayer(NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxTilesNARCMember(optionsFrame), battleBag->background, BG_LAYER_SUB_0, 1024 - SCROLLING_MESSAGE_BOX_TILE_COUNT, 0, FALSE, battleBag->context->heapID);
-    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxPaletteNARCMember(optionsFrame), battleBag->context->heapID, PLTTBUF_SUB_BG, PALETTE_SIZE_BYTES, PLTT_DEST(14));
+    Graphics_LoadTilesToBgLayer(NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxTilesNARCMember(optionsFrame), battleBag->background, BG_LAYER_MAIN_0, 1024 - SCROLLING_MESSAGE_BOX_TILE_COUNT, 0, FALSE, battleBag->context->heapID);
+    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_GRAPHIC__PL_WINFRAME, GetMessageBoxPaletteNARCMember(optionsFrame), battleBag->context->heapID, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(14));
 }
 
 static void InitializeMessageLoader(BattleBag *battleBagTask)
@@ -761,16 +762,16 @@ static void SetupBackgroundScroll(BattleBag *battleBag, enum BattleBagScreen scr
 {
     switch (screen) {
     case BATTLE_BAG_SCREEN_MENU:
-        Bg_ScheduleScroll(battleBag->background, BG_LAYER_SUB_2, 0, 0);
-        Bg_ScheduleScroll(battleBag->background, BG_LAYER_SUB_2, 3, 0);
+        Bg_ScheduleScroll(battleBag->background, BG_LAYER_MAIN_2, 0, 0);
+        Bg_ScheduleScroll(battleBag->background, BG_LAYER_MAIN_2, 3, 0);
         break;
     case BATTLE_BAG_SCREEN_POCKET_MENU:
-        Bg_ScheduleScroll(battleBag->background, BG_LAYER_SUB_2, 0, 256);
-        Bg_ScheduleScroll(battleBag->background, BG_LAYER_SUB_2, 3, 0);
+        Bg_ScheduleScroll(battleBag->background, BG_LAYER_MAIN_2, 0, 256);
+        Bg_ScheduleScroll(battleBag->background, BG_LAYER_MAIN_2, 3, 0);
         break;
     case BATTLE_BAG_SCREEN_USE_ITEM:
-        Bg_ScheduleScroll(battleBag->background, BG_LAYER_SUB_2, 0, 0);
-        Bg_ScheduleScroll(battleBag->background, BG_LAYER_SUB_2, 3, 256);
+        Bg_ScheduleScroll(battleBag->background, BG_LAYER_MAIN_2, 0, 0);
+        Bg_ScheduleScroll(battleBag->background, BG_LAYER_MAIN_2, 3, 256);
         break;
     }
 }
@@ -781,8 +782,8 @@ static void SetupBackgroundTilemap(BattleBag *battleBag, enum BattleBagScreen sc
         return;
     }
 
-    Bg_ChangeTilemapRectPalette(battleBag->background, BG_LAYER_SUB_2, 2, 35, 28, 4, 8 + battleBag->currentBattlePocket);
-    Bg_ChangeTilemapRectPalette(battleBag->background, BG_LAYER_SUB_2, 2, 40, 28, 8, 8 + battleBag->currentBattlePocket);
+    Bg_ChangeTilemapRectPalette(battleBag->background, BG_LAYER_MAIN_2, 2, 35, 28, 4, 8 + battleBag->currentBattlePocket);
+    Bg_ChangeTilemapRectPalette(battleBag->background, BG_LAYER_MAIN_2, 2, 40, 28, 8, 8 + battleBag->currentBattlePocket);
 }
 
 static void ChangeBattleBagScreen(BattleBag *battleBag, u8 screen)
@@ -790,8 +791,8 @@ static void ChangeBattleBagScreen(BattleBag *battleBag, u8 screen)
     SetupBackgroundTilemap(battleBag, screen);
     SetupBackgroundScroll(battleBag, screen);
 
-    Bg_ScheduleFillTilemap(battleBag->background, BG_LAYER_SUB_0, 0);
-    Bg_ScheduleFillTilemap(battleBag->background, BG_LAYER_SUB_1, 0);
+    Bg_ScheduleFillTilemap(battleBag->background, BG_LAYER_MAIN_0, 0);
+    Bg_ScheduleFillTilemap(battleBag->background, BG_LAYER_MAIN_1, 0);
 
     BattleBagText_ClearScreenWindows(battleBag);
     BattleBagText_InitializeScreenWindows(battleBag, screen);

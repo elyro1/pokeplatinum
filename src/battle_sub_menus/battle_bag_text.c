@@ -29,7 +29,7 @@ static void RenderPocketMenuScreen(BattleBag *battleBag);
 static void RenderUseItemScreen(BattleBag *battleBag);
 
 static const WindowTemplate sMessageBoxWindowTemplate = {
-    .bgLayer = BG_LAYER_SUB_0,
+    .bgLayer = BG_LAYER_MAIN_0,
     .tilemapLeft = 2,
     .tilemapTop = 19,
     .width = 27,
@@ -40,7 +40,7 @@ static const WindowTemplate sMessageBoxWindowTemplate = {
 
 static const WindowTemplate sMenuScreenWindowTemplates[] = {
     [BATTLE_BAG_MENU_WINDOW_HP_PP_RESTORE] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 2,
         .tilemapTop = 4,
         .width = 12,
@@ -49,7 +49,7 @@ static const WindowTemplate sMenuScreenWindowTemplates[] = {
         .baseTile = 718,
     },
     [BATTLE_BAG_MENU_WINDOW_STATUS_HEALERS] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 2,
         .tilemapTop = 13,
         .width = 12,
@@ -58,7 +58,7 @@ static const WindowTemplate sMenuScreenWindowTemplates[] = {
         .baseTile = 778,
     },
     [BATTLE_BAG_MENU_WINDOW_POKE_BALLS] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 18,
         .tilemapTop = 5,
         .width = 12,
@@ -67,7 +67,7 @@ static const WindowTemplate sMenuScreenWindowTemplates[] = {
         .baseTile = 646,
     },
     [BATTLE_BAG_MENU_WINDOW_BATTLE_ITEMS] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 18,
         .tilemapTop = 14,
         .width = 12,
@@ -76,7 +76,7 @@ static const WindowTemplate sMenuScreenWindowTemplates[] = {
         .baseTile = 682,
     },
     [BATTLE_BAG_MENU_WINDOW_LAST_USED_ITEM] = {
-        .bgLayer = BG_LAYER_SUB_0,
+        .bgLayer = BG_LAYER_MAIN_0,
         .tilemapLeft = 5,
         .tilemapTop = 20,
         .width = 20,
@@ -88,7 +88,7 @@ static const WindowTemplate sMenuScreenWindowTemplates[] = {
 
 static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_1_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 1,
         .width = 14,
@@ -97,7 +97,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 1,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_1_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 8,
         .tilemapTop = 4,
         .width = 4,
@@ -106,7 +106,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 43,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_2_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 1,
         .width = 14,
@@ -115,7 +115,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 55,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_2_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 4,
         .width = 4,
@@ -124,7 +124,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 97,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_3_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 7,
         .width = 14,
@@ -133,7 +133,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 109,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_3_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 8,
         .tilemapTop = 10,
         .width = 4,
@@ -142,7 +142,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 151,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_4_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 7,
         .width = 14,
@@ -151,7 +151,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 163,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_4_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 10,
         .width = 4,
@@ -160,7 +160,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 205,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_5_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 13,
         .width = 14,
@@ -169,7 +169,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 217,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_5_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 8,
         .tilemapTop = 16,
         .width = 4,
@@ -178,7 +178,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 259,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_6_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 13,
         .width = 14,
@@ -187,7 +187,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 271,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ITEM_SLOT_6_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 16,
         .width = 4,
@@ -196,7 +196,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 313,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_1_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 1,
         .width = 14,
@@ -205,7 +205,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 325,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_1_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 8,
         .tilemapTop = 4,
         .width = 4,
@@ -214,7 +214,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 367,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_2_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 1,
         .width = 14,
@@ -223,7 +223,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 379,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_2_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 4,
         .width = 4,
@@ -232,7 +232,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 421,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_3_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 7,
         .width = 14,
@@ -241,7 +241,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 433,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_3_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 8,
         .tilemapTop = 10,
         .width = 4,
@@ -250,7 +250,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 475,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_4_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 7,
         .width = 14,
@@ -259,7 +259,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 487,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_4_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 10,
         .width = 4,
@@ -268,7 +268,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 529,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_5_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 1,
         .tilemapTop = 13,
         .width = 14,
@@ -277,7 +277,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 541,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_5_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 8,
         .tilemapTop = 16,
         .width = 4,
@@ -286,7 +286,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 583,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_6_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 17,
         .tilemapTop = 13,
         .width = 14,
@@ -295,7 +295,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 595,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_ALT_ITEM_SLOT_6_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 24,
         .tilemapTop = 16,
         .width = 4,
@@ -304,7 +304,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 637,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_POCKET_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 11,
         .tilemapTop = 19,
         .width = 10,
@@ -313,7 +313,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
         .baseTile = 649,
     },
     [BATTLE_BAG_POCKET_MENU_WINDOW_PAGE_NUMS] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 22,
         .tilemapTop = 20,
         .width = 4,
@@ -325,7 +325,7 @@ static const WindowTemplate sPocketMenuScreenWindowTemplates[] = {
 
 static const WindowTemplate useItemScreenWindowTemplates[] = {
     [BATTLE_BAG_USE_ITEM_MENU_WINDOW_ITEM_NAME] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 7,
         .tilemapTop = 4,
         .width = 12,
@@ -334,7 +334,7 @@ static const WindowTemplate useItemScreenWindowTemplates[] = {
         .baseTile = 711,
     },
     [BATTLE_BAG_USE_ITEM_MENU_WINDOW_ITEM_AMOUNT] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 20,
         .tilemapTop = 4,
         .width = 4,
@@ -343,7 +343,7 @@ static const WindowTemplate useItemScreenWindowTemplates[] = {
         .baseTile = 735,
     },
     [BATTLE_BAG_USE_ITEM_MENU_WINDOW_ITEM_DESC] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 2,
         .tilemapTop = 9,
         .width = 28,
@@ -352,7 +352,7 @@ static const WindowTemplate useItemScreenWindowTemplates[] = {
         .baseTile = 743,
     },
     [BATTLE_BAG_USE_ITEM_MENU_WINDOW_ITEM_USE] = {
-        .bgLayer = BG_LAYER_SUB_1,
+        .bgLayer = BG_LAYER_MAIN_1,
         .tilemapLeft = 10,
         .tilemapTop = 20,
         .width = 6,
@@ -525,7 +525,7 @@ static void PrintPocketItemInfo(BattleBag *battleBag, u32 slot_index)
 
 void BattleBagText_PrintAllPocketItemInfo(BattleBag *battleBag)
 {
-    Bg_FillTilemapRect(battleBag->background, BG_LAYER_SUB_1, 0, 0, 0, 32, 19, 17);
+    Bg_FillTilemapRect(battleBag->background, BG_LAYER_MAIN_1, 0, 0, 0, 32, 19, 17);
 
     for (u16 i = 0; i < BATTLE_POCKET_ITEMS_PER_PAGE; i++) {
         PrintPocketItemInfo(battleBag, i);

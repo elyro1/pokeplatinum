@@ -47,7 +47,7 @@ void SetBattleSubMenuCursorCurrentPosition(BattleSubMenuCursor *cursor, u8 posit
     cursor->currentPositionIndex = positionIndex;
 
     if (cursor->isVisible == TRUE) {
-        CursorRenderer_DrawOnSubscreen(cursor->sprites, cursor->positions[cursor->currentPositionIndex].xCoord1, cursor->positions[cursor->currentPositionIndex].xCoord2, cursor->positions[cursor->currentPositionIndex].yCoord1, cursor->positions[cursor->currentPositionIndex].yCoord2);
+        CursorRenderer_DrawOnMainScreen(cursor->sprites, cursor->positions[cursor->currentPositionIndex].xCoord1, cursor->positions[cursor->currentPositionIndex].xCoord2, cursor->positions[cursor->currentPositionIndex].yCoord1, cursor->positions[cursor->currentPositionIndex].yCoord2);
     }
 }
 
@@ -65,7 +65,7 @@ void SetBattleSubMenuCursorPositions(BattleSubMenuCursor *cursor, const GridMenu
     cursor->enabledPositionsMask = ALL_POSITIONS_ENABLED_MASK;
 
     if (cursor->isVisible == TRUE) {
-        CursorRenderer_DrawOnSubscreen(cursor->sprites, cursor->positions[CURSOR_STARTING_INDEX].xCoord1, cursor->positions[CURSOR_STARTING_INDEX].xCoord2, cursor->positions[CURSOR_STARTING_INDEX].yCoord1, cursor->positions[CURSOR_STARTING_INDEX].yCoord2);
+        CursorRenderer_DrawOnMainScreen(cursor->sprites, cursor->positions[CURSOR_STARTING_INDEX].xCoord1, cursor->positions[CURSOR_STARTING_INDEX].xCoord2, cursor->positions[CURSOR_STARTING_INDEX].yCoord1, cursor->positions[CURSOR_STARTING_INDEX].yCoord2);
     }
 }
 
@@ -83,7 +83,7 @@ static u8 IsCursorVisible(BattleSubMenuCursor *cursor)
     if (JOY_NEW(PAD_KEY | PAD_BUTTON_B | PAD_BUTTON_A)) {
         cursor->isVisible = TRUE;
 
-        CursorRenderer_DrawOnSubscreen(cursor->sprites, cursor->positions[cursor->currentPositionIndex].xCoord1, cursor->positions[cursor->currentPositionIndex].xCoord2, cursor->positions[cursor->currentPositionIndex].yCoord1, cursor->positions[cursor->currentPositionIndex].yCoord2);
+        CursorRenderer_DrawOnMainScreen(cursor->sprites, cursor->positions[cursor->currentPositionIndex].xCoord1, cursor->positions[cursor->currentPositionIndex].xCoord2, cursor->positions[cursor->currentPositionIndex].yCoord1, cursor->positions[cursor->currentPositionIndex].yCoord2);
         Sound_PlayEffect(SE_CONFIRM_sseq_3);
     }
 
@@ -186,7 +186,7 @@ u32 BattleSubMenuCursorTick(BattleSubMenuCursor *cursor)
 
             cursor->currentPositionIndex = nextPositionIndex;
 
-            CursorRenderer_DrawOnSubscreen(cursor->sprites, x1, x2, y1, y2);
+            CursorRenderer_DrawOnMainScreen(cursor->sprites, x1, x2, y1, y2);
             Sound_PlayEffect(SE_CONFIRM_sseq_3);
         }
 

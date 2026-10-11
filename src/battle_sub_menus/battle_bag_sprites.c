@@ -89,7 +89,7 @@ void BattleBagSprites_InitializeSprites(BattleBag *battleBag)
     InitializeCursor(battleBag);
     InitializeCatchTutorialCursor(battleBag);
 
-    GXLayers_EngineBToggleLayers(GX_PLANEMASK_OBJ, TRUE);
+    GXLayers_EngineAToggleLayers(GX_PLANEMASK_OBJ, TRUE);
 }
 
 static void InitializeSpriteManager(BattleBag *battleBag)
@@ -109,8 +109,8 @@ static void LoadSpriteData(BattleBag *battleBag)
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleBag->context->battleSys);
 
     for (u32 i = 0; i < NUM_BATTLE_BAG_SPRITES; i++) {
-        SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleBag->spriteManager, narc, Item_FileID(ITEM_MASTER_BALL, ITEM_FILE_TYPE_ICON), FALSE, NNS_G2D_VRAM_TYPE_2DSUB, POCKET_SLOT_1_RESOURCE_ID + i);
-        SpriteSystem_LoadPaletteBufferFromOpenNarc(battleBag->palette, PLTTBUF_SUB_OBJ, spriteSystem, battleBag->spriteManager, narc, Item_FileID(ITEM_MASTER_BALL, ITEM_FILE_TYPE_PALETTE), FALSE, 1, NNS_G2D_VRAM_TYPE_2DSUB, POCKET_SLOT_1_RESOURCE_ID + i);
+        SpriteSystem_LoadCharResObjFromOpenNarc(spriteSystem, battleBag->spriteManager, narc, Item_FileID(ITEM_MASTER_BALL, ITEM_FILE_TYPE_ICON), FALSE, NNS_G2D_VRAM_TYPE_2DMAIN, POCKET_SLOT_1_RESOURCE_ID + i);
+        SpriteSystem_LoadPaletteBufferFromOpenNarc(battleBag->palette, PLTTBUF_MAIN_OBJ, spriteSystem, battleBag->spriteManager, narc, Item_FileID(ITEM_MASTER_BALL, ITEM_FILE_TYPE_PALETTE), FALSE, 1, NNS_G2D_VRAM_TYPE_2DMAIN, POCKET_SLOT_1_RESOURCE_ID + i);
     }
 
     SpriteSystem_LoadCellResObjFromOpenNarc(spriteSystem, battleBag->spriteManager, narc, Item_IconNCERFile(), FALSE, POCKET_SLOT_1_RESOURCE_ID);
@@ -126,7 +126,7 @@ static void LoadItemIcon(BattleBag *battleBag, u16 item, u32 resourceID)
 
 static void LoadItemPaletteData(BattleBag *battleBag, u16 item, u16 slotIndex, u32 resourceID)
 {
-    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, Item_FileID(item, ITEM_FILE_TYPE_PALETTE), battleBag->context->heapID, PLTTBUF_SUB_OBJ, PALETTE_SIZE_BYTES, PLTT_DEST(slotIndex));
+    PaletteData_LoadBufferFromFileStart(battleBag->palette, NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, Item_FileID(item, ITEM_FILE_TYPE_PALETTE), battleBag->context->heapID, PLTTBUF_MAIN_OBJ, PALETTE_SIZE_BYTES, PLTT_DEST(slotIndex));
 }
 
 static ManagedSprite *CreateSprite(BattleBag *battleBag, u32 spriteIndex)
@@ -140,7 +140,7 @@ static ManagedSprite *CreateSprite(BattleBag *battleBag, u32 spriteIndex)
     template.animIdx = 0;
     template.priority = sPocketItemSpriteResourcesAndPriority[spriteIndex].priority;
     template.plttIdx = 0;
-    template.vramType = NNS_G2D_VRAM_TYPE_2DSUB;
+    template.vramType = NNS_G2D_VRAM_TYPE_2DMAIN;
     template.resources[SPRITE_RESOURCE_CHAR] = sPocketItemSpriteResourcesAndPriority[spriteIndex].charResID;
     template.resources[SPRITE_RESOURCE_PLTT] = sPocketItemSpriteResourcesAndPriority[spriteIndex].plttResID;
     template.resources[SPRITE_RESOURCE_CELL] = sPocketItemSpriteResourcesAndPriority[spriteIndex].cellResID;
@@ -234,8 +234,8 @@ static void InitializeCursor(BattleBag *battleBag)
     SpriteSystem *spriteSystem = BattleSystem_GetSpriteSystem(battleBag->context->battleSys);
     CursorRenderer *cursorSprites;
 
-    CursorRenderer_LoadResources(spriteSystem, battleBag->spriteManager, battleBag->palette, battleBag->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID);
-    cursorSprites = CursorRenderer_New(spriteSystem, battleBag->spriteManager, battleBag->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID, 0, 1);
+    CursorRenderer_LoadResourcesOnMainScreen(spriteSystem, battleBag->spriteManager, battleBag->palette, battleBag->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID);
+    cursorSprites = CursorRenderer_NewOnMainScreen(spriteSystem, battleBag->spriteManager, battleBag->context->heapID, CURSOR_CHAR_RESOURCE_ID, CURSOR_PLTT_RESOURCE_ID, CURSOR_CELL_RESOURCE_ID, CURSOR_ANIM_RESOURCE_ID, 0, 1);
 
     SetBattleSubMenuCursorSprites(battleBag->cursor, cursorSprites);
 }
