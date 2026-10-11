@@ -116,7 +116,7 @@ static void sub_02062010(MapObject *mapObj);
 static void sub_020620C4(UnkStruct_020620C4 *param0);
 static MapObject *sub_02062120(const MapObjectManager *mapObjMan);
 static MapObject *sub_02062154(const MapObjectManager *mapObjMan, int param1, int param2);
-static void MapObjectMan_AddMoveTask(const MapObjectManager *mapObjMan, MapObject *mapObj);
+static BOOL MapObjectMan_AddMoveTask(const MapObjectManager *mapObjMan, MapObject *mapObj);
 static void sub_020621E8(MapObject *mapObj, const ObjectEvent *objectEvent, FieldSystem *fieldSystem);
 static void sub_020622B8(MapObject *mapObj, const ObjectEvent *objectEvent);
 static void sub_0206234C(MapObject *mapObj, const MapObjectManager *mapObjMan);
@@ -290,10 +290,15 @@ MapObject *MapObjectMan_AddMapObjectFromHeader(const MapObjectManager *mapObjMan
     mapObj->streamedNeighbor = streamedNeighbor;
 #endif
     MapObject_SetMapHeaderID(mapObj, mapHeaderID);
+    // Reserve the task before initializing movement or graphics resources.
+    // A full scheduler must not leave an allocated, taskless object behind.
+    if (!MapObjectMan_AddMoveTask(mapObjMan, mapObj)) {
+        sub_0206243C(mapObj);
+        return NULL;
+    }
     sub_02062660(mapObj);
     sub_02062670(mapObj);
     MapObject_SetStatusFlagOn(mapObj, MAP_OBJ_STATUS_START_MOVEMENT);
-    MapObjectMan_AddMoveTask(mapObjMan, mapObj);
     MapObjectMan_IncObjectCount(MapObjectMan_Deconst(mapObjMan));
 
     return mapObj;
@@ -494,6 +499,10 @@ void MapObjectMan_LoadAllObjects(const MapObjectManager *mapObjMan, MapObjectSav
             mapObj = sub_02062120(mapObjMan);
             GF_ASSERT(mapObj != NULL);
 
+            if (mapObj == NULL) {
+                break;
+            }
+
             MapObject_LoadSave(mapObj, mapObjSave);
             sub_02061FA8(mapObjMan, mapObj);
         }
@@ -595,10 +604,13 @@ static void sub_02061FA8(const MapObjectManager *mapObjMan, MapObject *mapObj)
     sub_02061FF0(mapObj);
     sub_02062010(mapObj);
     MapObject_SetMapObjectManager(mapObj, mapObjMan);
+    if (!MapObjectMan_AddMoveTask(mapObjMan, mapObj)) {
+        sub_0206243C(mapObj);
+        return;
+    }
     sub_0206239C(mapObj);
     sub_020656DC(mapObj);
     sub_02062670(mapObj);
-    MapObjectMan_AddMoveTask(mapObjMan, mapObj);
     sub_02062B34(mapObj);
     MapObjectMan_IncObjectCount(MapObjectMan_Deconst(mapObjMan));
 }
@@ -710,7 +722,7 @@ static MapObject *sub_02062154(const MapObjectManager *mapObjMan, int param1, in
     return NULL;
 }
 
-static void MapObjectMan_AddMoveTask(const MapObjectManager *mapObjMan, MapObject *mapObj)
+static BOOL MapObjectMan_AddMoveTask(const MapObjectManager *mapObjMan, MapObject *mapObj)
 {
     int v0 = MapObjectMan_GetTaskBasePriority(mapObjMan);
     int movementType = MapObject_GetMovementType(mapObj);
@@ -722,9 +734,12 @@ static void MapObjectMan_AddMoveTask(const MapObjectManager *mapObjMan, MapObjec
     }
 
     task = SysTask_Start(MapObjectTask_Move, mapObj, v0);
-    GF_ASSERT(task != NULL);
+    if (task == NULL) {
+        return FALSE;
+    }
 
     sub_02062A1C(mapObj, task);
+    return TRUE;
 }
 
 static void sub_020621E8(MapObject *mapObj, const ObjectEvent *objectEvent, FieldSystem *fieldSystem)
@@ -1553,7 +1568,10 @@ SysTask *sub_02062A24(const MapObject *mapObj)
 
 void sub_02062A2C(const MapObject *mapObj)
 {
-    SysTask_Done(sub_02062A24(mapObj));
+    SysTask *task = sub_02062A24(mapObj);
+    if (task != NULL) {
+        SysTask_Done(task);
+    }
 }
 
 void MapObject_SetMapObjectManager(MapObject *mapObj, const MapObjectManager *mapObjMan)

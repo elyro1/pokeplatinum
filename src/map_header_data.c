@@ -107,7 +107,11 @@ static BOOL MapHeaderData_IsObjectNearZone(const FieldSystem *fieldSystem, const
 
 void MapHeaderData_PreloadNeighborObjects(FieldSystem *fieldSystem)
 {
-    if (!MapHeader_IsOnMainMatrix(fieldSystem->location->mapHeaderID) || MapMatrix_GetMatrixID(fieldSystem->mapMatrix) != 0) {
+    // Everywhere covers disconnected empty cells across the whole matrix;
+    // treating it as a zone would stream neighbors from all over Sinnoh.
+    if (fieldSystem->location->mapHeaderID == MAP_HEADER_EVERYWHERE
+        || !MapHeader_IsOnMainMatrix(fieldSystem->location->mapHeaderID)
+        || MapMatrix_GetMatrixID(fieldSystem->mapMatrix) != 0) {
         return;
     }
 

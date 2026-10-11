@@ -416,12 +416,25 @@ static BOOL FieldMap_ChangeZone(FieldSystem *fieldSystem)
         return FALSE;
     }
 
-    int x = (PlayerAvatar_GetXPos(fieldSystem->playerAvatar) - LandDataManager_GetOffsetTileX(fieldSystem->landDataMan)) / MAP_TILES_COUNT_X;
-    int y = (PlayerAvatar_GetZPos(fieldSystem->playerAvatar) - LandDataManager_GetOffsetTileZ(fieldSystem->landDataMan)) / MAP_TILES_COUNT_Z;
+    int tileX = PlayerAvatar_GetXPos(fieldSystem->playerAvatar) - LandDataManager_GetOffsetTileX(fieldSystem->landDataMan);
+    int tileZ = PlayerAvatar_GetZPos(fieldSystem->playerAvatar) - LandDataManager_GetOffsetTileZ(fieldSystem->landDataMan);
+
+    // Wallhack can leave the matrix. Check before dividing so negative tiles
+    // cannot truncate into the first cell.
+    if (tileX < 0 || tileZ < 0
+        || tileX >= MapMatrix_GetWidth(fieldSystem->mapMatrix) * MAP_TILES_COUNT_X
+        || tileZ >= MapMatrix_GetHeight(fieldSystem->mapMatrix) * MAP_TILES_COUNT_Z) {
+        return FALSE;
+    }
+
+    int x = tileX / MAP_TILES_COUNT_X;
+    int y = tileZ / MAP_TILES_COUNT_Z;
 
     enum MapHeaderID newMapHeaderID = MapMatrix_GetMapHeaderIDAtCoords(fieldSystem->mapMatrix, x, y);
     enum MapHeaderID oldMapHeaderID = fieldSystem->location->mapHeaderID;
-    if (newMapHeaderID == oldMapHeaderID) {
+    // Empty cells are not playable zones. Retain the last valid zone until
+    // the player re-enters authored terrain.
+    if (newMapHeaderID == MAP_HEADER_EVERYWHERE || newMapHeaderID == oldMapHeaderID) {
         return FALSE;
     }
 
