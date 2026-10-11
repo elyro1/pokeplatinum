@@ -71,7 +71,7 @@ static void BattleSubscreen_DrawMainMenuText(Window *unk_04, String *string, int
 static void BattleSubscreen_DrawMainActionMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_ClearMainActionMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen);
-static void BattleSubscreen_RestoreMainMovePrompt(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_ClearMainMoveMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawStopMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
 static int BattleSubscreen_ProcessActionInput(BattleSubscreen *btlSubscreen, int selectedAction, int unused);
 static int BattleSubscreen_ProcessMoveInput(BattleSubscreen *btlSubscreen, int selectedMove, int unused);
@@ -1370,7 +1370,7 @@ int BattleSystem_MenuInput(BattleSubscreen *btlSubscreen)
                     BattleSubscreen_ClearMainActionMenu(btlSubscreen);
                 }
             } else if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex) && buttonResult != 0xFF) {
-                BattleSubscreen_RestoreMainMovePrompt(btlSubscreen);
+                BattleSubscreen_ClearMainMoveMenu(btlSubscreen);
             }
 
             MI_CpuClear8(&btlSubscreen->cursor, sizeof(MenuCursor));
@@ -1795,8 +1795,12 @@ static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen
     String_Free(ppLabel);
 }
 
-static void BattleSubscreen_RestoreMainMovePrompt(BattleSubscreen *btlSubscreen)
+static void BattleSubscreen_ClearMainMoveMenu(BattleSubscreen *btlSubscreen)
 {
+    // The move menu covers the prepared action prompt, including its touch
+    // indicator. Clear it before restoring the dialogue window on confirmation.
+    Window *window = BattleSystem_GetWindow(btlSubscreen->battleSys, 0);
+    Window_FillTilemap(window, 0xFF);
     BattleSubscreen_ClearMainActionMenu(btlSubscreen);
 }
 
