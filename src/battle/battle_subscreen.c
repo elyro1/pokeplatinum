@@ -3620,6 +3620,11 @@ static int BattleSystem_Cursor_Moves(BattleSubscreen *btlSubscreen, BOOL cursorH
     }
 
     MI_CpuCopy8(sMoveMenuButtonLayout, buttonLayout, sizeof(buttonLayout));
+    for (i = 0; i < LEARNED_MOVES_MAX; i++) {
+        if (moveData->moveIDs[i] == MOVE_NONE) {
+            buttonLayout[i / 2][i % 2] = 0xff;
+        }
+    }
     button = BattleSystem_MoveCursor(cursor, 2, 2, buttonLayout[0]);
 
     switch (button) {
