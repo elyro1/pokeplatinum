@@ -220,6 +220,10 @@ typedef struct BattleSubscreen {
     MenuCursor cursor;
     u8 suppressActivationSfx;
     u8 isWaitingForPartner;
+    u8 targetBlinkActive;
+    u8 targetBlinkFrame;
+    u8 targetBlinkSlot;
+    u8 targetWasHidden[MAX_BATTLERS];
     struct {
         Indicator *indicator;
         u8 step;
