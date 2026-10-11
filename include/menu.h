@@ -9,7 +9,11 @@
 #include "colored_arrow.h"
 #include "string_list.h"
 
-typedef uPtr menu_selection_t;
+#ifdef SDK_BUILD_ARM
+typedef u32 menu_selection_t;
+#else
+typedef u64 menu_selection_t;
+#endif
 
 enum MenuAction {
     MENU_ACTION_NONE = 0,

@@ -8,7 +8,11 @@
 
 #define STRING_LIST_TERMINATOR ((void *)0xFFFFFFFF)
 
-typedef uPtr list_index_t;
+#ifdef SDK_BUILD_ARM
+typedef u32 list_index_t;
+#else
+typedef u64 list_index_t;
+#endif
 
 typedef struct StringList {
     void *entry;
