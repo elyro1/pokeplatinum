@@ -4,7 +4,6 @@ map_data_files = copy_gen.process(files(
     'map_data_003.bin',
     'map_data_004.bin',
     'map_data_005.bin',
-    'map_data_006.bin',
     'map_data_007.bin',
     'map_data_009.bin',
     'map_data_010.bin',
@@ -656,6 +655,20 @@ map_data_files = copy_gen.process(files(
     'map_data_664.bin',
     'map_data_665.bin'
 ))
+
+route_201_source = files('map_data_006.bin')
+if build_target != 'arm'
+    route_201_source = custom_target('route_201_widescreen',
+        input: route_201_source,
+        output: 'map_data_006.bin',
+        depend_files: files('../../../../tools/scripts/map_scenery.py'),
+        command: [
+            find_program('../../../../tools/scripts/extend_route_201.py', native: true),
+            '@INPUT@', '@OUTPUT@',
+        ],
+    )
+endif
+map_data_files = [map_data_files, copy_gen.process(route_201_source)]
 
 twinleaf_source = files('map_data_000.bin')
 if build_target != 'arm'
