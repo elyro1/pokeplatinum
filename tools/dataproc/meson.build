@@ -22,7 +22,8 @@ dataproc_dep = declare_dependency(
         c_args: dataproc_cflags,
 
         include_directories: include_directories('lib/include'),
-        dependencies: dependency('yyjson'),
+        # dataproc requires the byte spans added by our yyjson wrap patches.
+        dependencies: subproject('yyjson').get_variable('yyjson_dep'),
         native: true,
     ),
 )
