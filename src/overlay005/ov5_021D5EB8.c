@@ -909,6 +909,7 @@ void ov5_021D63A4(UnkStruct_ov5_021D6594 **param0)
         ov5_021D62BC(&(*param0)->unk_08);
 #ifdef SDK_PORT
         SIM_SetFieldOverlayTiled(FALSE);
+        SIM_SetFieldDarknessMask(FALSE);
 #endif
 
         NARC_dtor((*param0)->unk_144);
@@ -1555,6 +1556,8 @@ static void ov5_021D6E20(UnkStruct_ov5_021D6594 *param0, int param1)
         // Dense snow, sand, ash and Eterna Forest use seamless scrolling tilemaps.
         // Other overlays retain edge extension, including the dark cave mask.
         SIM_SetFieldOverlayTiled(param1 == 0 || param1 == 1 || param1 == 3 || param1 == 9);
+        // Flash's opaque cave mask does not use alpha blending.
+        SIM_SetFieldDarknessMask(param1 == 7);
 #endif
 
         v0.unk_08 = NARC_AllocAndReadWholeMember(param0->unk_144, param0->unk_04[param1].unk_08, 4);
