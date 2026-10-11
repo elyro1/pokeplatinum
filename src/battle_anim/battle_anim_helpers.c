@@ -851,7 +851,11 @@ static void CustomBgScrollContext_DoDMA(void *param)
     CustomBgScrollContext_DoDMAImpl(ctx);
 }
 
+#ifdef SDK_BUILD_ARM
 CustomBgScrollContext *CustomBgScrollContext_New(u32 offsetReg, u32 initValue, enum HeapID heapID)
+#else
+CustomBgScrollContext *CustomBgScrollContext_New(u64 offsetReg, u32 initValue, enum HeapID heapID)
+#endif
 {
     CustomBgScrollContext *ctx = Heap_Alloc(heapID, sizeof(CustomBgScrollContext));
     memset(ctx, 0, sizeof(CustomBgScrollContext));
