@@ -1132,8 +1132,12 @@ static BOOL NamingScreen_Init(ApplicationManager *appMan, int *state)
             HEAP_ID_NAMING_SCREEN_APP);
         NamingScreen_ToggleEngineLayers(TRUE);
 
-        // Keep the nickname keyboard and name preview on the main display.
-        gSystem.whichScreenIs3D = namingScreen->type == NAMING_SCREEN_TYPE_POKEMON ? DS_SCREEN_MAIN : DS_SCREEN_SUB;
+        // Keep the player, rival, and nickname keyboards and name previews on the main display.
+        gSystem.whichScreenIs3D = (namingScreen->type == NAMING_SCREEN_TYPE_PLAYER
+                                     || namingScreen->type == NAMING_SCREEN_TYPE_RIVAL
+                                     || namingScreen->type == NAMING_SCREEN_TYPE_POKEMON)
+            ? DS_SCREEN_MAIN
+            : DS_SCREEN_SUB;
         GXLayers_SwapDisplay();
 
         NARC_dtor(narc);
