@@ -1,3 +1,6 @@
+#ifdef SDK_PORT
+#include "port/field_visual_effects.h"
+#endif
 #include "easy3d.h"
 
 #include <nitro.h>
@@ -63,7 +66,13 @@ void Easy3D_DrawRenderObj(NNSG3dRenderObj *renderObj, const VecFx32 *pos, const 
     NNS_G3dGlbSetBaseRot(rot);
     NNS_G3dGlbSetBaseScale(scale);
     NNS_G3dGlbFlush();
+#ifdef SDK_PORT
+    BOOL nightModel = FieldVisualEffects_BeginModel(renderObj);
+#endif
     NNS_G3dDraw(renderObj);
+#ifdef SDK_PORT
+    FieldVisualEffects_EndModel(renderObj, nightModel);
+#endif
 }
 
 void Easy3D_DrawRenderObjSimple(NNSG3dRenderObj *renderObj, const VecFx32 *pos, const MtxFx33 *rot, const VecFx32 *scale)

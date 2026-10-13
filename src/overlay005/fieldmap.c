@@ -6,6 +6,12 @@
 #include "pc_frame_profile.h"
 #ifdef SDK_PORT
 #include <simulator/sim.h>
+#include "port/field_visuals.h"
+#include "overlay005/model_attributes.h"
+#include "port/field_visual_effects.h"
+#include "port/sim_config_prj.h"
+#include "constants/overworld_weather.h"
+#include "rtc.h"
 #endif
 
 #include "constants/field/dynamic_map_features.h"
@@ -712,6 +718,106 @@ void ov5_021D15E8(void)
     PlttTransfer_Free();
 }
 
+#ifdef SDK_PORT
+static void FieldMap_ApplyVisualEnhancements(FieldSystem *fieldSystem)
+{
+    FieldGrade grade;
+    float fog[3] = { 0, 0, 0 }, strength = 0;
+    SIM_Config_prj_type *config = SIM_Config_prj_GetConfig();
+    enum MapHeaderID map = fieldSystem->location->mapHeaderID;
+    int weather = FieldOverworldState_GetWeather(SaveData_GetFieldOverworldState(fieldSystem->saveData));
+    int seconds = FieldVisuals_GetTime(GetSecondsSinceMidnight());
+    BOOL outdoors = MapHeader_IsOutdoors(map);
+    BOOL cave = MapHeader_IsCave(map);
+    BOOL ordinaryScene = !FieldMap_InDistortionWorld(fieldSystem)
+        && !fieldSystem->encounterEffectBorders && fieldSystem->npcSceneNativeViewLocks == 0
+        && fieldSystem->areaLightMan->applyToAreaModelAttrs;
+    // Authored fog, Flash, sandstorms and supernatural effects retain their
+    // exact visibility. UI composition happens after this world-only pass.
+    BOOL ordinaryWeather = FieldVisuals_IsOrdinaryWeather(weather);
+    enum FieldAtmosphereRegion region = cave ? FIELD_ATMOSPHERE_CAVE : FIELD_ATMOSPHERE_PLAIN;
+    switch (map) {
+    case MAP_HEADER_ETERNA_FOREST:
+    case MAP_HEADER_ETERNA_FOREST_OUTSIDE:
+    case MAP_HEADER_FULLMOON_ISLAND_FOREST:
+    case MAP_HEADER_NEWMOON_ISLAND_FOREST:
+    case MAP_HEADER_GREAT_MARSH_1:
+    case MAP_HEADER_GREAT_MARSH_2:
+    case MAP_HEADER_GREAT_MARSH_3:
+    case MAP_HEADER_GREAT_MARSH_4:
+    case MAP_HEADER_GREAT_MARSH_5:
+    case MAP_HEADER_GREAT_MARSH_6:
+        region = FIELD_ATMOSPHERE_FOREST;
+        break;
+    case MAP_HEADER_ROUTE_216:
+    case MAP_HEADER_ROUTE_217:
+    case MAP_HEADER_SNOWPOINT_CITY:
+    case MAP_HEADER_ACUITY_LAKEFRONT:
+    case MAP_HEADER_LAKE_ACUITY:
+    case MAP_HEADER_LAKE_ACUITY_LOW_WATER:
+    case MAP_HEADER_MT_CORONET_OUTSIDE_NORTH:
+    case MAP_HEADER_MT_CORONET_OUTSIDE_SOUTH:
+        region = FIELD_ATMOSPHERE_SNOW;
+        break;
+    case MAP_HEADER_ROUTE_213:
+    case MAP_HEADER_ROUTE_222:
+    case MAP_HEADER_ROUTE_223:
+    case MAP_HEADER_SUNYSHORE_CITY:
+    case MAP_HEADER_CANALAVE_CITY:
+    case MAP_HEADER_LAKE_VERITY:
+    case MAP_HEADER_LAKE_VALOR:
+    case MAP_HEADER_VALOR_LAKEFRONT:
+    case MAP_HEADER_FULLMOON_ISLAND:
+    case MAP_HEADER_NEWMOON_ISLAND:
+        region = FIELD_ATMOSPHERE_COAST;
+        break;
+    }
+    if ((weather >= OVERWORLD_WEATHER_SNOWING && weather <= OVERWORLD_WEATHER_HEAVY_SNOW)
+        || weather == OVERWORLD_WEATHER_HAILING) region = FIELD_ATMOSPHERE_SNOW;
+
+    // Forest's dappled BG overlay is not a visibility-limiting weather effect.
+    // Several exterior maps (forests/lakes) are internally marked as caves.
+    ordinaryWeather |= region == FIELD_ATMOSPHERE_FOREST && weather == OVERWORLD_WEATHER_23;
+    BOOL exterior = outdoors || region == FIELD_ATMOSPHERE_FOREST
+        || region == FIELD_ATMOSPHERE_COAST || region == FIELD_ATMOSPHERE_SNOW;
+    if (ordinaryScene && exterior && ordinaryWeather && config->correctLighting) {
+        // Map ground shadows are authored for a northwest key light. Keep the
+        // outdoor sun/moon consistent with those fixed shadows at every time.
+        VecFx16 direction = FieldVisuals_OutdoorKeyLight();
+        ModelAttributes_SetLightVector(fieldSystem->areaModelAttrs, 0,
+            direction.x, direction.y, direction.z);
+    }
+    // One grade shapes the archived light palettes over the day; it replaces
+    // separate tint, ambient and key-light multipliers.
+    if (ordinaryScene && exterior && config->enhancedDayNight && ordinaryWeather) {
+        FieldVisuals_Grade(seconds, region, weather, &grade);
+    } else {
+        FieldVisuals_IdentityGrade(&grade);
+    }
+    if (ordinaryScene && (outdoors || cave) && config->regionalAtmosphere && ordinaryWeather
+        && !FogManager_IsEnabled(fieldSystem->fogMan)
+        && fieldSystem->camera->projection == CAMERA_PROJECTION_PERSPECTIVE) {
+        FieldVisuals_Atmosphere(region, weather, seconds, config->enhancedDayNight, fog, &strength);
+    }
+    // Falling ash keeps the game's own haze and colors, but the effects (lava
+    // glow, shadows) still run in it.
+    BOOL effectsWeather = ordinaryWeather || weather == OVERWORLD_WEATHER_SLOW_ASHFALL;
+    SIM_SetFieldEmissionDebug(ordinaryScene && exterior && effectsWeather && FieldVisuals_IsEmissionDebug());
+    if (ordinaryScene && exterior && effectsWeather && config->nightGlows && config->emissiveBloom) {
+        // Emission already fades with the sun; skip the passes in daylight
+        // unless something glows by day there.
+        FieldNightLighting night;
+        FieldVisuals_NightLighting(seconds, &night);
+        if (night.emissionActivation > 0 || FieldVisuals_HasDayEmission(fieldSystem->location->mapHeaderID))
+            SIM_SetFieldBloom(FIELD_BLOOM_PEAK);
+    }
+    float distance = FX_FX32_TO_F32(Camera_GetDistance(fieldSystem->camera));
+    SIM_SetFieldGrade(grade.shadows, grade.highlights, grade.exposure, grade.saturation, grade.contrast);
+    SIM_SetFieldAtmosphere(fog[0], fog[1], fog[2], strength, distance - 80.0f, distance + 120.0f);
+    FieldVisualEffects_SetScene(fieldSystem, ordinaryScene && effectsWeather, region, weather);
+}
+#endif
+
 static void ov5_021D15F4(FieldSystem *fieldSystem)
 {
     MtxFx44 v0, v1;
@@ -744,9 +850,13 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
     fieldSystem->npcSceneViewMatrix = *NNS_G3dGlbGetCameraMtx();
     fieldSystem->npcSceneProjectionMatrix = *NNS_G3dGlbGetProjectionMtx();
     fieldSystem->npcSceneRenderFrame++;
+    FieldMap_ApplyVisualEnhancements(fieldSystem);
 #endif
 
     PokeRadar_ClearIfAllOutOfView(fieldSystem);
+#ifdef SDK_PORT
+    SIM_SetFieldSurface(TRUE);
+#endif
     LandDataManager_RenderLoadedMaps(fieldSystem->landDataMan, fieldSystem->areaModelAttrs);
 
     if (FieldMap_InDistortionWorld(fieldSystem) == TRUE) {
@@ -754,6 +864,9 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
     }
 
     MapPropManager_Render2(fieldSystem->mapPropManager, fieldSystem->areaDataManager);
+#ifdef SDK_PORT
+    SIM_SetFieldSurface(FALSE);
+#endif
 
     {
         const MtxFx44 *v2;
@@ -779,7 +892,13 @@ static void ov5_021D15F4(FieldSystem *fieldSystem)
         NNS_G3dGlbFlush();
     }
 
+#ifdef SDK_PORT
+    FieldVisualEffects_Render(fieldSystem);
+#endif
     ov5_021D1B18(fieldSystem->unk_04->unk_04);
+#ifdef SDK_PORT
+    FieldVisualEffects_EndScene();
+#endif
     G3_RequestSwapBuffers(GX_SORTMODE_AUTO, gBufferMode);
 }
 

@@ -1,5 +1,9 @@
 #include "overlay005/map_prop_animation.h"
 
+#ifdef SDK_PORT
+#include "port/sim_config_prj.h"
+#endif
+
 #include <nitro.h>
 
 #include "constants/heap.h"
@@ -512,17 +516,27 @@ void MapPropAnimation_GoToLastFrame(MapPropAnimation *animation)
 
 void MapPropAnimation_AdvanceFrame(MapPropAnimation *animation)
 {
-    if (!animation->reversed) {
-        animation->animationObj->frame += (FX32_ONE);
+    fx32 step = FX32_ONE;
+#ifdef SDK_PORT
+    // At 60 FPS the field updates twice per original frame. Half steps still
+    // land exactly on the first, last and wrap-around frames checked here.
+    SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
+    if (myConfig->enable60fps) {
+        step = FX32_ONE / 2;
+    }
+#endif
 
-        if (animation->animationObj->frame == NNS_G3dAnmObjGetNumFrame(animation->animationObj)) {
+    if (!animation->reversed) {
+        animation->animationObj->frame += step;
+
+        if (animation->animationObj->frame >= NNS_G3dAnmObjGetNumFrame(animation->animationObj)) {
             animation->animationObj->frame = 0;
         }
     } else {
         if (animation->animationObj->frame <= 0) {
             animation->animationObj->frame = NNS_G3dAnmObjGetNumFrame(animation->animationObj) - (FX32_ONE);
         } else {
-            animation->animationObj->frame -= (FX32_ONE);
+            animation->animationObj->frame -= step;
         }
     }
 }

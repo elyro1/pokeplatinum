@@ -11,6 +11,7 @@
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
 #include <simulator/sim.h>
 #endif
+#include "port/field_visual_effects.h"
 #endif
 
 enum BillboardAnimStatus {
@@ -275,7 +276,14 @@ static void BillboardList_Draw(BillboardList *list)
                 rotMatrix = &identityMatrix;
             }
 
+#ifdef SDK_PORT
+            BOOL lit = FieldVisualEffects_BeginCharacter(billboard);
+#endif
             Easy3D_DrawRenderObj(&billboard->renderObj, &billboard->pos, rotMatrix, &billboard->scale);
+#ifdef SDK_PORT
+            FieldVisualEffects_EndCharacter(lit);
+            FieldVisualEffects_DrawCastShadows(billboard);
+#endif
             ReleaseVRAMKeysAndModelSet(billboard);
         }
 

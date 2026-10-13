@@ -36,6 +36,7 @@
 
 #ifdef SDK_PORT
 #include "port/sim_config_prj.h"
+#include <simulator/sim.h>
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
 #include "port/map_patches.h"
 #endif
@@ -153,6 +154,10 @@ void NitroMain(void)
 #endif
 
     while (TRUE) {
+#ifdef SDK_PORT
+        SIM_Set3DAntialiasing(myConfig->antialias3D);
+        SIM_SetLightingCorrection(myConfig->correctLighting);
+#endif
         CheckHeapCanary();
         HandleConsoleFold();
         ReadKeypadAndTouchpad();

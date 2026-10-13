@@ -1,3 +1,8 @@
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+
+#include "port/field_visual_effects.h"
+#endif
 #include "overlay005/map_prop.h"
 
 #include <nitro.h>
@@ -163,6 +168,9 @@ void MapPropManager_Render(const VecFx32 *positionOffset, const AreaDataManager 
                         MODEL_LIGHT_VECTOR_1 | MODEL_LIGHT_VECTOR_2 | MODEL_LIGHT_COLOR_1 | MODEL_LIGHT_COLOR_2 | MODEL_DIFFUSE_REFLECT_COLOR | MODEL_AMBIENT_REFLECT_COLOR | MODEL_SPECULAR_REFLECT_COLOR | MODEL_EMISSION_COLOR);
                 }
 
+#ifdef SDK_PORT
+                FieldVisualEffects_RegisterProp(loadedProp->modelID, &position, &loadedProp->scale);
+#endif
                 MapProp_GetMaterialShapeIDsCount(loadedProp->modelID, propMatShp, &propMatShpIDsCount);
 
                 if (propMatShpIDsCount == 0) {
@@ -170,6 +178,9 @@ void MapPropManager_Render(const VecFx32 *positionOffset, const AreaDataManager 
                 } else {
                     MapPropManager_RenderUsing1Mat1Shp(loadedProp->model, &position, &rotationMatrix, &loadedProp->scale, propMatShp, loadedProp->modelID);
                 }
+#ifdef SDK_PORT
+                FieldVisualEffects_EndProp();
+#endif
             }
         }
     }
@@ -270,8 +281,15 @@ static void MapPropManager_RenderUsing1Mat1Shp(const NNSG3dResMdl *model, VecFx3
             sendMaterial = FALSE;
         }
 
+#ifdef SDK_PORT
+        FieldVisualEffects_SetMaterial(model, materialID);
+#endif
         NNS_G3dDraw1Mat1Shp(model, materialID, propMatShpIDs[i].shapeID, sendMaterial);
     }
+#ifdef SDK_PORT
+    NNS_G3dGeFlushBuffer();
+    SIM_SetFieldEffect(0, 0);
+#endif
 }
 
 u8 MapPropManager_LoadOne(MapPropManager *mapPropManager, AreaDataManager *const areaDataManager, const int modelID, const VecFx32 *position, const VecFx32 *rotation, MapPropAnimationManager *mapPropAnimMan)

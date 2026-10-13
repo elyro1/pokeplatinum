@@ -1019,6 +1019,9 @@ pokeplatinum_c += files(
     'port/battle_timing.c',
     'port/charcode_convert.c',
     'port/debug_field.c',
+    'port/field_lights.c',
+    'port/field_visuals.c',
+    'port/field_visual_effects.c',
     'port/scripted_npc_scene.c',
     'port/sim_config_prj.c',
     'port/sim_gui_prj.cpp',
@@ -1037,6 +1040,16 @@ pokeplatinum_c += files(
     'port/sim_icon.cpp'
 )
 endif
+
+# The field light table, built in as the fallback for field_lights.txt.
+field_lights_header = custom_target('field_lights.inc',
+    output: 'field_lights.inc',
+    input: files('../res/pc_port/field_lights.txt'),
+    command: [find_program('python3', native: true),
+        files('../tools/scripts/embed_text.py'), '@INPUT@', '@OUTPUT@', 'sEmbeddedFieldLights'],
+)
+pokeplatinum_c += field_lights_header
+public_includes = [public_includes, include_directories('.')]
 endif
 
 # Embed resource deltas in desktop executables; the player's ROM supplies bases.

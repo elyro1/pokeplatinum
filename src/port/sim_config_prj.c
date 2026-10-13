@@ -64,6 +64,21 @@ static int IniHandler(void* user, const char* section, const char* name,
     if(MATCH("General", "EnableAsserts")) {
         config->enableAsserts = StringToBool(value);
     }
+    if(MATCH("Graphics", "EnhancedDayNight")) config->enhancedDayNight = StringToBool(value);
+    if(MATCH("Graphics", "RegionalAtmosphere")) config->regionalAtmosphere = StringToBool(value);
+    if(MATCH("Graphics", "Antialias3D")) config->antialias3D = StringToBool(value);
+    if(MATCH("Graphics", "CorrectLighting")) config->correctLighting = StringToBool(value);
+    if(MATCH("Graphics", "EnvironmentalParticles")) config->environmentalParticles = StringToBool(value);
+    if(MATCH("Graphics", "SoftContactShadows")) config->softContactShadows = StringToBool(value);
+    if(MATCH("Graphics", "CastShadows")) config->castShadows = StringToBool(value);
+    if(MATCH("Graphics", "WaterEffects")) config->waterEffects = StringToBool(value);
+    if(MATCH("Graphics", "WeatherEffects")) config->weatherEffects = StringToBool(value);
+    if (MATCH("Graphics", "NightLighting"))
+        config->nightLighting = StringToBool(value);
+    if (MATCH("Graphics", "NightGlows"))
+        config->nightGlows = StringToBool(value);
+    if (MATCH("Graphics", "EmissiveBloom"))
+        config->emissiveBloom = StringToBool(value);
 
     // Cheats section
     if(MATCH("Cheats", "WalkThroughWalls")) {
@@ -111,6 +126,18 @@ void SIM_Config_prj_LoadDefaults(SIM_Config_prj_type * aConfig)
   aConfig->bw2BattleVisuals = FALSE;
   aConfig->enableAsserts = FALSE;
   aConfig->breakDebuggerOnGfAssert = FALSE;
+  aConfig->enhancedDayNight = TRUE;
+  aConfig->regionalAtmosphere = TRUE;
+  aConfig->antialias3D = TRUE;
+  aConfig->correctLighting = TRUE;
+  aConfig->environmentalParticles = TRUE;
+  aConfig->softContactShadows = TRUE;
+  aConfig->castShadows = TRUE;
+  aConfig->waterEffects = TRUE;
+  aConfig->weatherEffects = TRUE;
+  aConfig->nightLighting = TRUE;
+  aConfig->nightGlows = TRUE;
+  aConfig->emissiveBloom = TRUE;
 
   // Cheats section
   aConfig->walkThroughWalls = FALSE;
@@ -140,6 +167,7 @@ BOOL SIM_Config_prj_LoadConfigFile(SIM_Config_prj_type * aConfig)
 void SIM_Config_prj_SaveConfigFile(SIM_Config_prj_type * aConfig)
 {
     FILE * configFile = fopen(SIM_CONFIG_PRJ_FILE_PATH, "w");
+    if (configFile == NULL) return;
     
     fprintf(configFile, "[General]\n");
     fprintf(configFile, "60Fps=%s\n", BoolToString(aConfig->enable60fps));
@@ -149,6 +177,20 @@ void SIM_Config_prj_SaveConfigFile(SIM_Config_prj_type * aConfig)
     fprintf(configFile, "EnableAsserts=%s\n", BoolToString(aConfig->enableAsserts));
     fprintf(configFile, "BreakDebuggerOnAssert=%s\n", BoolToString(aConfig->breakDebuggerOnGfAssert));
     fprintf(configFile, "\n");
+
+    fprintf(configFile, "[Graphics]\n");
+    fprintf(configFile, "EnhancedDayNight=%s\n", BoolToString(aConfig->enhancedDayNight));
+    fprintf(configFile, "RegionalAtmosphere=%s\n", BoolToString(aConfig->regionalAtmosphere));
+    fprintf(configFile, "Antialias3D=%s\n", BoolToString(aConfig->antialias3D));
+    fprintf(configFile, "CorrectLighting=%s\n", BoolToString(aConfig->correctLighting));
+    fprintf(configFile, "EnvironmentalParticles=%s\n", BoolToString(aConfig->environmentalParticles));
+    fprintf(configFile, "SoftContactShadows=%s\n", BoolToString(aConfig->softContactShadows));
+    fprintf(configFile, "CastShadows=%s\n", BoolToString(aConfig->castShadows));
+    fprintf(configFile, "WaterEffects=%s\n", BoolToString(aConfig->waterEffects));
+    fprintf(configFile, "WeatherEffects=%s\n", BoolToString(aConfig->weatherEffects));
+    fprintf(configFile, "NightLighting=%s\n", BoolToString(aConfig->nightLighting));
+    fprintf(configFile, "NightGlows=%s\n", BoolToString(aConfig->nightGlows));
+    fprintf(configFile, "EmissiveBloom=%s\n\n", BoolToString(aConfig->emissiveBloom));
 
     fprintf(configFile, "[Cheats]\n");
     fprintf(configFile, "WalkThroughWalls=%s\n", BoolToString(aConfig->walkThroughWalls));

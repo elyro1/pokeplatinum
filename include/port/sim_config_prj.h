@@ -21,9 +21,21 @@ typedef struct {
     BOOL bw2BattleVisuals; // Show battles with Black 2 / White 2's view when its assets are extracted (docs/bwbattle.md)
     BOOL enableAsserts; // Should asserts cause a communication error?
     BOOL breakDebuggerOnGfAssert; // When true, break the debugger when a GF_ASSERT fails
+    BOOL enhancedDayNight;
+    BOOL regionalAtmosphere;
+    BOOL antialias3D;
+    BOOL correctLighting;
+    BOOL environmentalParticles;
+    BOOL softContactShadows;
+    BOOL castShadows;
+    BOOL waterEffects;
+    BOOL weatherEffects;
+    BOOL nightLighting;
+    BOOL nightGlows;
+    BOOL emissiveBloom;
 
-	// Cheats section
-	BOOL walkThroughWalls; // When enabled, allows the player to walk through walls
+    // Cheats section
+    BOOL walkThroughWalls; // When enabled, allows the player to walk through walls
     BOOL disableRandomEncounters; // When enabled, all random encounters are turned off
     BOOL runFromTrainerBattles; // When enabled, allows running away from trainer battles
 } SIM_Config_prj_type;

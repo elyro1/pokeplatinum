@@ -9,11 +9,15 @@
 #include "overlay005/field_effect_manager.h"
 
 #include "map_object.h"
+#include "map_tile_behavior.h"
 #include "overworld_anim_manager.h"
 #include "rtc.h"
 #include "simple3d.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#ifdef SDK_PORT
+#include "port/field_visual_effects.h"
+#endif
 
 typedef struct {
     int unk_00;
@@ -257,7 +261,16 @@ static void ov5_021F1604(OverworldAnimManager *param0, void *param1)
 
     if (MapObject_CheckStatusFlag(v1, MAP_OBJ_STATUS_HIDE | MAP_OBJ_STATUS_HIDE_SHADOW) == 1) {
         v0->unk_0C = 1;
-        return;
+#ifdef SDK_PORT
+        // Keep enhanced shadows in tall grass, where the original blob hides.
+        if (!MapObject_CheckStatusFlag(v1, MAP_OBJ_STATUS_HIDE)
+            && TileBehavior_IsTallGrass(MapObject_GetCurrTileBehavior(v1))) {
+            v0->unk_0C = 2;
+        }
+#endif
+        if (v0->unk_0C == 1) {
+            return;
+        }
     }
 
     {
@@ -272,7 +285,7 @@ static void ov5_021F1670(OverworldAnimManager *param0, void *param1)
 {
     UnkStruct_ov5_021F15B4 *v0 = param1;
 
-    if (v0->unk_0C == 0) {
+    if (v0->unk_0C != 1) {
         VecFx32 v1, v2;
         MtxFx33 v3 = { FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0, FX32_ONE };
         Simple3DRenderObj *v4 = &v0->unk_14.unk_04->unk_64[0];
@@ -284,6 +297,14 @@ static void ov5_021F1670(OverworldAnimManager *param0, void *param1)
         v1.y += (FX32_ONE * -4);
         v1.z += (FX32_ONE * 1);
 
+#ifdef SDK_PORT
+        FieldSystem *field = FieldEffectManager_GetFieldSystem(v0->unk_14.unk_00);
+        if (FieldVisualEffects_DrawContactShadow(field, v0->unk_14.unk_08,
+                &v1, &v2, &v4->g3DRenderObj.resMdl->info)
+            || v0->unk_0C == 2) {
+            return;
+        }
+#endif
         Simple3D_DrawRenderObj(v4, &v1, &v2, &v3);
     }
 }

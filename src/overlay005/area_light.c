@@ -13,6 +13,10 @@
 #include "graphics.h"
 #include "heap.h"
 #include "rtc.h"
+#ifdef SDK_PORT
+#include "port/field_visuals.h"
+#include "port/sim_config_prj.h"
+#endif
 
 #define AREA_LIGHT_FILE_COUNT 4
 #define SCRATCH_BUFFER_SIZE   256
@@ -35,6 +39,9 @@ AreaLightManager *AreaLightManager_New(ModelAttributes *areaModelAttrs, const u8
     areaLightMan->activeTemplateIndex = 0;
 
     int currentTime = GetSecondsSinceMidnight() / 2;
+#ifdef SDK_PORT
+    currentTime = FieldVisuals_GetTime(GetSecondsSinceMidnight()) / 2;
+#endif
 
     for (int i = 0; i < areaLightMan->templateCount; i++) {
         if (areaLightMan->templates[i].endTime > currentTime) {
@@ -64,6 +71,24 @@ void AreaLightManager_UpdateActiveTemplate(AreaLightManager *areaLightMan)
     GF_ASSERT(areaLightMan);
 
     int currentTime = GetSecondsSinceMidnight() / 2;
+#ifdef SDK_PORT
+    currentTime = FieldVisuals_GetTime(GetSecondsSinceMidnight()) / 2;
+#endif
+
+#ifdef SDK_PORT
+    // Resample after clock jumps and setting changes as well as time boundaries.
+    // Scripted scenes can suspend updates through applyToAreaModelAttrs.
+    if (areaLightMan->applyToAreaModelAttrs) {
+        for (int i = 0; i < areaLightMan->templateCount; i++) {
+            if (areaLightMan->templates[i].endTime > currentTime) {
+                areaLightMan->activeTemplateIndex = i;
+                break;
+            }
+        }
+        AreaLightManager_ApplyActiveTemplateToAreaModelAttrs(areaLightMan);
+    }
+    return;
+#endif
 
     if (areaLightMan->templateCount > 1) {
         int previousEndTime = areaLightMan->activeTemplateIndex - 1 >= 0
@@ -109,6 +134,13 @@ void AreaLightTemplate_ApplyToModelAttributes(const AreaLightTemplate *template,
 static void AreaLightManager_ApplyActiveTemplateToAreaModelAttrs(AreaLightManager *areaLightMan)
 {
     AreaLightTemplate *activeTemplate = &areaLightMan->templates[areaLightMan->activeTemplateIndex];
+#ifdef SDK_PORT
+    AreaLightTemplate blended;
+    if (SIM_Config_prj_GetConfig()->enhancedDayNight) {
+        FieldVisuals_SampleLight(areaLightMan->templates, areaLightMan->templateCount, FieldVisuals_GetTime(GetSecondsSinceMidnight()), &blended);
+        activeTemplate = &blended;
+    }
+#endif
     AreaLightTemplate_ApplyToModelAttributes(activeTemplate, areaLightMan->areaModelAttrs);
 }
 

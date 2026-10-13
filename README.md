@@ -16,6 +16,12 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 - **QoL Repels:** when a Repel wears off, you can use another without reopening the Bag. If that type has run out, an available alternative is offered.
 - **Stability and visual fixes:**
 
+## Visual upgrades
+
+Richer day/night lighting, regional haze, and smooth 3D edges are enabled by default.
+Toggle them under Tab → Application → Config → Graphics.
+See [graphics notes](docs/visual_upgrades.md).
+
 ## How to run
 
 Use a build from this fork's [Releases](https://github.com/elyro1/pokeplatinum/releases) or [GitHub Actions artifacts](https://github.com/elyro1/pokeplatinum/actions), then follow **[cybervisi0n's setup guide](https://github.com/cybervisi0n/pokeplatinum#setup-guide)**. The launch and first-run ROM extraction steps are the same.

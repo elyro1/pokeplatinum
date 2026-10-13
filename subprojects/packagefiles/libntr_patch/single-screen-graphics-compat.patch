@@ -1,0 +1,1213 @@
+diff --git a/include/nitro/gx/g2.h b/include/nitro/gx/g2.h
+index 65bdc0f..220c3d0 100644
+--- a/include/nitro/gx/g2.h
++++ b/include/nitro/gx/g2.h
+@@ -110,6 +110,12 @@ static void G2S_ChangeBlendAlpha(int ev1, int ev2);
+ static void G2S_ChangeBlendBrightness(int brightness);
+ 
+ #ifdef SDK_PORT
++// The OBJ extension of the main engine, for a second set of sprites beside the game's (the BW2 battle view): the OAM
++// entries from firstOam on take their characters charOffset bytes into OBJ VRAM and their colors from the second
++// set of palettes (HW_OBJ_PLTT_EXT). A charOffset that is a multiple of the mapping's reach (64K in 1D 64K mode)
++// lets their character names wrap back to the same numbers. firstOam 128 turns it off, as it starts
++void SIM_SetObjExtension(int firstOam, u32 charOffset);
++
+ void G2x_SetBGyAffine_(u64 addr, const MtxFx22 *mtx, int centerX, int centerY, int x1, int y1);
+ void G2x_SetBlendAlpha_(u64 addr, int plane1, int plane2, int ev1, int ev2);
+ void G2x_SetBlendBrightness_(u64 addr, int plane, int brightness);
+diff --git a/include/nitro/gx/g3imm.h b/include/nitro/gx/g3imm.h
+index 0f07fc3..aab1031 100644
+--- a/include/nitro/gx/g3imm.h
++++ b/include/nitro/gx/g3imm.h
+@@ -18,6 +18,9 @@ extern "C" {
+ #include <simulator/drawmsg.h>
+ #include <simulator/queue.h>
+ extern SIM_queue_t * drawQueuePtr;
++#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
++u32 SIM_EncodeTextureAddress(u32 parameter, u32 baseAddress);
++#endif
+ #endif
+ 
+ static void G3_Direct0(int op);
+@@ -437,6 +440,13 @@ static inline void G3_TexImageParam (GXTexFmt texFmt,
+     msg = (draw_msg_t*)malloc( sizeof( draw_msg_t ) );
+ 
+     msg->type = DRAW_CMD_G3_TEXIMAGEPARAM;
++#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
++    // Textures past the DS's 512 KB live in the simulator's extended store, which the 16-bit address field can't
++    // reach; they are named by a virtual texture ID instead, as NitroSystem's models do
++    if (addr >= 0x80000) {
++        msg->data.numU32 = SIM_EncodeTextureAddress(GX_PACK_TEXIMAGE_PARAM(texFmt, texGen, s, t, repeat, flip, pltt0, 0), addr);
++    } else
++#endif
+     msg->data.numU32 = GX_PACK_TEXIMAGE_PARAM(texFmt, texGen, s, t, repeat, flip, pltt0, addr);
+ 
+     SIM_HandleG3Command( msg );
+diff --git a/include/nitro/hw/X86/mmap_global.h b/include/nitro/hw/X86/mmap_global.h
+index 3be08a2..8fd3313 100644
+--- a/include/nitro/hw/X86/mmap_global.h
++++ b/include/nitro/hw/X86/mmap_global.h
+@@ -56,9 +56,11 @@ extern u8 s_HW_BG_PLTT[0x200];
+ //#define HW_OBJ_PLTT             0x05000200
+ //#define HW_OBJ_PLTT_END         0x05000400
+ //#define HW_OBJ_PLTT_SIZE        (HW_OBJ_PLTT_END-HW_OBJ_PLTT)
+-extern u8 s_HW_OBJ_PLTT[0x200];
++extern u8 s_HW_OBJ_PLTT[0x400];
+ #define HW_OBJ_PLTT             ((u64)s_HW_OBJ_PLTT)
+ #define HW_OBJ_PLTT_END         ((u64)s_HW_OBJ_PLTT + 0x200)
++// The OBJ extension's palettes (SIM_SetObjExtension), after the main ones
++#define HW_OBJ_PLTT_EXT         ((u64)s_HW_OBJ_PLTT + 0x200)
+ #define HW_OBJ_PLTT_SIZE        (HW_OBJ_PLTT_END-HW_OBJ_PLTT)
+ 
+ #define HW_PLTT                 HW_BG_PLTT
+diff --git a/include/nitro/mi/dma.h b/include/nitro/mi/dma.h
+index 3a46232..bc6e921 100644
+--- a/include/nitro/mi/dma.h
++++ b/include/nitro/mi/dma.h
+@@ -265,6 +265,11 @@ static inline void MI_DmaClear16Async (u32 dmaNo, void * dest, u32 size, MIDmaCa
+ }
+ 
+ void MI_DmaSend16Async(u32 dmaNo, const void * src, volatile void * dest, u32 size, MIDmaCallback callback, void * arg);
++#ifdef SDK_PORT
++void MIi_ExecuteHBlankDma(void);
++void MIi_StopHBlankDma(u32 dmaNo);
++BOOL MIi_HBlankDmaWritesTo(const volatile void *address);
++#endif
+ void MI_HBlankDmaCopy32(u32 dmaNo, const void * src, void * dest, u32 size);
+ void MI_HBlankDmaCopy16(u32 dmaNo, const void * src, void * dest, u32 size);
+ void MI_HBlankDmaCopy32If(u32 dmaNo, const void * src, void * dest, u32 size);
+diff --git a/include/simulator/sim.h b/include/simulator/sim.h
+index 0fd1cca..c8f4279 100644
+--- a/include/simulator/sim.h
++++ b/include/simulator/sim.h
+@@ -121,6 +121,10 @@ u32 SIM_DecodeTextureAddress(u32 *parameter);
+ #endif
+ // Repeat seamless weather BG2 textures across the wide field viewport.
+ void SIM_SetFieldOverlayTiled(BOOL enabled);
++// Carry a main-engine BG layer's edge dots on into the wide field viewport's
++// sides on screen rows [firstRow, endRow), as for a band across the screen
++// (the BW2 battle's message window). layer -1 turns it off.
++void SIM_SetFieldEdgeRows(int layer, int firstRow, int endRow);
+ // Extend the opaque cave mask across the wide field viewport.
+ void SIM_SetFieldDarknessMask(BOOL enabled);
+ // Extend the HM cut-in band without stretching its sprites.
+diff --git a/include/simulator/simvariables.h b/include/simulator/simvariables.h
+index 6e41f75..042783c 100644
+--- a/include/simulator/simvariables.h
++++ b/include/simulator/simvariables.h
+@@ -391,7 +391,7 @@ extern u8 s_HW_MAIN_MEM_SUB[0x400000];
+ extern u8 s_HW_MAIN_MEM[0x800000];
+ extern u8 s_HW_MAIN_MEM_EX[0x800000];
+ extern u8 s_HW_BG_PLTT[0x200];
+-extern u8 s_HW_OBJ_PLTT[0x200];
++extern u8 s_HW_OBJ_PLTT[0x400];
+ extern u8 s_HW_DB_BG_PLTT[0x200];
+ extern u8 s_HW_DB_OBJ_PLTT[0x200];
+ extern u8 s_HW_BG_VRAM[0x80000];
+diff --git a/include/twl/hw/X86/mmap_global.h b/include/twl/hw/X86/mmap_global.h
+index 78cf25d..191e567 100644
+--- a/include/twl/hw/X86/mmap_global.h
++++ b/include/twl/hw/X86/mmap_global.h
+@@ -103,7 +103,7 @@ extern u8 s_HW_BG_PLTT[0x200];
+ #define HW_BG_PLTT              ((u64)s_HW_BG_PLTT)
+ #define HW_BG_PLTT_END          ((u64)s_HW_BG_PLTT + 0x200)
+ #define HW_BG_PLTT_SIZE (HW_BG_PLTT_END - HW_BG_PLTT)
+-extern u8 s_HW_OBJ_PLTT[0x200];
++extern u8 s_HW_OBJ_PLTT[0x400];
+ #define HW_OBJ_PLTT             ((u64)s_HW_OBJ_PLTT)
+ #define HW_OBJ_PLTT_END         ((u64)s_HW_OBJ_PLTT + 0x200)
+ #define HW_OBJ_PLTT_SIZE        (HW_OBJ_PLTT_END-HW_OBJ_PLTT)
+diff --git a/libraries/fx/src/fx_mtx33.c b/libraries/fx/src/fx_mtx33.c
+index 6a7d9d5..06f147c 100644
+--- a/libraries/fx/src/fx_mtx33.c
++++ b/libraries/fx/src/fx_mtx33.c
+@@ -31,26 +31,44 @@ void MTX_Identity33_(MtxFx33* pDst)
+ 
+ void MTX_Copy33To43_(const MtxFx33* pSrc, MtxFx43* pDst)
+ {
+-    SIM_assert_always_msg("Not implemented");
+-    return;
++    for (int i = 0; i < 3; i++) {
++        for (int j = 0; j < 3; j++) {
++            pDst->m[i][j] = pSrc->m[i][j];
++        }
++    }
++    pDst->_30 = pDst->_31 = pDst->_32 = 0;
+ }
+ 
+ void MTX_Copy33To44_(const MtxFx33* pSrc, MtxFx44* pDst)
+ {
+-    SIM_assert_always_msg("Not implemented");
+-    return;
++    for (int i = 0; i < 3; i++) {
++        for (int j = 0; j < 3; j++) {
++            pDst->m[i][j] = pSrc->m[i][j];
++        }
++        pDst->m[i][3] = 0;
++    }
++    pDst->_30 = pDst->_31 = pDst->_32 = 0;
++    pDst->_33 = FX32_ONE;
+ }
+ 
+ void MTX_Transpose33_(const MtxFx33* pSrc, MtxFx33* pDst)
+ {
+-    SIM_assert_always_msg("Not implemented");
+-    return;
++    MtxFx33 tmp;
++
++    for (int i = 0; i < 3; i++) {
++        for (int j = 0; j < 3; j++) {
++            tmp.m[i][j] = pSrc->m[j][i];
++        }
++    }
++    *pDst = tmp;
+ }
+ 
+ void MTX_Scale33_(MtxFx33* pDst, fx32 x, fx32 y, fx32 z)
+ {
+-    SIM_assert_always_msg("Not implemented");
+-    return;
++    MI_CpuClear32(pDst, sizeof(*pDst));
++    pDst->_00 = x;
++    pDst->_11 = y;
++    pDst->_22 = z;
+ }
+ #else
+ 
+diff --git a/libraries/fx/src/fx_mtx43.c b/libraries/fx/src/fx_mtx43.c
+index c460643..b4261e7 100644
+--- a/libraries/fx/src/fx_mtx43.c
++++ b/libraries/fx/src/fx_mtx43.c
+@@ -28,14 +28,26 @@ void MTX_Identity43_(MtxFx43* pDst)
+ 
+ void MTX_Copy43To44_(const MtxFx43* pSrc, MtxFx44* pDst)
+ {
+-    //PCPORT_TODO
+-    SIM_assert_always_msg("Not implemented");
++    for (int i = 0; i < 4; i++) {
++        for (int j = 0; j < 3; j++) {
++            pDst->m[i][j] = pSrc->m[i][j];
++        }
++        pDst->m[i][3] = (i == 3) ? FX32_ONE : 0;
++    }
+ }
+ 
++// As the SDK's: the 3x3 part is transposed and the translation becomes 0
+ void MTX_Transpose43_(const MtxFx43* pSrc, MtxFx43* pDst)
+ {
+-    //PCPORT_TODO
+-    SIM_assert_always_msg("Not implemented");
++    MtxFx43 tmp;
++
++    for (int i = 0; i < 3; i++) {
++        for (int j = 0; j < 3; j++) {
++            tmp.m[i][j] = pSrc->m[j][i];
++        }
++    }
++    tmp._30 = tmp._31 = tmp._32 = 0;
++    *pDst = tmp;
+ }
+ #else
+ asm void MTX_Identity43_ (register MtxFx43 *pDst)
+@@ -163,6 +175,9 @@ void MTX_RotX43_(MtxFx43 * pDst, fx32 sinVal, fx32 cosVal) {
+     pDst->a[6] = 0;
+     pDst->a[7] = -sinVal;
+     pDst->a[8] = cosVal;
++    pDst->a[9] = 0;
++    pDst->a[10] = 0;
++    pDst->a[11] = 0;
+ }
+ 
+ void MTX_RotY43_(MtxFx43 * pDst, fx32 sinVal, fx32 cosVal) {
+@@ -175,6 +190,9 @@ void MTX_RotY43_(MtxFx43 * pDst, fx32 sinVal, fx32 cosVal) {
+     pDst->a[6] = sinVal;
+     pDst->a[7] = 0;
+     pDst->a[8] = cosVal;
++    pDst->a[9] = 0;
++    pDst->a[10] = 0;
++    pDst->a[11] = 0;
+ }
+ 
+ void MTX_RotZ43_(MtxFx43 * pDst, fx32 sinVal, fx32 cosVal) {
+@@ -187,6 +205,9 @@ void MTX_RotZ43_(MtxFx43 * pDst, fx32 sinVal, fx32 cosVal) {
+     pDst->a[6] = 0;
+     pDst->a[7] = 0;
+     pDst->a[8] = FX32_ONE;
++    pDst->a[9] = 0;
++    pDst->a[10] = 0;
++    pDst->a[11] = 0;
+ }
+ #else
+ #include <nitro/code16.h>
+diff --git a/libraries/fx/src/fx_mtx44.c b/libraries/fx/src/fx_mtx44.c
+index 9f0cc5c..591bebf 100644
+--- a/libraries/fx/src/fx_mtx44.c
++++ b/libraries/fx/src/fx_mtx44.c
+@@ -133,13 +133,22 @@ void MTX_TransApply44 (const MtxFx44 *pSrc, MtxFx44 *pDst, fx32 x, fx32 y, fx32
+ 
+ #ifdef SDK_PORT
+ void MTX_Transpose44_(const MtxFx44* pSrc, MtxFx44* pDst) {
+-    //PCPORT_TODO
+-    SIM_assert_always_msg("Not implemented");
++    MtxFx44 tmp;
++
++    for (int i = 0; i < 4; i++) {
++        for (int j = 0; j < 4; j++) {
++            tmp.m[i][j] = pSrc->m[j][i];
++        }
++    }
++    *pDst = tmp;
+ }
+ 
+ void MTX_Scale44_(MtxFx44 * pDst, fx32 x, fx32 y, fx32 z) {
+-    //PCPORT_TODO
+-    SIM_assert_always_msg("Not implemented");
++    MI_CpuClear32(pDst, sizeof(*pDst));
++    pDst->_00 = x;
++    pDst->_11 = y;
++    pDst->_22 = z;
++    pDst->_33 = FX32_ONE;
+ }
+ #else
+ asm void MTX_Transpose44_ (register const MtxFx44 *pSrc, register MtxFx44 *pDst)
+diff --git a/libraries/gx/src/g3imm.c b/libraries/gx/src/g3imm.c
+index 6f3866b..7e9c97a 100644
+--- a/libraries/gx/src/g3imm.c
++++ b/libraries/gx/src/g3imm.c
+@@ -43,9 +43,20 @@ void G3_LoadMtx43 (const MtxFx43 *m)
+ void G3_MultMtx44 (const MtxFx44 *m)
+ {
+ 	SDK_NULL_ASSERT(m);
++    #ifdef SDK_PORT
++    draw_msg_t * msg;
++    msg = malloc( sizeof( draw_msg_t ) );
++
++    msg->type = DRAW_CMD_G3_MTXMULT44;
++    memcpy( &msg->data.mtx44, m, sizeof( MtxFx44 ) );
++
++    SIM_HandleG3Command( msg );
++    free( msg );
++    #else
+ 
+ 	reg_G3X_GXFIFO = G3OP_MTX_MULT_4x4;
+ 	GX_SendFifo64B(&m->_00, (void *)&reg_G3X_GXFIFO);
++    #endif
+ }
+ 
+ void G3_MultMtx43 (const MtxFx43 *m)
+@@ -70,9 +81,21 @@ void G3_MultMtx43 (const MtxFx43 *m)
+ void G3_MultMtx33 (const MtxFx33 *m)
+ {
+ 	SDK_NULL_ASSERT(m);
++    #ifdef SDK_PORT
++    // The FIFO is one register here, so the 36 bytes would overrun it into GXSTAT and the registers after it
++    draw_msg_t * msg;
++    msg = malloc( sizeof( draw_msg_t ) );
++
++    msg->type = DRAW_CMD_G3_MTXMULT33;
++    memcpy( &msg->data.mtx33, m, sizeof( MtxFx33 ) );
++
++    SIM_HandleG3Command( msg );
++    free( msg );
++    #else
+ 
+ 	reg_G3X_GXFIFO = G3OP_MTX_MULT_3x3;
+ 	GX_SendFifo36B(&m->_00, (void *)&reg_G3X_GXFIFO);
++    #endif
+ }
+ 
+ void G3_Shininess (const u32 *table)
+@@ -95,10 +118,32 @@ void G3_MultTransMtx33 (const MtxFx33 *mtx, const VecFx32 *trans)
+ 	SDK_NULL_ASSERT(mtx);
+ 	SDK_NULL_ASSERT(trans);
+ 
++    #ifdef SDK_PORT
++    draw_msg_t * msg;
++    msg = malloc( sizeof( draw_msg_t ) );
++
++    msg->type = DRAW_CMD_G3_MTXMULT43;
++    msg->data.mtx43._00 = mtx->_00;
++    msg->data.mtx43._01 = mtx->_01;
++    msg->data.mtx43._02 = mtx->_02;
++    msg->data.mtx43._10 = mtx->_10;
++    msg->data.mtx43._11 = mtx->_11;
++    msg->data.mtx43._12 = mtx->_12;
++    msg->data.mtx43._20 = mtx->_20;
++    msg->data.mtx43._21 = mtx->_21;
++    msg->data.mtx43._22 = mtx->_22;
++    msg->data.mtx43._30 = trans->x;
++    msg->data.mtx43._31 = trans->y;
++    msg->data.mtx43._32 = trans->z;
++
++    SIM_HandleG3Command( msg );
++    free( msg );
++    #else
+ 	reg_G3X_GXFIFO = G3OP_MTX_MULT_4x3;
+ 	GX_SendFifo36B(&mtx->_00, (void *)&reg_G3X_GXFIFO);
+ 
+ 	reg_G3X_GXFIFO = (u32)trans->x;
+ 	reg_G3X_GXFIFO = (u32)trans->y;
+ 	reg_G3X_GXFIFO = (u32)trans->z;
++    #endif
+ }
+diff --git a/libraries/mi/src/mi_dma.c b/libraries/mi/src/mi_dma.c
+index 165e004..876f1f1 100644
+--- a/libraries/mi/src/mi_dma.c
++++ b/libraries/mi/src/mi_dma.c
+@@ -826,6 +826,9 @@ void MI_WaitDma (u32 dmaNo)
+ 
+ void MI_StopDma (u32 dmaNo)
+ {
++#ifdef SDK_PORT
++    MIi_StopHBlankDma(dmaNo);
++#endif
+     OSIntrMode enabled = OS_DisableInterrupts();
+     vu16 * dmaCntp = &((vu16 *)REG_DMA0SAD_ADDR)[dmaNo * 6 + 5];
+ 
+diff --git a/libraries/mi/src/mi_dma_hblank.c b/libraries/mi/src/mi_dma_hblank.c
+index 835849c..717c3bd 100644
+--- a/libraries/mi/src/mi_dma_hblank.c
++++ b/libraries/mi/src/mi_dma_hblank.c
+@@ -81,23 +81,71 @@ void MI_HBlankDmaCopy16If (u32 dmaNo, const void * src, void * dest, u32 size)
+ #elif defined(SDK_PORT)
+ #include <nitro.h>
+ #include "../include/mi_dma.h"
++// Each visible HBlank transfers one entry and reloads the destination.
++// Keep host pointers intact: the emulated DMA address registers are only 32-bit.
++static struct {
++    const u8 *source;
++    void *destination;
++    u32 size;
++} s_HBlankDma[MI_DMA_MAX_NUM + 1];
++
++static void MIi_StartHBlankDma(u32 dmaNo, const void *src, void *dest, u32 size)
++{
++    MIi_ASSERT_DMANO(dmaNo);
++    if (size == 0) {
++        return;
++    }
++    s_HBlankDma[dmaNo].source = src;
++    s_HBlankDma[dmaNo].destination = dest;
++    s_HBlankDma[dmaNo].size = size;
++}
++
++void MIi_StopHBlankDma(u32 dmaNo)
++{
++    MIi_ASSERT_DMANO(dmaNo);
++    s_HBlankDma[dmaNo].size = 0;
++}
++
++void MIi_ExecuteHBlankDma(void)
++{
++    for (u32 dmaNo = 0; dmaNo <= MI_DMA_MAX_NUM; dmaNo++) {
++        if (s_HBlankDma[dmaNo].size) {
++            memcpy(s_HBlankDma[dmaNo].destination, s_HBlankDma[dmaNo].source,
++                   s_HBlankDma[dmaNo].size);
++            s_HBlankDma[dmaNo].source += s_HBlankDma[dmaNo].size;
++        }
++    }
++}
++
++BOOL MIi_HBlankDmaWritesTo(const volatile void *address)
++{
++    for (u32 dmaNo = 0; dmaNo <= MI_DMA_MAX_NUM; dmaNo++) {
++        const u64 start = (u64)s_HBlankDma[dmaNo].destination;
++        if (s_HBlankDma[dmaNo].size && (u64)address >= start &&
++            (u64)address < start + s_HBlankDma[dmaNo].size) {
++            return TRUE;
++        }
++    }
++    return FALSE;
++}
++
+ void MI_HBlankDmaCopy32(u32 dmaNo, const void *src, void *dest, u32 size)
+ {
+-    memcpy(dest, src, size);
++    MIi_StartHBlankDma(dmaNo, src, dest, size);
+ }
+ 
+ void MI_HBlankDmaCopy16(u32 dmaNo, const void *src, void *dest, u32 size)
+ {
+-    memcpy(dest, src, size);
++    MIi_StartHBlankDma(dmaNo, src, dest, size);
+ }
+ 
+ void MI_HBlankDmaCopy32If(u32 dmaNo, const void *src, void *dest, u32 size)
+ {
+-    memcpy(dest, src, size);
++    MIi_StartHBlankDma(dmaNo, src, dest, size);
+ }
+ 
+ void MI_HBlankDmaCopy16If(u32 dmaNo, const void *src, void *dest, u32 size)
+ {
+-    memcpy(dest, src, size);
++    MIi_StartHBlankDma(dmaNo, src, dest, size);
+ }
+ #endif
+diff --git a/libraries/sim/include/sim_g2.h b/libraries/sim/include/sim_g2.h
+index ffb9e7e..1b8886d 100644
+--- a/libraries/sim/include/sim_g2.h
++++ b/libraries/sim/include/sim_g2.h
+@@ -1,6 +1,8 @@
+ #ifndef SIM_G2_H
+ #define SIM_G2_H
+ #include <nitro/types.h>
++// On an OBJ pixel of G2SIM_DrawOBJ: its color index is in the OBJ extension's palettes (SIM_SetObjExtension)
++#define OBJ_PIXEL_EXT_PLTT 0x200000
+ void G2SIM_DrawBG( u8 bgNum, u8 bgMode, u8 bg03D, u8 isSub );
+ BOOL G2SIM_HasFieldSprites(void);
+ BOOL G2SIM_IsFieldMoveCutInWide(void);
+diff --git a/libraries/sim/src/g3_draw.cpp b/libraries/sim/src/g3_draw.cpp
+index d7d7c3e..85b51ad 100644
+--- a/libraries/sim/src/g3_draw.cpp
++++ b/libraries/sim/src/g3_draw.cpp
+@@ -1,6 +1,4 @@
+-#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+ #include <simulator/sim.h>
+-#endif
+ #include <algorithm>
+ #include <cmath>
+ #include <deque>
+@@ -717,6 +715,41 @@ static void G3SIM_ApplyPolygonRasterState(const G3SIM_PolygonAttr_t &polygon)
+ 	}
+ }
+ 
++// COMP4x4 stores two-bit texels and a separate palette descriptor per block.
++// Keep both streams and the referenced colors in the immutable cache identity.
++static void G3SIM_DecodeCompressed(const u8 *source, const u8 *palette, u8 *out,
++                                  u32 width, u32 height)
++{
++    const u32 blocks = width * height / 16;
++    const u8 *indices = source + blocks * 4;
++    for (u32 block = 0; block < blocks; ++block) {
++        u16 descriptor;
++        memcpy(&descriptor, indices + block * 2, 2);
++        const u32 mode = descriptor >> 14;
++        u16 colors[4];
++        memcpy(colors, palette + block * 8, 8);
++        if (mode & 1) {
++            colors[2] = colors[3] = 0;
++            for (u32 shift = 0; shift < 15; shift += 5) {
++                const u32 a = (colors[0] >> shift) & 31;
++                const u32 b = (colors[1] >> shift) & 31;
++                colors[2] |= (mode == 1 ? (a + b) / 2 : (a * 5 + b * 3) / 8) << shift;
++                if (mode == 3) colors[3] |= ((a * 3 + b * 5) / 8) << shift;
++            }
++        }
++        const u32 x = (block % (width / 4)) * 4;
++        const u32 y = (block / (width / 4)) * 4;
++        for (u32 row = 0; row < 4; ++row) {
++            for (u32 col = 0; col < 4; ++col) {
++                const u32 index = (source[block * 4 + row] >> (col * 2)) & 3;
++                u8 *pixel = out + ((y + row) * width + x + col) * 4;
++                SIM_u16ToRGB(colors[index], pixel, pixel + 1, pixel + 2);
++                pixel[3] = (mode < 2 && index == 3) ? 0 : 255;
++            }
++        }
++    }
++}
++
+ static G3Texture *G3SIM_AcquireTexture() {
+ 	G3Texture *texture = nullptr;
+ 
+@@ -731,6 +764,7 @@ static G3Texture *G3SIM_AcquireTexture() {
+         u8 *vramPltt = (u8 *)getTexPlttVramBank() + s_texPlttBase;
+         const u32 pixels = s_texImageParam.textureSSize * s_texImageParam.textureTSize;
+         u32 sourceSize = pixels, paletteSize = 0;
++        std::vector<u8> compressedSource, compressedPalette;
+         switch (s_texImageParam.textureFormat) {
+         case GX_TEXFMT_PLTT4: sourceSize = pixels / 4; paletteSize = 8; break;
+         case GX_TEXFMT_PLTT16: sourceSize = pixels / 2; paletteSize = 32; break;
+@@ -738,6 +772,27 @@ static G3Texture *G3SIM_AcquireTexture() {
+         case GX_TEXFMT_A3I5: paletteSize = 64; break;
+         case GX_TEXFMT_A5I3: paletteSize = 16; break;
+         case GX_TEXFMT_DIRECT: sourceSize = pixels * 2; break;
++        case GX_TEXFMT_COMP4x4: {
++            const u32 blocks = pixels / 16;
++            const u32 indexOffset = GX_COMP4x4_PLTT_IDX(s_texImageParam.textureOffset);
++            const u8 *indices = (u8 *)getTextureVramBank() + indexOffset;
++            compressedSource.assign(vramTex, vramTex + blocks * 4);
++            compressedSource.insert(compressedSource.end(), indices, indices + blocks * 2);
++            compressedPalette.resize(blocks * 8, 0);
++            for (u32 block = 0; block < blocks; ++block) {
++                u16 descriptor;
++                memcpy(&descriptor, indices + block * 2, 2);
++                const u32 mode = descriptor >> 14;
++                const u32 colorBytes = (mode & 1) ? 4 : (mode == 0 ? 6 : 8);
++                memcpy(compressedPalette.data() + block * 8,
++                       vramPltt + (descriptor & 0x3fff) * 4, colorBytes);
++            }
++            vramTex = compressedSource.data();
++            vramPltt = compressedPalette.data();
++            sourceSize = compressedSource.size();
++            paletteSize = compressedPalette.size();
++            break;
++        }
+         default: SIM_assert_always(); return nullptr;
+         }
+         SIM_assert(vramTex != nullptr);
+@@ -775,6 +830,7 @@ static G3Texture *G3SIM_AcquireTexture() {
+             case GX_TEXFMT_PLTT16: G3SIM_DecodeTex16(vramTex, colors, decoded.data(), texture->width, texture->height); break;
+             case GX_TEXFMT_PLTT256: G3SIM_DecodeTex256(vramTex, colors, decoded.data(), texture->width, texture->height); break;
+             case GX_TEXFMT_A5I3: G3SIM_DecodeTexA5I3(vramTex, colors, decoded.data(), texture->width, texture->height); break;
++            case GX_TEXFMT_COMP4x4: G3SIM_DecodeCompressed(vramTex, vramPltt, decoded.data(), texture->width, texture->height); break;
+             case GX_TEXFMT_DIRECT: G3SIM_DecodeTexDirect(vramTex, decoded.data(), texture->width, texture->height); break;
+             }
+             // Weighted strongly towards the brightest texels: lit glass, bulbs.
+@@ -818,10 +874,6 @@ u32 G3SIM_PrewarmTexture(u32 image, u32 palette) {
+     const u32 previousPalette = s_texPlttBase;
+     G3SIM_TexImageParam(image);
+     G3SIM_TexPlttBase(palette);
+-    if (s_texImageParam.textureFormat == GX_TEXFMT_COMP4x4) {
+-        s_texImageParam = previous; s_texPlttBase = previousPalette;
+-        return 0;
+-    }
+     const u64 before = sUploadedBytes;
+     G3Texture *entry = G3SIM_AcquireTexture();
+     u32 bytes = sUploadedBytes - before;
+diff --git a/libraries/sim/src/g3_handler.cpp b/libraries/sim/src/g3_handler.cpp
+index e219aff..4551467 100644
+--- a/libraries/sim/src/g3_handler.cpp
++++ b/libraries/sim/src/g3_handler.cpp
+@@ -321,6 +321,19 @@ static void calculateClipMatrix()
+ 
+     memcpy( (void*)&s_reg_G3X_CLIPMTX_RESULT_0, &fxMtx, sizeof( MtxFx44 ) );
+ 
++    // The vector matrix's 3x3 part, which G3X_GetVectorMtx reads back: NitroSystem's envelope (NODEMIX) models
++    // read it to blend their joints' normal matrices
++    MtxFx33 vecMtx;
++    vecMtx._00 = currentVectorMatrix.nums[0][0];
++    vecMtx._01 = currentVectorMatrix.nums[0][1];
++    vecMtx._02 = currentVectorMatrix.nums[0][2];
++    vecMtx._10 = currentVectorMatrix.nums[1][0];
++    vecMtx._11 = currentVectorMatrix.nums[1][1];
++    vecMtx._12 = currentVectorMatrix.nums[1][2];
++    vecMtx._20 = currentVectorMatrix.nums[2][0];
++    vecMtx._21 = currentVectorMatrix.nums[2][1];
++    vecMtx._22 = currentVectorMatrix.nums[2][2];
++    memcpy( (void*)&s_reg_G3X_VECMTX_RESULT_0, &vecMtx, sizeof( MtxFx33 ) );
+ 
+     return;
+ }
+diff --git a/libraries/sim/src/meson.build b/libraries/sim/src/meson.build
+index ada03ed..1eaac02 100644
+--- a/libraries/sim/src/meson.build
++++ b/libraries/sim/src/meson.build
+@@ -24,6 +24,7 @@ libsim_srcs = files(
+     'sim_gui_config.cpp',
+     'sim_gui_net.cpp',
+     'sim_gui_pad.cpp',
++    'sim_autopilot.cpp',
+     'sim_main.cpp',
+     'sim_frame_profile.cpp',
+     'sim_net.cpp',
+diff --git a/libraries/sim/src/shaders/g2_fragment.glsl b/libraries/sim/src/shaders/g2_fragment.glsl
+index a99a833..2352b4c 100644
+--- a/libraries/sim/src/shaders/g2_fragment.glsl
++++ b/libraries/sim/src/shaders/g2_fragment.glsl
+@@ -33,6 +33,10 @@ uniform float presentationWidth;
+ uniform float borderWidth;
+ uniform float fieldWidth;
+ uniform bool fieldOverlayTiled;
++// SIM_SetFieldEdgeRows: a main-engine BG layer whose edge dots carry on into the wide view's sides on rows
++// [edgeRows.x, edgeRows.y), or -1
++uniform int edgeLayer;
++uniform vec2 edgeRows;
+ uniform bool fieldDarknessMask;
+ uniform bool fieldMoveCutIn;
+ uniform bool screenFadeWindows;
+@@ -90,6 +94,12 @@ vec4 sampleBg(int layer) {
+         vec2 overlayCoord = vec2(clamp(uiCoord.x, 0.5 / 256.0, 255.5 / 256.0), uiCoord.y);
+         return texture(bgTexture[layer], overlayCoord);
+     }
++    if (layer == edgeLayer && fieldWidth > 256.0 && (uiCoord.x < 0.0 || uiCoord.x >= 1.0)) {
++        float y = ((topScreen == 1 ? 1.0 : 0.5) - uiCoord.y) * 384.0;
++        if (y >= edgeRows.x && y < edgeRows.y) {
++            return texture(bgTexture[layer], vec2(clamp(uiCoord.x, 0.5 / 256.0, 255.5 / 256.0), uiCoord.y));
++        }
++    }
+     if (uiCoord.x < 0.0 || uiCoord.x >= 1.0) return vec4(0.0);
+     return texture(bgTexture[layer], uiCoord);
+ }
+diff --git a/libraries/sim/src/sim_autopilot.cpp b/libraries/sim/src/sim_autopilot.cpp
+new file mode 100644
+index 0000000..62bed41
+--- /dev/null
++++ b/libraries/sim/src/sim_autopilot.cpp
+@@ -0,0 +1,146 @@
++// Debug autopilot: plays a script of key presses and takes screenshots, for testing without a person at the keyboard.
++// Off unless PLATINUM_AUTOPILOT names a script. Each line is a frame number and a command:
++//   <frame> key <SDL key name> <frames held>   e.g. "300 key Z 4", "1700 key Left_Shift 99999"
++//   <frame> shot <file.ppm>                     the window as it is drawn that frame
++//   <frame> quit
++// Lines starting with # are comments. Frames count the rendered frames from start.
++#include <SDL2/SDL.h>
++
++#include <cstdio>
++#include <cstdlib>
++#include <fstream>
++#include <sstream>
++#include <string>
++#include <vector>
++
++#ifdef SDK_BUILD_NX
++#include <glad/glad.h>
++#else
++#include <simulator/glad/glad.h>
++#endif
++
++namespace {
++
++struct Command {
++    unsigned long frame;
++    std::string kind;
++    std::string arg;
++    int hold;
++};
++
++struct HeldKey {
++    SDL_Keycode key;
++    unsigned long releaseFrame;
++};
++
++std::vector<Command> sCommands;
++std::vector<HeldKey> sHeld;
++size_t sNext;
++unsigned long sFrame;
++bool sLoaded;
++bool sEnabled;
++std::string sPendingShot;
++
++void Load() {
++    sLoaded = true;
++    const char *path = std::getenv("PLATINUM_AUTOPILOT");
++    if (path == nullptr || *path == '\0') {
++        return;
++    }
++    std::ifstream in(path);
++    std::string line;
++    while (std::getline(in, line)) {
++        if (line.empty() || line[0] == '#') {
++            continue;
++        }
++        std::istringstream ss(line);
++        Command cmd{};
++        cmd.hold = 1;
++        ss >> cmd.frame >> cmd.kind >> cmd.arg >> cmd.hold;
++        if (!cmd.kind.empty()) {
++            sCommands.push_back(cmd);
++        }
++    }
++    sEnabled = true;
++    std::fprintf(stderr, "[autopilot] %zu commands from %s\n", sCommands.size(), path);
++}
++
++void PushKey(SDL_Keycode key, bool down) {
++    SDL_Event ev{};
++    ev.type = down ? SDL_KEYDOWN : SDL_KEYUP;
++    ev.key.state = down ? SDL_PRESSED : SDL_RELEASED;
++    ev.key.keysym.sym = key;
++    ev.key.keysym.scancode = SDL_GetScancodeFromKey(key);
++    SDL_PushEvent(&ev);
++}
++
++} // namespace
++
++// Called once per rendered frame, before the frame's events are read
++extern "C" void SIM_Autopilot_Frame(void) {
++    if (!sLoaded) {
++        Load();
++    }
++    if (!sEnabled) {
++        return;
++    }
++    sFrame++;
++    for (size_t i = 0; i < sHeld.size();) {
++        if (sFrame >= sHeld[i].releaseFrame) {
++            PushKey(sHeld[i].key, false);
++            sHeld.erase(sHeld.begin() + i);
++        } else {
++            i++;
++        }
++    }
++    while (sNext < sCommands.size() && sCommands[sNext].frame <= sFrame) {
++        const Command &cmd = sCommands[sNext++];
++        if (cmd.kind == "key") {
++            // Key names with spaces are written with underscores: Left_Shift
++            std::string name = cmd.arg;
++            for (char &c : name) {
++                if (c == '_') {
++                    c = ' ';
++                }
++            }
++            SDL_Keycode key = SDL_GetKeyFromName(name.c_str());
++            if (key == SDLK_UNKNOWN) {
++                std::fprintf(stderr, "[autopilot] unknown key %s\n", cmd.arg.c_str());
++                continue;
++            }
++            PushKey(key, true);
++            sHeld.push_back({ key, sFrame + (unsigned long)(cmd.hold > 0 ? cmd.hold : 1) });
++        } else if (cmd.kind == "shot") {
++            sPendingShot = cmd.arg;
++        } else if (cmd.kind == "quit") {
++            std::fprintf(stderr, "[autopilot] quit at frame %lu\n", sFrame);
++            std::exit(0);
++        }
++    }
++}
++
++// Saves the next presented frame, for the game's own debug tools
++extern "C" void SIM_Autopilot_RequestShot(const char *path) {
++    sPendingShot = path;
++}
++
++// Called just before the frame is presented, with the window's drawable size
++extern "C" void SIM_Autopilot_BeforeSwap(int width, int height) {
++    if (sPendingShot.empty()) {
++        return;
++    }
++    std::vector<unsigned char> pixels((size_t)width * height * 3);
++    glPixelStorei(GL_PACK_ALIGNMENT, 1);
++    glReadBuffer(GL_BACK);
++    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
++    FILE *out = std::fopen(sPendingShot.c_str(), "wb");
++    if (out != nullptr) {
++        std::fprintf(out, "P6\n%d %d\n255\n", width, height);
++        for (int y = height - 1; y >= 0; y--) {
++            std::fwrite(&pixels[(size_t)y * width * 3], 1, (size_t)width * 3, out);
++        }
++        std::fclose(out);
++        std::fprintf(stderr, "[autopilot] frame %lu -> %s\n", sFrame, sPendingShot.c_str());
++    }
++    sPendingShot.clear();
++}
+diff --git a/libraries/sim/src/sim_g2.cpp b/libraries/sim/src/sim_g2.cpp
+index bd4900b..fb8ccd0 100644
+--- a/libraries/sim/src/sim_g2.cpp
++++ b/libraries/sim/src/sim_g2.cpp
+@@ -50,8 +50,19 @@ extern u8 OBJWindow[2][256];
+ 
+ static u8 *bgTexTable[] = {bg0tex, bg1tex, bg2tex, bg3tex};
+ static u8 *bgsTexTable[] = {bg0stex, bg1stex, bg2stex, bg3stex};
+-static s32 bgAffineX[4];
+-static s32 bgAffineY[4];
++struct ScanlineAffine {
++  s16 a, b, c, d;
++  s32 x, y;
++};
++static ScanlineAffine s_ScanlineAffine[2][SIM_NDS_SCREEN_HEIGHT][2];
++static s32 s_AffineX[2][2], s_AffineY[2][2];
++static u32 s_LastAffineX[2][2], s_LastAffineY[2][2];
++
++static s32 SignExtendAffineReference(u32 value) {
++  // The DS reference registers contain signed 20.8 values (28 bits).
++  value &= 0x0fffffff;
++  return (value & 0x08000000) ? (s32)(value | 0xf0000000) : (s32)value;
++}
+ 
+ // RG: rectangular/outside mask and OBJ-inside mask. Include widescreen sides.
+ static u8 s_WindowMasks[2][SIM_NDS_SCREEN_HEIGHT * 2 * SIM_FIELD_SPRITE_WIDTH * 2];
+@@ -93,6 +104,41 @@ void G2SIM_CaptureScanline(u32 line) {
+         engine ? s_reg_G2S_DB_BG1OFS : s_reg_G2_BG1OFS,
+         engine ? s_reg_G2S_DB_BG2OFS : s_reg_G2_BG2OFS,
+         engine ? s_reg_G2S_DB_BG3OFS : s_reg_G2_BG3OFS};
++    const s16 matrices[2][4] = {
++        {(s16)(engine ? s_reg_G2S_DB_BG2PA : s_reg_G2_BG2PA),
++         (s16)(engine ? s_reg_G2S_DB_BG2PB : s_reg_G2_BG2PB),
++         (s16)(engine ? s_reg_G2S_DB_BG2PC : s_reg_G2_BG2PC),
++         (s16)(engine ? s_reg_G2S_DB_BG2PD : s_reg_G2_BG2PD)},
++        {(s16)(engine ? s_reg_G2S_DB_BG3PA : s_reg_G2_BG3PA),
++         (s16)(engine ? s_reg_G2S_DB_BG3PB : s_reg_G2_BG3PB),
++         (s16)(engine ? s_reg_G2S_DB_BG3PC : s_reg_G2_BG3PC),
++         (s16)(engine ? s_reg_G2S_DB_BG3PD : s_reg_G2_BG3PD)}};
++    const volatile u32 *referencesX[] = {
++        engine ? &s_reg_G2S_DB_BG2X : &s_reg_G2_BG2X,
++        engine ? &s_reg_G2S_DB_BG3X : &s_reg_G2_BG3X};
++    const volatile u32 *referencesY[] = {
++        engine ? &s_reg_G2S_DB_BG2Y : &s_reg_G2_BG2Y,
++        engine ? &s_reg_G2S_DB_BG3Y : &s_reg_G2_BG3Y};
++    for (int bg = 0; bg < 2; bg++) {
++      ScanlineAffine &affine = s_ScanlineAffine[engine][line][bg];
++      affine.a = matrices[bg][0];
++      affine.b = matrices[bg][1];
++      affine.c = matrices[bg][2];
++      affine.d = matrices[bg][3];
++      const u32 x = *referencesX[bg], y = *referencesY[bg];
++      // Reference writes reload the internal origin, even when a DMA entry
++      // repeats the same value. Otherwise PB/PD advance it each scanline.
++      if (line == 0 || x != s_LastAffineX[engine][bg] || MIi_HBlankDmaWritesTo(referencesX[bg]))
++        s_AffineX[engine][bg] = SignExtendAffineReference(x);
++      if (line == 0 || y != s_LastAffineY[engine][bg] || MIi_HBlankDmaWritesTo(referencesY[bg]))
++        s_AffineY[engine][bg] = SignExtendAffineReference(y);
++      s_LastAffineX[engine][bg] = x;
++      s_LastAffineY[engine][bg] = y;
++      affine.x = s_AffineX[engine][bg];
++      affine.y = s_AffineY[engine][bg];
++      s_AffineX[engine][bg] += affine.b;
++      s_AffineY[engine][bg] += affine.d;
++    }
+     blend[3] = 0;
+     for (int bg = 0; bg < 4; bg++) {
+       blend[3] |= (controls[bg] & 3) << (bg * 2);
+@@ -336,6 +382,21 @@ BOOL G2SIM_HasFieldSprites(void) {
+   return FALSE;
+ }
+ 
++// The OBJ extension (SIM_SetObjExtension): from this OAM entry on, the main engine's sprites read their characters
++// this far into OBJ VRAM and their palettes from the second set, which OBJ_PIXEL_EXT_PLTT marks on their pixels for
++// SIM's composition
++static int s_ObjExtFirstOam = 128;
++static u32 s_ObjExtCharOffset = 0;
++
++extern "C" void SIM_SetObjExtension(int firstOam, u32 charOffset) {
++  s_ObjExtFirstOam = firstOam;
++  s_ObjExtCharOffset = charOffset;
++}
++
++static inline bool G2SIM_IsObjExt(u32 num, u8 isSub) {
++  return !isSub && !s_FieldSpriteDraw && (int)num >= s_ObjExtFirstOam;
++}
++
+ void G2SIM_DrawOBJ(u32 line, u8 isSub, int bgnum, BOOL fieldOnly) {
+   u32 dispcnt;
+   u16 *oam;
+@@ -795,24 +856,10 @@ static void DrawBGLine_Affine(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+       break;
+     case 2:
+       bgcnt = s_reg_G2S_DB_BG2CNT;
+-      rotA = s_reg_G2S_DB_BG2PA;
+-      rotB = s_reg_G2S_DB_BG2PB;
+-      rotC = s_reg_G2S_DB_BG2PC;
+-      rotD = s_reg_G2S_DB_BG2PD;
+-
+-      rotX = s_reg_G2S_DB_BG2X;
+-      rotY = s_reg_G2S_DB_BG2Y;
+       pixelBuf = bg2stex;
+       break;
+     case 3:
+       bgcnt = s_reg_G2S_DB_BG3CNT;
+-      rotA = s_reg_G2S_DB_BG3PA;
+-      rotB = s_reg_G2S_DB_BG3PB;
+-      rotC = s_reg_G2S_DB_BG3PC;
+-      rotD = s_reg_G2S_DB_BG3PD;
+-
+-      rotX = s_reg_G2S_DB_BG3X;
+-      rotY = s_reg_G2S_DB_BG3Y;
+       pixelBuf = bg3stex;
+       break;
+     default:
+@@ -830,24 +877,10 @@ static void DrawBGLine_Affine(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+       break;
+     case 2:
+       bgcnt = s_reg_G2_BG2CNT;
+-      rotA = s_reg_G2_BG2PA;
+-      rotB = s_reg_G2_BG2PB;
+-      rotC = s_reg_G2_BG2PC;
+-      rotD = s_reg_G2_BG2PD;
+-
+-      rotX = s_reg_G2_BG2X;
+-      rotY = s_reg_G2_BG2Y;
+       pixelBuf = bg2tex;
+       break;
+     case 3:
+       bgcnt = s_reg_G2_BG3CNT;
+-      rotA = s_reg_G2_BG3PA;
+-      rotB = s_reg_G2_BG3PB;
+-      rotC = s_reg_G2_BG3PC;
+-      rotD = s_reg_G2_BG3PD;
+-
+-      rotX = s_reg_G2_BG3X;
+-      rotY = s_reg_G2_BG3Y;
+       pixelBuf = bg3tex;
+       break;
+     default:
+@@ -856,23 +889,13 @@ static void DrawBGLine_Affine(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+       break;
+     }
+   }
+-  if (line == 0) {
+-    if (isSub) {
+-      bgAffineX[bgnum - 2] = rotX;
+-      bgAffineY[bgnum - 2] = rotY;
+-    } else {
+-      bgAffineX[bgnum] = rotX;
+-      bgAffineY[bgnum] = rotY;
+-    }
+-  } else {
+-    if (isSub) {
+-      rotX = bgAffineX[bgnum - 2];
+-      rotY = bgAffineY[bgnum - 2];
+-    } else {
+-      rotX = bgAffineX[bgnum];
+-      rotY = bgAffineY[bgnum];
+-    }
+-  }
++  const ScanlineAffine &affine = s_ScanlineAffine[isSub][line][bgnum - 2];
++  rotA = affine.a;
++  rotB = affine.b;
++  rotC = affine.c;
++  rotD = affine.d;
++  rotX = affine.x;
++  rotY = affine.y;
+ 
+   switch (bgcnt & 0xC000) {
+   case 0x0000:
+@@ -963,14 +986,6 @@ static void DrawBGLine_Affine(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+     rotY += rotC;
+   }
+ 
+-  if (isSub) {
+-    bgAffineX[bgnum - 2] += rotB;
+-    bgAffineY[bgnum - 2] += rotD;
+-  } else {
+-    bgAffineX[bgnum] += rotB;
+-    bgAffineY[bgnum] += rotD;
+-  }
+-
+ #ifdef SDK_TRACY_ENABLE
+   TracyCZoneEnd(ctx);
+ #endif
+@@ -1019,24 +1034,10 @@ static void DrawBGLine_Extended(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+       break;
+     case 2:
+       bgcnt = s_reg_G2S_DB_BG2CNT;
+-      rotA = s_reg_G2S_DB_BG2PA;
+-      rotB = s_reg_G2S_DB_BG2PB;
+-      rotC = s_reg_G2S_DB_BG2PC;
+-      rotD = s_reg_G2S_DB_BG2PD;
+-
+-      rotX = s_reg_G2S_DB_BG2X;
+-      rotY = s_reg_G2S_DB_BG2Y;
+       pixelBuf = bg2stex;
+       break;
+     case 3:
+       bgcnt = s_reg_G2S_DB_BG3CNT;
+-      rotA = s_reg_G2S_DB_BG3PA;
+-      rotB = s_reg_G2S_DB_BG3PB;
+-      rotC = s_reg_G2S_DB_BG3PC;
+-      rotD = s_reg_G2S_DB_BG3PD;
+-
+-      rotX = s_reg_G2S_DB_BG3X;
+-      rotY = s_reg_G2S_DB_BG3Y;
+       pixelBuf = bg3stex;
+       break;
+     default:
+@@ -1054,24 +1055,10 @@ static void DrawBGLine_Extended(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+       break;
+     case 2:
+       bgcnt = s_reg_G2_BG2CNT;
+-      rotA = s_reg_G2_BG2PA;
+-      rotB = s_reg_G2_BG2PB;
+-      rotC = s_reg_G2_BG2PC;
+-      rotD = s_reg_G2_BG2PD;
+-
+-      rotX = s_reg_G2_BG2X;
+-      rotY = s_reg_G2_BG2Y;
+       pixelBuf = bg2tex;
+       break;
+     case 3:
+       bgcnt = s_reg_G2_BG3CNT;
+-      rotA = s_reg_G2_BG3PA;
+-      rotB = s_reg_G2_BG3PB;
+-      rotC = s_reg_G2_BG3PC;
+-      rotD = s_reg_G2_BG3PD;
+-
+-      rotX = s_reg_G2_BG3X;
+-      rotY = s_reg_G2_BG3Y;
+       pixelBuf = bg3tex;
+       break;
+     default:
+@@ -1081,23 +1068,13 @@ static void DrawBGLine_Extended(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+     }
+   }
+ 
+-  if (line == 0) {
+-    if (isSub) {
+-      bgAffineX[bgnum - 2] = rotX;
+-      bgAffineY[bgnum - 2] = rotY;
+-    } else {
+-      bgAffineX[bgnum] = rotX;
+-      bgAffineY[bgnum] = rotY;
+-    }
+-  } else {
+-    if (isSub) {
+-      rotX = bgAffineX[bgnum - 2];
+-      rotY = bgAffineY[bgnum - 2];
+-    } else {
+-      rotX = bgAffineX[bgnum];
+-      rotY = bgAffineY[bgnum];
+-    }
+-  }
++  const ScanlineAffine &affine = s_ScanlineAffine[isSub][line][bgnum - 2];
++  rotA = affine.a;
++  rotB = affine.b;
++  rotC = affine.c;
++  rotD = affine.d;
++  rotX = affine.x;
++  rotY = affine.y;
+ 
+   if (bgcnt & 0x0040) {
+   }
+@@ -1330,13 +1307,6 @@ static void DrawBGLine_Extended(u32 line, u32 bgnum, u8 mosaic, u8 isSub) {
+     }
+   }
+ 
+-  if (isSub) {
+-    bgAffineX[bgnum - 2] += rotB;
+-    bgAffineY[bgnum - 2] += rotD;
+-  } else {
+-    bgAffineX[bgnum] += rotB;
+-    bgAffineY[bgnum] += rotD;
+-  }
+ #ifdef SDK_TRACY_ENABLE
+   TracyCZoneEnd(ctx);
+ #endif
+@@ -1368,10 +1338,19 @@ static void DrawOBJ_RotScale(u32 num, u32 boundwidth, u32 boundheight,
+   BOOL window;
+   window = isWin;
+ 
++  const bool objExt = G2SIM_IsObjExt(num, isSub);
++  if (objExt) {
++    objvram += s_ObjExtCharOffset;
++    objvrammask = 0xFFFF;
++  }
++
+   attrib = &oam[num * 4];
+   u16 *rotparams = &oam[(((attrib[1] >> 9) & 0x1F) * 16) + 3];
+ 
+   u32 pixelattr = ((attrib[2] & 0x0C00) << 6) | 0xC0000;
++  if (objExt) {
++    pixelattr |= OBJ_PIXEL_EXT_PLTT;
++  }
+   u32 tilenum = attrib[2] & 0x03FF;
+   u32 spritemode = window ? 0 : ((attrib[0] >> 10) & 0x3);
+ 
+@@ -1578,9 +1557,18 @@ static void DrawOBJ_Normal(u32 num, u32 width, u32 height, s32 xpos, s32 ypos,
+     objvrammask = 0x3FFFF;
+   }
+ 
++  const bool objExt = G2SIM_IsObjExt(num, isSub);
++  if (objExt) {
++    objvram += s_ObjExtCharOffset;
++    objvrammask = 0xFFFF;
++  }
++
+   attrib = &oam[num * 4];
+ 
+   u32 pixelattr = ((attrib[2] & 0x0C00) << 6) | 0xC0000;
++  if (objExt) {
++    pixelattr |= OBJ_PIXEL_EXT_PLTT;
++  }
+   u32 tilenum = attrib[2] & 0x03FF;
+ 
+   BOOL window = isWin;
+diff --git a/libraries/sim/src/sim_main.cpp b/libraries/sim/src/sim_main.cpp
+index 0e35916..b7cc0db 100644
+--- a/libraries/sim/src/sim_main.cpp
++++ b/libraries/sim/src/sim_main.cpp
+@@ -77,6 +77,8 @@ static u32 s_WindowViewWidth = 256;
+ static float s_BorderPresentationWidth = 256.0f;
+ static u32 s_FieldViewWidth = 256;
+ static BOOL s_FieldOverlayTiled = FALSE;
++static int s_FieldEdgeLayer = -1;
++static int s_FieldEdgeRows[2];
+ static BOOL s_FieldDarknessMask = FALSE;
+ static BOOL s_FieldMoveCutIn = FALSE;
+ static BOOL s_ScreenFadeWindows[2] = {FALSE, FALSE};
+@@ -1125,7 +1127,8 @@ static void DrawEngine(BOOL isSub) {
+           u8 colorIdx = OBJLine[isSub][j] & 0xFF;
+           if (colorIdx) {
+             u16 *objPltt =
+-                isSub ? (u16 *)s_HW_DB_OBJ_PLTT : (u16 *)s_HW_OBJ_PLTT;
++                isSub ? (u16 *)s_HW_DB_OBJ_PLTT
++                      : (u16 *)((OBJLine[isSub][j] & OBJ_PIXEL_EXT_PLTT) ? HW_OBJ_PLTT_EXT : HW_OBJ_PLTT);
+             u16 color = objPltt[colorIdx];
+             SIM_u16ToRGB(color, &r, &g, &b);
+             G2SIM_PlotPixel(pixelBuf, r, g, b, j, i, isSub);
+@@ -1300,6 +1303,10 @@ static void DrawEngine(BOOL isSub) {
+                      (float)s_FieldViewWidth);
+   glProgramUniform1i(g2shaderProgramID, glGetUniformLocation(g2shaderProgramID, "fieldOverlayTiled"),
+                      s_FieldOverlayTiled);
++  glProgramUniform1i(g2shaderProgramID, glGetUniformLocation(g2shaderProgramID, "edgeLayer"),
++                     isSub ? -1 : s_FieldEdgeLayer);
++  glProgramUniform2f(g2shaderProgramID, glGetUniformLocation(g2shaderProgramID, "edgeRows"),
++                     (float)s_FieldEdgeRows[0], (float)s_FieldEdgeRows[1]);
+   glProgramUniform1i(g2shaderProgramID, glGetUniformLocation(g2shaderProgramID, "fieldDarknessMask"),
+                      !isSub && s_FieldDarknessMask);
+   glProgramUniform1i(g2shaderProgramID, glGetUniformLocation(g2shaderProgramID, "fieldMoveCutIn"),
+@@ -1458,6 +1465,12 @@ void SIM_SetFieldOverlayTiled(BOOL enabled) {
+   s_FieldOverlayTiled = enabled;
+ }
+ 
++void SIM_SetFieldEdgeRows(int layer, int firstRow, int endRow) {
++  s_FieldEdgeLayer = layer;
++  s_FieldEdgeRows[0] = firstRow;
++  s_FieldEdgeRows[1] = endRow;
++}
++
+ void SIM_SetScreenFadeWindows(BOOL main, BOOL sub) {
+   s_ScreenFadeWindows[0] = main;
+   s_ScreenFadeWindows[1] = sub;
+@@ -1488,6 +1501,9 @@ u32 SIM_SetFieldWidescreen(BOOL enabled) {
+   return width;
+ }
+ 
++extern "C" void SIM_Autopilot_Frame(void);
++extern "C" void SIM_Autopilot_BeforeSwap(int width, int height);
++
+ void *SIM_Render(void *arg) {
+ 
+   SDL_Event Event;
+@@ -1650,6 +1666,7 @@ void *SIM_Render(void *arg) {
+       s_SIM_SDLJoystick = SDL_JoystickOpen(0);
+     }
+ 
++    SIM_Autopilot_Frame();
+     while (SDL_PollEvent(&Event)) {
+       SIM::GUI::ProcessEvent(&Event);
+ 
+@@ -1875,6 +1892,7 @@ void *SIM_Render(void *arg) {
+       s_reg_GX_DISPSTAT &= ~(REG_GX_DISPSTAT_HBLK_MASK | REG_GX_DISPSTAT_VBLK_MASK);
+       G2SIM_CaptureScanline(line);
+       s_reg_GX_DISPSTAT |= REG_GX_DISPSTAT_HBLK_MASK;
++      MIi_ExecuteHBlankDma();
+       if ((s_reg_GX_DISPSTAT & REG_GX_DISPSTAT_HBI_MASK) && (OS_GetIrqMask() & OS_IE_H_BLANK))
+         OS_IRQTable[OS_IE_H_BLANK - 1]();
+     }
+@@ -1933,6 +1951,7 @@ void *SIM_Render(void *arg) {
+     // high-refresh displays and on drivers that ignore the swap interval.
+     if (paced && swapInterval == 0) WaitForFrameDeadline(deadline);
+     const u64 profileSwapStart = SIM_ProfileNow();
++    SIM_Autopilot_BeforeSwap(windowWidth, windowHeight);
+     SDL_GL_SwapWindow(window);
+     const u64 profileSwapEnd = SIM_ProfileNow();
+     if (paced && swapInterval != 0) WaitForFrameDeadline(deadline);
+diff --git a/libraries/sim/src/sim_vars.c b/libraries/sim/src/sim_vars.c
+index 347393e..309e268 100644
+--- a/libraries/sim/src/sim_vars.c
++++ b/libraries/sim/src/sim_vars.c
+@@ -387,7 +387,8 @@ u8 s_HW_MAIN_MEM_SUB[0x400000];
+ u8 s_HW_MAIN_MEM[0x800000];
+ u8 s_HW_MAIN_MEM_EX[0x800000];
+ u8 s_HW_BG_PLTT[0x200];
+-u8 s_HW_OBJ_PLTT[0x200];
++// The main OBJ palettes, then a second set for the OAM entries of the OBJ extension (SIM_SetObjExtension)
++u8 s_HW_OBJ_PLTT[0x400];
+ u8 s_HW_DB_BG_PLTT[0x200];
+ u8 s_HW_DB_OBJ_PLTT[0x200];
+ u8 s_HW_BG_VRAM[0x80000];
+diff --git a/libraries/sim/src/shaders/g3_fragment.glsl b/libraries/sim/src/shaders/g3_fragment.glsl
+index e6e7459..a9df003 100644
+--- a/libraries/sim/src/shaders/g3_fragment.glsl
++++ b/libraries/sim/src/shaders/g3_fragment.glsl
+@@ -95,8 +95,8 @@ float RainRings(vec2 pixelPosition, float time, int reach)
+             float radius = 0.5 + life * 3.5;
+             float d = length(vec2(pixel) + 0.5 - center);
+             // Half of the cells are dry at any time, so drops stay sparse.
+-            float active = ((h >> 20) & 1u) == 1u ? 1.0 : 0.0;
+-            brightness = max(brightness, (1.0 - smoothstep(0.35, 0.75, abs(d - radius))) * (1.0 - life) * active);
++            float ringActive = ((h >> 20) & 1u) == 1u ? 1.0 : 0.0;
++            brightness = max(brightness, (1.0 - smoothstep(0.35, 0.75, abs(d - radius))) * (1.0 - life) * ringActive);
+         }
+     return brightness;
+ }

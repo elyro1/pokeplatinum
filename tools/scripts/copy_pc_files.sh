@@ -15,6 +15,8 @@ cat $2 | while read line; do
 done
 cp -u $BUILDDIR/../res/pc_port/header.bin $OUTPUTDIR/header.bin
 cp -u $BUILDDIR/../res/pc_port/dwc_nv.bin $OUTPUTDIR/firmware.bin
+# The field light table; edits in the game's folder survive until the source changes.
+cp -u $BUILDDIR/../res/pc_port/field_lights.txt $OUTPUTDIR/field_lights.txt
 cp "$BUILDDIR/main" "$OUTPUTDIR/main.tmp" || exit 1
 mv -f "$OUTPUTDIR/main.tmp" "$OUTPUTDIR/main" || exit 1
 

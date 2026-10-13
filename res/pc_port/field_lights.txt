@@ -1,0 +1,215 @@
+# Field night lights: which materials glow, fade or mirror lights at night,
+# and the light sources placed in the world.
+#
+# The game reads this file from its folder when it starts and again from
+# Graphics > Reload light table, so edits apply while playing. A copy is
+# built in and used when the file is missing; a file with errors is
+# reported in the Graphics panel and the previous table is kept.
+#
+# Lines (# starts a comment; values are separated by spaces):
+#
+# material NAME ROLE [bloom=B] [intensity=I] [map=MAP] [prop=N|land]
+#   NAME matches a model's material name, and longer names that continue
+#   with "_", such as a lightmap suffix "_lm4" (so "light" also matches
+#   "light_a"). The first matching line wins, so lines scoped to a map or
+#   prop, and longer names, go before general ones.
+#   ROLE is one of:
+#     shadow          authored ground shadow; fades at night
+#     painted_shadow  shadow disc painted into a grass tile; fades at night
+#     tree            tree atlas whose stump cells paint the tree's shadow
+#     puddle_ground   path or sand that collects puddles in rain
+#     window          glass that glows warm at night
+#     source          light fixture that keeps its own colors
+#     lamp            lamp mesh whose near-white glass emits
+#     light_bar       only the brightest texels emit, inside white trim
+#     neon            shared texture whose saturated bulbs emit
+#     keyed_window    shared texture whose colored panes glow warm
+#     beacon          lighthouse lantern; pulses with its beams
+#     screen          video screen; keeps its colors and flickers gently
+#     emblem          shared texture whose yellow emblem emits
+#     lava            glows in its own colors by day too, pulsing slowly
+#     water           water surface; mirrors lights at night
+#   bloom: halo strength, at most 3 (default 0). Windows and lamps use 2,
+#     large signs 0.85 so their halo does not swamp the building.
+#   intensity: how strongly the surface lights up (default 1).
+#   map: only on this map (a map header name without MAP_HEADER_).
+#   prop: only on this prop model, or "land" for the map's land mesh.
+#
+# lamp KIND MAP X Y Z [aim=A] [width=W] [deck=D]
+#   A light in a land mesh, which is not a prop, at world position X Y Z.
+#   KIND street: a lamp lighting the pavement around it.
+#   KIND downlight: a Cycling Road light whose head reaches over the road;
+#     aim is the x offset of the lit patch on the road from the head, width
+#     the half width of its pool, deck the patch's height at the head's z
+#     (0: no painted patch).
+#
+# prop_light PROP KIND X Y Z
+#   A light on every instance of a prop model, offset from its origin.
+#   KIND window: a lit window, with a pool in front of it.
+#   KIND center: a Pokémon Center logo, lighting the entrance.
+#   KIND beacon: Vista Lighthouse's lantern and its turning beams.
+#
+# day_emission MAP
+#   Something glows by day on this map (lava), so glow and bloom run then.
+
+# --- Shadows that fade at night ---
+
+material h_kage shadow
+# Shadows cast by bridges and raised boardwalks.
+material shadowchip shadow
+# Tree shadows: the grass tile under a tree, and the disc around the stump
+# in the tree atlases ("onttree2_b" is misspelled in one map).
+material tshadow painted_shadow
+material conttree_b tree
+material conttree2_b tree
+material onttree2_b tree
+material tree01 tree
+material tree04_2 tree
+material tree2_01 tree
+
+# --- Rain ---
+
+# Ground that collects puddles: Route 215's worn path, sand paths and
+# Route 213's hotel road.
+material lgreen puddle_ground
+material nsand puddle_ground
+material l02_road puddle_ground
+
+# --- Windows and signs ---
+
+# Battle Hall's middle window band is dimmer than ordinary windows.
+material h_mado window bloom=1 intensity=0.55 prop=540
+material h_mado window bloom=2
+# Pokémon Center logo and roof trim.
+material light_a source bloom=0.85
+# Poké Mart sign.
+material light2 source bloom=0.85
+# House windows the game already lights at night; dimmer in the two quiet
+# starting towns.
+material light source bloom=1.2 intensity=0.6 map=TWINLEAF_TOWN
+material Light source bloom=1.2 intensity=0.6 map=TWINLEAF_TOWN
+material light source bloom=1.2 intensity=0.6 map=SANDGEM_TOWN
+material Light source bloom=1.2 intensity=0.6 map=SANDGEM_TOWN
+material light source bloom=2
+material Light source bloom=2
+# Jubilife props: office windows that stay dark in the original (on both
+# office designs), the round tower's window bands, the Global Terminal
+# logo, Pokétch Co.'s sign and windows and the Jubilife TV screen.
+material c1_b01_4 window bloom=2
+material c1_b03_3 window bloom=2 intensity=0.6 prop=186
+material c1_s03_c source bloom=0.85 prop=14
+material c1_s01_a_ source bloom=0.85 prop=12
+material c1_s01_c window bloom=2 intensity=0.65 prop=12
+material c1_s02_4 screen bloom=0.85 intensity=0.8 prop=13
+# The Trainers' School Poké Ball emblem shares its material with the stone
+# front and roof.
+material c1_school_2 emblem bloom=2 prop=17
+
+# --- Lamps ---
+
+# Jubilife, in the land mesh: red roof beacons, lit building windows and
+# street lamps.
+material lamp01 source bloom=2
+material lamp03 source bloom=2
+material c1_lamp01 source bloom=2
+material c1_lamp02 source bloom=2
+material c1_o02 lamp bloom=2
+material c1_o02b lamp bloom=2
+# Canalave's red canal bollard lights.
+material c2_light_a source bloom=2
+material c2_light_b source bloom=2
+# Cycling Road (Route 206) light lenses: small boxes under each lamp head,
+# the only use of this generic name in the route's land mesh.
+material lambert14 source bloom=2 map=ROUTE_206 prop=land
+# Hearthome and Amity Square globe lamps; only the globe emits.
+material c5_light lamp bloom=2
+
+# --- Water and lava ---
+
+# Water surfaces in the land meshes, which mirror lights at night: the sea
+# (also Canalave's canal and harbor), lakes, shallows and the Battle
+# Frontier's pond.
+material sea water
+material lake water
+material asasea water
+material bf_lake water
+# Stark Mountain's lava pool and stream (prop 584), seen from Route 227.
+material magma lava bloom=1.4 prop=584
+
+# --- Landmarks ---
+
+# Every Gym (prop 8): the emblem over the entrance.
+material lambert5 source bloom=0.85 prop=8
+# Veilstone Game Corner: the crown sign, the blinking door bulbs (the
+# brightest lights in the game) and the side windows.
+material lambert8 source bloom=2 prop=207
+material lambert2 neon bloom=3 prop=207
+material lambert4 neon bloom=3 prop=207
+material lambert3 window bloom=2 prop=207
+# Route 210 Café windows.
+material r210h02_c window bloom=2 prop=205
+# Sunyshore Market windows.
+material lambert4 window bloom=2 prop=221
+# Vista Lighthouse lantern glass.
+material lambert3 beacon bloom=2 prop=223
+# Pokémon League emblem.
+material lambert3 source bloom=0.85 prop=452
+# Battle Frontier: Tower windows, Hall light pillars and sign, Factory
+# light strips, Arcade neon arches and trim.
+material a keyed_window bloom=1 intensity=0.55 prop=477
+material d32_s02c source bloom=2 prop=540
+material lambert10 source bloom=0.85 prop=540
+material d32_s03c source bloom=2 prop=541
+material d32_s04d source bloom=2 prop=542
+# Battle Frontier plaza lamps.
+material bf_light source bloom=2
+material bf_light2 source bloom=2
+material bf_light3 source bloom=2
+
+# --- Light sources in the world ---
+
+# Jubilife's street lamps: the c1_o02b glass of each lamp.
+lamp street JUBILIFE_CITY 2152 58 12104
+lamp street JUBILIFE_CITY 2152 58 12184
+lamp street JUBILIFE_CITY 2536 58 12104
+lamp street JUBILIFE_CITY 2536 58 12184
+lamp street JUBILIFE_CITY 2760 58 11896
+lamp street JUBILIFE_CITY 2840 58 11896
+lamp street JUBILIFE_CITY 2744 58 12040
+lamp street JUBILIFE_CITY 2840 58 12040
+lamp street JUBILIFE_CITY 2968 58 12104
+lamp street JUBILIFE_CITY 2968 58 12184
+lamp street JUBILIFE_CITY 2744 58 12232
+lamp street JUBILIFE_CITY 2840 58 12232
+lamp street JUBILIFE_CITY 2744 58 12408
+lamp street JUBILIFE_CITY 2840 58 12408
+lamp street JUBILIFE_CITY 2744 58 12632
+lamp street JUBILIFE_CITY 2840 58 12632
+
+# Cycling Road lights (the head of each r206_pol2), from north to south; the
+# lit patch is the road's lambert13 quad. Under the tunnels (z 10528) the
+# road splits into two lanes around a median.
+lamp downlight ROUTE_206 4779 239 9568 aim=29 width=35 deck=157
+lamp downlight ROUTE_206 4917 239 9568 aim=-25 width=41 deck=157
+lamp downlight ROUTE_206 4779 219 9808 aim=29 width=35 deck=137
+lamp downlight ROUTE_206 4917 219 9808 aim=-25 width=41 deck=137
+lamp downlight ROUTE_206 4779 199 10048 aim=29 width=35 deck=118
+lamp downlight ROUTE_206 4917 199 10048 aim=-25 width=41 deck=118
+lamp downlight ROUTE_206 4779 183 10288 aim=29 width=35 deck=99
+lamp downlight ROUTE_206 4917 183 10288 aim=-25 width=41 deck=99
+lamp downlight ROUTE_206 4779 163 10528 aim=28 width=34 deck=80
+lamp downlight ROUTE_206 4917 163 10528 aim=-17 width=29 deck=80
+lamp downlight ROUTE_206 4779 144 10768 aim=31 width=35
+lamp downlight ROUTE_206 4917 144 10768 aim=-31 width=35
+
+# c4_h01 in Eterna: the circular front window, not the door.
+prop_light 56 window 17 34 24
+# Both Pokémon Center variants: the logo on the sloped front fascia.
+prop_light 4 center 0 46 17
+prop_light 450 center 0 46 17
+# Vista Lighthouse: the lantern on top of the tower.
+prop_light 223 beacon 0 132 0
+
+# Stark Mountain's lava sits on its outside map, at Route 227's border.
+day_emission STARK_MOUNTAIN_OUTSIDE
+day_emission ROUTE_227

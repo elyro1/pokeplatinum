@@ -404,6 +404,14 @@ static void sub_02063A78(MapObject *mapObj, u8 currTileBehavior, u8 prevTileBeha
         || TileBehavior_IsMudWithGrass(currTileBehavior) == TRUE
         || TileBehavior_IsReflective(currTileBehavior)) {
         MapObject_SetStatusFlagOn(mapObj, MAP_OBJ_STATUS_HIDE_SHADOW);
+#ifdef SDK_PORT
+        // The PC's soft and cast shadows show in tall grass, so a character
+        // placed there needs its shadow animation; it hides the game's blob.
+        if (TileBehavior_IsTallGrass(currTileBehavior) && !MapObject_CheckStatus(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW)) {
+            ov5_021F1570(mapObj);
+            MapObject_SetStatusFlagOn(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW);
+        }
+#endif
     } else {
         if (!MapObject_CheckStatus(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW)) {
             ov5_021F1570(mapObj);

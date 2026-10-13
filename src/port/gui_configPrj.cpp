@@ -6,6 +6,12 @@
 #include "sim_gui_prj.hpp"
 
 #include "port/sim_config_prj.h"
+#include "port/field_lights.h"
+#include "port/field_visuals.h"
+#include "port/field_visual_effects.h"
+extern "C" {
+#include "rtc.h"
+}
 
 #include "bwbattle/bwbattle.h"
 
@@ -81,6 +87,65 @@ void ConfigPrjMain(bool * openState) {
     Bw2BattleVisualsConfig(myConfig, configChanged);
     ConfigCheckBox("Enable GF_Asserts", &myConfig->enableAsserts, configChanged);
     ConfigCheckBox("DebugBreak on GF assertion fail", &myConfig->breakDebuggerOnGfAssert, configChanged);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Graphics");
+    ConfigCheckBox("Richer day/night lighting", &myConfig->enhancedDayNight, configChanged);
+    ConfigCheckBox("Regional atmosphere", &myConfig->regionalAtmosphere, configChanged);
+    ConfigCheckBox("Smooth 3D edges", &myConfig->antialias3D, configChanged);
+    if (myConfig->antialias3D) {
+        int samples = SIM_Get3DAntialiasingSamples();
+        if (samples) ImGui::TextDisabled("3D edges: %dx MSAA + downsampling", samples);
+        else ImGui::TextDisabled("3D edges: high-resolution downsampling");
+    }
+    ConfigCheckBox("Correct model lighting", &myConfig->correctLighting, configChanged);
+    ConfigCheckBox("Environmental particles", &myConfig->environmentalParticles, configChanged);
+    ConfigCheckBox("Soft character shadows", &myConfig->softContactShadows, configChanged);
+    ConfigCheckBox("Character cast shadows", &myConfig->castShadows, configChanged);
+    ConfigCheckBox("Water shimmer and ripples", &myConfig->waterEffects, configChanged);
+    ConfigCheckBox("Weather effects", &myConfig->weatherEffects, configChanged);
+    ConfigCheckBox("Coherent night lighting", &myConfig->nightLighting, configChanged);
+    ConfigCheckBox("Night window and lamp glow", &myConfig->nightGlows, configChanged);
+    ConfigCheckBox("Emissive bloom", &myConfig->emissiveBloom, configChanged);
+    if (ImGui::Button("Reload light table"))
+        FieldLights_Reload();
+    ImGui::SameLine();
+    ImGui::TextDisabled("%s", FieldLights_Status());
+    static bool emissionOnly;
+    if (ImGui::Checkbox("Show emission only", &emissionOnly))
+        FieldVisuals_SetEmissionDebug(emissionOnly);
+    static bool frameTimings;
+    if (ImGui::Checkbox("Measure frame timings", &frameTimings))
+        SIM_SetRenderGpuProfiling(frameTimings);
+    if (frameTimings) {
+        ImGui::TextDisabled("CPU work: %.2f ms; total frame: %.2f ms", SIM_GetRenderFrameTime() / 1000000.0, SIM_GetFullFrameTime() / 1000000.0);
+        float gpu = SIM_GetRenderGpuMs();
+        if (gpu < 0) ImGui::TextDisabled("GPU: waiting for timing result");
+        else ImGui::TextDisabled("GPU elapsed: %.2f ms (%d frames old)", gpu, SIM_GetRenderGpuSampleAge());
+        ImGui::TextWrapped("Renderer: %s", SIM_GetGraphicsRenderer());
+    }
+    static bool waterTimings;
+    ImGui::Checkbox("Measure water timings", &waterTimings);
+    SIM_SetWaterProfiling(waterTimings);
+    if (waterTimings)
+        ImGui::TextDisabled("Water: %.3f ms CPU, %.3f ms GPU", FieldVisualEffects_GetWaterCpuMs(), FieldVisualEffects_GetWaterCount() ? SIM_GetWaterGpuMs() : 0);
+    ImGui::TextDisabled("Night sources: %d", FieldVisualEffects_GetLightCount());
+    FieldNightLighting night;
+    FieldVisuals_NightLighting(FieldVisuals_GetTime(GetSecondsSinceMidnight()), &night);
+    ImGui::TextDisabled("Sun %.2f, moon %.2f, emission %.2f", night.sunIntensity, night.moonIntensity, night.emissionActivation);
+    ImGui::TextDisabled("Visible effects: %d particles, %d water tiles, %d ripples",
+        FieldVisualEffects_GetParticleCount(), FieldVisualEffects_GetWaterCount(), FieldVisualEffects_GetRippleCount());
+
+    ImGui::Separator();
+    ImGui::Text("Lighting preview: %s", FieldVisuals_GetTimePreviewName());
+    if (ImGui::Button("Cycle time of day")) {
+        FieldVisuals_CycleTimePreview();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Use real time")) {
+        FieldVisuals_ResetTimePreview();
+    }
+    ImGui::TextWrapped("Lighting only; resets on restart. Resume game logic if paused to see the preview.");
 
     if(configChanged) {
         SIM_Config_prj_SaveConfigFile(myConfig);
