@@ -53,6 +53,7 @@
 #include "unk_0208C098.h"
 
 #include "res/text/bank/battle_strings.h"
+#include "res/text/bank/battle_party.h"
 
 static void *BattleSubscreen_Alloc(void);
 static void BattleSubscreen_OpenActionMenu(BattleSubscreen *btlSubscreen, int unused1, int unused2);
@@ -68,9 +69,12 @@ static BOOL BattleSubscreen_IsMainBattleMenu(int menuConfigIndex);
 static void BattleSubscreen_RestoreTargetSprites(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawMainTargetPrompt(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_InitMainMenuWindow(BattleSubscreen *btlSubscreen, Window *unk_04);
-static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *unk_04, int moveType);
+static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *unk_04, int moveType, int x, int y);
 static void BattleSubscreen_DrawMainMenuCursor(Window *unk_04, int x, int y);
 static void BattleSubscreen_DrawMainMenuText(Window *unk_04, String *string, int x, int y, int maxWidth, TextColor color);
+static void BattleSubscreen_DrawMoveInfo(BattleSubscreen *btlSubscreen);
+static void BattleSubscreen_CloseMoveInfo(BattleSubscreen *btlSubscreen);
+static BOOL BattleSubscreen_ProcessMoveInfoInput(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawMainActionMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_ClearMainActionMenu(BattleSubscreen *btlSubscreen);
 static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen);
@@ -1097,6 +1101,8 @@ void BattleSubscreen_SetupBackground(NARC *unused, NARC *spriteNarc, BattleSubsc
 {
     const BattleMenuConfig *newBattleMenuConfig, *activeBattleMenuConfig;
 
+    BattleSubscreen_CloseMoveInfo(btlSubscreen);
+
     if (battleDisplayData) {
         MI_CpuCopy8(battleDisplayData, &btlSubscreen->activeMenuData, sizeof(ActiveMenuData));
     }
@@ -1343,6 +1349,9 @@ int BattleSystem_MenuInput(BattleSubscreen *btlSubscreen)
     if (BattleSystem_GetBattleType(btlSubscreen->battleSys) & BATTLE_TYPE_CATCH_TUTORIAL) {
         buttonIndex = GetCatchTutorialInput(btlSubscreen);
     } else {
+        if (BattleSubscreen_ProcessMoveInfoInput(btlSubscreen)) {
+            return 0xffffffff;
+        }
         if (btlSubscreen->activeMenuConfigIndex == 12) {
             buttonIndex = TOUCHSCREEN_INPUT_NONE;
         } else if (BattleSubscreen_IsMainActionMenu(btlSubscreen->activeMenuConfigIndex)) {
@@ -1623,7 +1632,7 @@ static void BattleSubscreen_InitMainMenuWindow(BattleSubscreen *btlSubscreen, Wi
     Window_DrawMessageBox(window, 1, 10);
 }
 
-static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *window, int moveType)
+static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, Window *window, int moveType, int x, int y)
 {
     NNSG2dCharacterData *charData;
     NNSG2dPaletteData *paletteData;
@@ -1654,7 +1663,7 @@ static void BattleSubscreen_DrawMainMenuTypeIcon(BattleSubscreen *btlSubscreen, 
     }
 
     PaletteData_LoadBuffer(BattleSystem_GetPaletteData(btlSubscreen->battleSys), iconColors, PLTTBUF_MAIN_BG, PLTT_DEST(MAIN_MENU_TEXT_PALETTE) + 9, colorCount * sizeof(u16));
-    Window_BlitBitmapRect(window, pixels, 0, 0, 32, 16, 168, 16, 32, 16);
+    Window_BlitBitmapRect(window, pixels, 0, 0, 32, 16, x, y, 32, 16);
     Heap_Free(paletteAllocation);
     Heap_Free(charAllocation);
 }
@@ -1773,6 +1782,187 @@ static void BattleSubscreen_ClearMainActionMenu(BattleSubscreen *btlSubscreen)
     Window_CopyToVRAM(window);
 }
 
+// A separate tile range keeps the normal two-row move menu intact below
+// the popup. BG1's character region has room for both windows.
+#define MOVE_INFO_BASE_TILE (MAIN_MENU_BASE_TILE + 27 * 4)
+
+static void BattleSubscreen_DrawMainMenuCategoryIcon(BattleSubscreen *btlSubscreen, Window *window, int move)
+{
+    int category = MoveTable_LoadParam(move, MOVEATTRIBUTE_CLASS);
+    NNSG2dCharacterData *charData;
+    NNSG2dPaletteData *paletteData;
+    void *charAllocation = Graphics_GetCharData(CategoryIcon_GetNARC(), CategoryIcon_GetChar(category), TRUE, &charData, HEAP_ID_BATTLE);
+    void *paletteAllocation = Graphics_GetPlttData(TypeIcon_GetNARC(), TypeIcon_GetPlttSrc(), &paletteData, HEAP_ID_BATTLE);
+    const u16 *iconPalette = (const u16 *)paletteData->pRawData + PLTT_DEST(CategoryIcon_GetPltt(category));
+    u16 colors[16] = { 0 };
+    u8 colorMap[16] = { 15 };
+    u8 *pixels = charData->pRawData;
+    int colorCount = 0;
+    GF_ASSERT(charData->szByte >= 32 * 16 / 2);
+    for (int i = 0; i < 32 * 16 / 2; i++) {
+        u8 original = pixels[i];
+        u8 remapped = 0;
+        for (int shift = 0; shift < 8; shift += 4) {
+            int color = (original >> shift) & 15;
+            if (colorMap[color] == 0) {
+                GF_ASSERT(colorCount < 14);
+                colorMap[color] = ++colorCount;
+                colors[colorCount] = iconPalette[color];
+            }
+            remapped |= colorMap[color] << shift;
+        }
+        pixels[i] = remapped;
+    }
+    // Give the badge its own palette so its colors cannot change PP or type.
+    colors[15] = PaletteData_GetFadedBuffer(BattleSystem_GetPaletteData(btlSubscreen->battleSys), PLTTBUF_MAIN_BG)[PLTT_DEST(MAIN_MENU_TEXT_PALETTE) + 15];
+    PaletteData_LoadBuffer(BattleSystem_GetPaletteData(btlSubscreen->battleSys), colors, PLTTBUF_MAIN_BG, PLTT_DEST(12), sizeof(colors));
+    Bg_LoadPalette(BG_LAYER_MAIN_1, colors, sizeof(colors), PLTT_OFFSET(12));
+    Window_BlitBitmapRect(window, charData->pRawData, 0, 0, 32, 16, 0, 16, 32, 16);
+    Heap_Free(paletteAllocation);
+    Heap_Free(charAllocation);
+}
+
+static void BattleSubscreen_DrawMoveDescription(Window *window, const String *description)
+{
+    String *line = String_Init(String_Length(description) + 1, HEAP_ID_BATTLE);
+    String *word = String_Init(String_Length(description) + 1, HEAP_ID_BATTLE);
+    String *candidate = String_Init(String_Length(description) + 1, HEAP_ID_BATTLE);
+    const charcode_t *chars = String_GetData(description);
+    int y = 32;
+    // Summary descriptions contain narrow-screen line breaks. Reflow at word
+    // boundaries for this wider window instead of retaining those breaks.
+    for (;;) {
+        charcode_t c = *chars++;
+        if (c != CHAR_SPACE && c != CHAR_CR && c != CHAR_EOS) {
+            String_AppendChar(word, c);
+            continue;
+        }
+        if (String_Length(word)) {
+            String_Copy(candidate, line);
+            if (String_Length(line)) {
+                String_AppendChar(candidate, CHAR_SPACE);
+            }
+            String_Concat(candidate, word);
+            if (String_Length(line) && Font_CalcStringWidth(FONT_SYSTEM, candidate, 0) > 216) {
+                BattleSubscreen_DrawMainMenuText(window, line, 0, y, 216, TEXT_COLOR(1, 2, 15));
+                y += 16;
+                String_Copy(line, word);
+            } else {
+                String_Copy(line, candidate);
+            }
+            String_Clear(word);
+        }
+        if (c == CHAR_EOS) {
+            break;
+        }
+    }
+    BattleSubscreen_DrawMainMenuText(window, line, 0, y, 216, TEXT_COLOR(1, 2, 15));
+    String_Free(candidate);
+    String_Free(word);
+    String_Free(line);
+}
+
+static void BattleSubscreen_DrawMoveInfo(BattleSubscreen *btlSubscreen)
+{
+    int slot = sMoveMenuButtonLayout[btlSubscreen->cursor.y][btlSubscreen->cursor.x] - 1;
+    int move = btlSubscreen->activeMenuData.moveData.moveIDs[slot];
+    if (move == MOVE_NONE) {
+        return;
+    }
+    Window window;
+    BgConfig *bgConfig = BattleSystem_GetBgConfig(btlSubscreen->battleSys);
+    BattleSystem_SetHealthboxPriority(btlSubscreen->battleSys, 1);
+    Window_Init(&window);
+    Window_Add(bgConfig, &window, BG_LAYER_MAIN_1, 2, 5, 27, 12, MAIN_MENU_TEXT_PALETTE, MOVE_INFO_BASE_TILE);
+    Window_FillTilemap(&window, 15);
+    Window_DrawMessageBox(&window, 1, 10);
+
+    String *name = MessageUtil_MoveName(move, HEAP_ID_BATTLE);
+    BattleSubscreen_DrawMainMenuText(&window, name, 0, 0, 176, TEXT_COLOR(1, 2, 15));
+    String_Free(name);
+    BattleSubscreen_DrawMainMenuTypeIcon(btlSubscreen, &window, MoveTable_LoadParam(move, MOVEATTRIBUTE_TYPE), 184, 0);
+    BattleSubscreen_DrawMainMenuCategoryIcon(btlSubscreen, &window, move);
+
+    MessageLoader *messages = MessageLoader_Init(MSG_LOADER_LOAD_ON_DEMAND, NARC_INDEX_MSGDATA__PL_MSG, TEXT_BANK_BATTLE_PARTY, HEAP_ID_BATTLE);
+    String *value = String_Init(8, HEAP_ID_BATTLE);
+    for (int i = 0; i < 2; i++) {
+        BOOL isAccuracy = i == 1;
+        int stat = MoveTable_LoadParam(move, isAccuracy ? MOVEATTRIBUTE_ACCURACY : MOVEATTRIBUTE_POWER);
+        String *label = MessageLoader_GetNewString(messages, isAccuracy ? BattleParty_Text_MoveAccuracyLabel : BattleParty_Text_MovePowerLabel);
+        String *text = String_Init(String_Length(label) + 10, HEAP_ID_BATTLE);
+        String_Copy(text, label);
+        String_AppendChar(text, CHAR_SPACE);
+        if (stat <= (isAccuracy ? 0 : 1)) {
+            MessageLoader_GetString(messages, BattleParty_Text_MoveStatNoValue, value);
+        } else {
+            String_FormatInt(value, stat, 3, PADDING_MODE_NONE, CHARSET_MODE_EN);
+            if (isAccuracy) {
+                String_AppendChar(value, CHAR_PERCENT);
+            }
+        }
+        String_Concat(text, value);
+        BattleSubscreen_DrawMainMenuText(&window, text, isAccuracy ? 128 : 48, 16, isAccuracy ? 88 : 72, TEXT_COLOR(1, 2, 15));
+        String_Free(text);
+        String_Free(label);
+    }
+    String_Free(value);
+    MessageLoader_Free(messages);
+
+    messages = MessageLoader_Init(MSG_LOADER_LOAD_ON_DEMAND, NARC_INDEX_MSGDATA__PL_MSG, TEXT_BANK_MOVE_DESCRIPTIONS, HEAP_ID_BATTLE);
+    String *description = MessageLoader_GetNewString(messages, move);
+    BattleSubscreen_DrawMoveDescription(&window, description);
+    String_Free(description);
+    MessageLoader_Free(messages);
+
+    BattleSubscreen_TransferMainMenuWindow(btlSubscreen, &window);
+    Bg_ChangeTilemapRectPalette(bgConfig, BG_LAYER_MAIN_1, 2, 7, 4, 2, 12);
+    Bg_CopyTilemapBufferToVRAM(bgConfig, BG_LAYER_MAIN_1);
+    Window_Remove(&window);
+}
+
+static BOOL BattleSubscreen_ProcessMoveInfoInput(BattleSubscreen *btlSubscreen)
+{
+    if (BattleSubscreen_IsMainMoveMenu(btlSubscreen->activeMenuConfigIndex)) {
+        // Use raw L so the detail shortcut also works with L=A enabled.
+        // Consume dismissal before ordinary confirmation/cancel handling.
+        if (btlSubscreen->moveInfoVisible) {
+            if ((gSystem.pressedKeysRaw & PAD_BUTTON_L) || (gSystem.pressedKeys & (PAD_BUTTON_A | PAD_BUTTON_B))) {
+                BattleSubscreen_CloseMoveInfo(btlSubscreen);
+                Sound_PlayEffect(SE_CONFIRM_sseq_3);
+            } else {
+                BattleSystem_MenuKeys(btlSubscreen);
+            }
+            return TRUE;
+        }
+        if (gSystem.pressedKeysRaw & PAD_BUTTON_L) {
+            if (!btlSubscreen->cursor.isActive) {
+                btlSubscreen->cursor.isActive = TRUE;
+                BattleSystem_Cursor_Moves(btlSubscreen, TRUE);
+            }
+            btlSubscreen->moveInfoVisible = TRUE;
+            BattleSubscreen_DrawMoveInfo(btlSubscreen);
+            Sound_PlayEffect(SE_CONFIRM_sseq_3);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static void BattleSubscreen_CloseMoveInfo(BattleSubscreen *btlSubscreen)
+{
+    if (!btlSubscreen->moveInfoVisible) {
+        return;
+    }
+    btlSubscreen->moveInfoVisible = FALSE;
+    BgConfig *bgConfig = BattleSystem_GetBgConfig(btlSubscreen->battleSys);
+    Bg_FillTilemapRect(bgConfig, BG_LAYER_MAIN_1, 0, 0, 4, 32, 14, 0);
+    Bg_CopyTilemapBufferToVRAM(bgConfig, BG_LAYER_MAIN_1);
+    BattleSystem_SetHealthboxPriority(btlSubscreen->battleSys, 0);
+    // The popup type badge shares the menu palette: restore the menu's type
+    // colors as well as its text when dismissing it.
+    BattleSubscreen_DrawMainMoveSelectMenu(btlSubscreen);
+}
+
 static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen)
 {
     BattleSystem *battleSys = btlSubscreen->battleSys;
@@ -1811,7 +2001,7 @@ static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen
     Text_AddPrinterWithParamsColorAndSpacing(&window, FONT_SYSTEM, ppCount, ppCountX, 0, TEXT_SPEED_NO_TRANSFER, ppColor, 0, 0, NULL);
 
     int moveType = MoveTable_LoadParam(moveData->moveIDs[selectedMove], MOVEATTRIBUTE_TYPE);
-    BattleSubscreen_DrawMainMenuTypeIcon(btlSubscreen, &window, moveType);
+    BattleSubscreen_DrawMainMenuTypeIcon(btlSubscreen, &window, moveType, 168, 16);
     Window_FillRectWithColor(&window, 2, 144, 0, 1, 32);
 
     BattleSubscreen_TransferMainMenuWindow(btlSubscreen, &window);
@@ -1819,6 +2009,9 @@ static void BattleSubscreen_DrawMainMoveSelectMenu(BattleSubscreen *btlSubscreen
     String_Free(ppCount);
     String_Free(ppFormat);
     String_Free(ppLabel);
+    if (btlSubscreen->moveInfoVisible) {
+        BattleSubscreen_DrawMoveInfo(btlSubscreen);
+    }
 }
 
 static void BattleSubscreen_ClearMainMoveMenu(BattleSubscreen *btlSubscreen)
@@ -2799,6 +2992,7 @@ static void ResetSubscreenBgLayers(void)
 
 static void BattleSubscreen_Cleanup(BattleSubscreen *btlSubscreen, BOOL freeSprites, BOOL resetBg)
 {
+    BattleSubscreen_CloseMoveInfo(btlSubscreen);
     if (freeSprites == TRUE) {
         BattleSubscreen_FreeAllSprites(btlSubscreen);
     }

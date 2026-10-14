@@ -224,6 +224,7 @@ typedef struct BattleSubscreen {
     u8 targetBlinkFrame;
     u8 targetBlinkSlot;
     u8 targetWasHidden[MAX_BATTLERS];
+    BOOL moveInfoVisible;
     struct {
         Indicator *indicator;
         u8 step;
