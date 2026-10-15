@@ -34,6 +34,7 @@
 #include "graphics.h"
 #include "heap.h"
 #include "message.h"
+#include "player_avatar.h"
 #include "render_window.h"
 #include "save_player.h"
 #include "savedata.h"
@@ -342,7 +343,9 @@ BOOL UndergroundMan_CheckForTouchInput(void)
         return FALSE;
     }
 
-    if (gSystem.touchPressed) {
+    BOOL keyboardPing = JOY_NEW(PAD_BUTTON_R);
+
+    if (gSystem.touchPressed || keyboardPing) {
         sUndergroundMan->touchCooldown = 30;
 
         if (!sUndergroundMan->resourcesPaused) {
@@ -351,21 +354,31 @@ BOOL UndergroundMan_CheckForTouchInput(void)
                     return FALSE;
                 }
 
-                if (CommPlayer_GetMovementTimer(CommSys_CurNetId()) != 0) {
+                if (!keyboardPing && CommPlayer_GetMovementTimer(CommSys_CurNetId()) != 0) {
                     return FALSE;
                 }
 
-                VecFx32 pos;
-                pos = ov5_GetPositionFromTouchCoordinates(gSystem.touchX, gSystem.touchY, sUndergroundMan->fieldSystem->unk_8C);
                 int x, z;
-                LandData_ObjectPosToTilePos(pos.x, pos.z, &x, &z);
+                int screenX = gSystem.touchX;
+                int screenY = gSystem.touchY;
+
+                if (keyboardPing) {
+                    PlayerAvatar *avatar = sUndergroundMan->fieldSystem->playerAvatar;
+                    x = PlayerAvatar_GetXPos(avatar);
+                    z = PlayerAvatar_GetZPos(avatar);
+                    VecFx32 pos = *PlayerAvatar_GetPos(avatar);
+                    NNS_G3dWorldPosToScrPos(&pos, &screenX, &screenY);
+                } else {
+                    VecFx32 pos = ov5_GetPositionFromTouchCoordinates(gSystem.touchX, gSystem.touchY, sUndergroundMan->fieldSystem->unk_8C);
+                    LandData_ObjectPosToTilePos(pos.x, pos.z, &x, &z);
+                }
                 CoordinatesU16 touchedTileCoords = {
                     .x = x,
                     .z = z
                 };
 
-                sUndergroundMan->touchCoordinates.x = gSystem.touchX;
-                sUndergroundMan->touchCoordinates.y = gSystem.touchY;
+                sUndergroundMan->touchCoordinates.x = screenX;
+                sUndergroundMan->touchCoordinates.y = screenY;
                 sUndergroundMan->touchedTileCoords.x = x;
                 sUndergroundMan->touchedTileCoords.z = z;
 

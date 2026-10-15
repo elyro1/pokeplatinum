@@ -202,6 +202,11 @@ typedef struct MiningGameContext {
     int sizeOfCurrentSphere;
     int textTimer;
     u8 dugUpAllItems;
+    u8 previousScreen;
+    u8 cursorX;
+    u8 cursorY;
+    BOOL cursorVisible;
+    Window cursorWindow;
 } MiningGameContext;
 
 typedef struct MiningSpot {
@@ -1375,6 +1380,10 @@ static void Mining_PlayHitAnimationsAndSoundEffects(int x, int y, BOOL pickaxeSe
 
 static void Mining_InitGame(MiningGameContext *ctx)
 {
+    ctx->previousScreen = gSystem.whichScreenIs3D;
+    gSystem.whichScreenIs3D = DS_SCREEN_MAIN;
+    GXLayers_SwapDisplay();
+
     Sound_SetSceneAndPlayBGM(SOUND_SCENE_SUB_58, SEQ_NONE, 0);
     Mining_InitGameState();
 
@@ -1406,6 +1415,16 @@ static void Mining_InitGame(MiningGameContext *ctx)
 
     Graphics_LoadPalette(NARC_INDEX_DATA__UG_TRAP, text_window_NCLR, PAL_LOAD_MAIN_BG, PLTT_OFFSET(10), PALETTE_SIZE_BYTES * 4, HEAP_ID_MINING);
     Mining_GenerateGameLayout(bgConfig, size, ctx);
+
+    // A transparent cell outline on the text layer, using its unused low tiles.
+    static const u16 cursorPalette[] = { 0, GX_RGB(0, 0, 0), GX_RGB(31, 31, 31) };
+    GX_LoadBGPltt(cursorPalette, PLTT_OFFSET(9), sizeof(cursorPalette));
+    ctx->cursorX = MINING_GAME_WIDTH / 2;
+    ctx->cursorY = MINING_GAME_HEIGHT / 2;
+    Window_Add(bgConfig, &ctx->cursorWindow, BG_LAYER_MAIN_3, ctx->cursorX * 2, ctx->cursorY * 2 + 4, 2, 2, 9, 1);
+    Window_FillTilemap(&ctx->cursorWindow, 1);
+    Window_FillRectWithColor(&ctx->cursorWindow, 2, 1, 1, 14, 14);
+    Window_FillRectWithColor(&ctx->cursorWindow, 0, 2, 2, 12, 12);
 }
 
 static void Mining_InitGraphics(void)
@@ -1430,6 +1449,7 @@ static void Mining_InitGraphics(void)
 
 static void Mining_FreeGameResources(MiningGameContext *ctx)
 {
+    Window_Remove(&ctx->cursorWindow);
     Bg_FreeTilemapBuffer(sMiningEnv->bgConfig, BG_LAYER_MAIN_0);
     Bg_FreeTilemapBuffer(sMiningEnv->bgConfig, BG_LAYER_MAIN_1);
     Bg_FreeTilemapBuffer(sMiningEnv->bgConfig, BG_LAYER_MAIN_2);
@@ -1462,6 +1482,8 @@ static void Mining_FreeGameResources(MiningGameContext *ctx)
     sMiningEnv->bgConfig = NULL;
 
     Heap_Destroy(HEAP_ID_MINING);
+    gSystem.whichScreenIs3D = ctx->previousScreen;
+    GXLayers_SwapDisplay();
     UndergroundTextPrinter_SetBackground(UndergroundMan_GetCommonTextPrinter(), sMiningEnv->fieldSystem->bgConfig, BASE_TILE_SCROLLING_MESSAGE_BOX, UG_TEXT_BASE_TILE_MESSAGE_WINDOW);
 }
 
@@ -1564,6 +1586,10 @@ static void Mining_GameTask(SysTask *sysTask, void *data)
         break;
     case MINING_STATE_MAIN:
         Mining_MainGameLoop(ctx);
+        if (ctx->state != MINING_STATE_MAIN) {
+            Window_ClearAndScheduleCopyToVRAM(&ctx->cursorWindow);
+            ctx->cursorVisible = FALSE;
+        }
         Mining_QueueScreenShake(sMiningEnv->bgConfig);
         Mining_DrawUncoveredItemShines(ctx);
         SpriteList_Update(sMiningEnv->spriteList);
@@ -2720,41 +2746,87 @@ static void Mining_ShakeScreen(BgConfig *bgConfig)
 static BOOL Mining_MainGameLoop(MiningGameContext *ctx)
 {
     Underground *underground = SaveData_GetUnderground(FieldSystem_GetSaveData(sMiningEnv->fieldSystem));
+    int previousX = ctx->cursorX;
+    int previousY = ctx->cursorY;
+    int toolX = gSystem.touchX;
+    int toolY = gSystem.touchY;
+
+    if (JOY_REPEAT(PAD_KEY_LEFT) && ctx->cursorX > 0) {
+        ctx->cursorX--;
+    } else if (JOY_REPEAT(PAD_KEY_RIGHT) && ctx->cursorX < MINING_GAME_WIDTH - 1) {
+        ctx->cursorX++;
+    }
+
+    if (JOY_REPEAT(PAD_KEY_UP) && ctx->cursorY > 0) {
+        ctx->cursorY--;
+    } else if (JOY_REPEAT(PAD_KEY_DOWN) && ctx->cursorY < MINING_GAME_HEIGHT - 1) {
+        ctx->cursorY++;
+    }
 
     if (sMiningEnv->sidebarTouchState == 1) {
         sMiningEnv->sidebarTouchState = 0;
     }
 
+    // Both shoulders cycle the two tools through the existing button animation.
+    if (JOY_NEW(PAD_BUTTON_L | PAD_BUTTON_R)) {
+        toolX = 232;
+        toolY = sMiningEnv->pickaxeSelected ? 80 : 152;
+        sMiningEnv->sidebarTouchState = SIDEBAR_TOUCH_START;
+    }
+
+    Mining_ButtonTouchCheck(sMiningEnv->bgConfig, toolX, toolY, sMiningEnv->sidebarTouchState);
+
+    int strikeX = ctx->cursorX * 2 * TILE_WIDTH_PIXELS + TILE_WIDTH_PIXELS;
+    int strikeY = (ctx->cursorY * 2 + 4) * TILE_HEIGHT_PIXELS + TILE_HEIGHT_PIXELS;
+    BOOL strike = JOY_NEW(PAD_BUTTON_A);
+
     if (gSystem.touchPressed) {
-        if (gSystem.touchX < MINING_GAME_WIDTH * 2 * TILE_WIDTH_PIXELS && gSystem.touchY >= 4 * TILE_HEIGHT_PIXELS) {
-            MiningLinkInput input;
-            input.touchX = gSystem.touchX;
-            input.touchY = gSystem.touchY;
-
-            Mining_RemoveDirt(gSystem.touchX, gSystem.touchY, sMiningEnv->pickaxeSelected, ctx);
-
-            int damageToWall;
-            if (sMiningEnv->pickaxeSelected) {
-                damageToWall = 4;
-            } else {
-                damageToWall = 8;
-            }
-
-            CommSys_SendDataFixedSize(68, &input);
-
-            if (sMiningEnv->wallIntegrity > damageToWall) {
-                sMiningEnv->wallIntegrity -= damageToWall;
-            } else {
-                sMiningEnv->wallIntegrity = 0;
-            }
-
-            Mining_DrawDirt(sMiningEnv->bgConfig);
-            Mining_DrawWallCrack(sMiningEnv->bgConfig);
-
-            sMiningEnv->shakeTimer = 1;
+        if (gSystem.touchX < MINING_GAME_WIDTH * 2 * TILE_WIDTH_PIXELS && gSystem.touchY >= 4 * TILE_HEIGHT_PIXELS && gSystem.touchY < HW_LCD_HEIGHT) {
+            strikeX = gSystem.touchX;
+            strikeY = gSystem.touchY;
+            ctx->cursorX = strikeX / (2 * TILE_WIDTH_PIXELS);
+            ctx->cursorY = strikeY / (2 * TILE_HEIGHT_PIXELS) - 2;
+            strike = TRUE;
         } else if (gSystem.touchX >= MINING_GAME_WIDTH * 2 * TILE_WIDTH_PIXELS) {
             sMiningEnv->sidebarTouchState = SIDEBAR_TOUCH_START;
+            Mining_ButtonTouchCheck(sMiningEnv->bgConfig, gSystem.touchX, gSystem.touchY, sMiningEnv->sidebarTouchState);
         }
+    }
+
+    if (!ctx->cursorVisible || previousX != ctx->cursorX || previousY != ctx->cursorY) {
+        Window_ClearTilemap(&ctx->cursorWindow);
+        Window_SetXPos(&ctx->cursorWindow, ctx->cursorX * 2);
+        Window_SetYPos(&ctx->cursorWindow, ctx->cursorY * 2 + 4);
+        Window_ScheduleCopyToVRAM(&ctx->cursorWindow);
+        ctx->cursorVisible = TRUE;
+    }
+
+    if (strike) {
+        MiningLinkInput input;
+        input.touchX = strikeX;
+        input.touchY = strikeY;
+
+        Mining_RemoveDirt(strikeX, strikeY, sMiningEnv->pickaxeSelected, ctx);
+
+        int damageToWall;
+        if (sMiningEnv->pickaxeSelected) {
+            damageToWall = 4;
+        } else {
+            damageToWall = 8;
+        }
+
+        CommSys_SendDataFixedSize(68, &input);
+
+        if (sMiningEnv->wallIntegrity > damageToWall) {
+            sMiningEnv->wallIntegrity -= damageToWall;
+        } else {
+            sMiningEnv->wallIntegrity = 0;
+        }
+
+        Mining_DrawDirt(sMiningEnv->bgConfig);
+        Mining_DrawWallCrack(sMiningEnv->bgConfig);
+
+        sMiningEnv->shakeTimer = 1;
     }
 
     if (ctx->soundEffectTimer) {
@@ -2764,8 +2836,6 @@ static BOOL Mining_MainGameLoop(MiningGameContext *ctx)
             Sound_PlayEffect(SEQ_SE_DP_KIRAKIRA3_sseq);
         }
     }
-
-    Mining_ButtonTouchCheck(sMiningEnv->bgConfig, gSystem.touchX, gSystem.touchY, sMiningEnv->sidebarTouchState);
 
     if (sMiningEnv->sidebarTouchState >= SIDEBAR_TOUCH_START) {
         sMiningEnv->sidebarTouchState++;

@@ -7,6 +7,7 @@
 
 #include "field/field_system.h"
 #include "underground/manager.h"
+#include "underground/player.h"
 #include "underground/struct_underground_top_screen_context_decl.h"
 
 #include "bg_window.h"
@@ -27,6 +28,7 @@
 #include "string_gf.h"
 #include "sys_task_extensions.h"
 #include "sys_task_manager.h"
+#include "system.h"
 #include "text.h"
 
 #include "res/graphics/trap_effects/trap_effects.naix"
@@ -103,6 +105,9 @@ struct UndergroundTopScreenContext_t {
     int messageState;
     int messageTimer;
     MessageQueue messageQueue;
+#ifdef SDK_PORT
+    BOOL mapScreenShown;
+#endif
 };
 
 static int positionsDummy[MAX_CONNECTED_PLAYERS][2];
@@ -121,6 +126,17 @@ static String *MessageQueue_Dequeue(MessageQueue *queue);
 static BOOL MessageQueue_IsEmpty(MessageQueue *queue);
 static void UndergroundMap_DrawRadarAndBaseMarkers(OtherMarkerData markerData[], Sprite *sprites[]);
 static void UndergroundMap_FetchRadarAndBaseInfo(OtherMarkerData markerData[]);
+
+#ifdef SDK_PORT
+static void UndergroundMap_SetScreen(UndergroundTopScreenContext *ctx, BOOL showMap)
+{
+    if (ctx->mapScreenShown != showMap) {
+        ctx->mapScreenShown = showMap;
+        gSystem.whichScreenIs3D = showMap ? DS_SCREEN_SUB : DS_SCREEN_MAIN;
+        GXLayers_SwapDisplay();
+    }
+}
+#endif
 
 static UndergroundTopScreenContext *sUnused;
 
@@ -209,6 +225,11 @@ static void UndergroundTopScreen_Task(SysTask *sysTask, void *data)
         ctx->state++;
         break;
     case TOP_SCREEN_STATE_MAIN:
+#ifdef SDK_PORT
+        UndergroundMap_SetScreen(ctx, JOY_HELD(PAD_BUTTON_L)
+            && CommPlayerMan_IsFieldSystemActive()
+            && !UndergroundPlayer_IsAffectedByTrap(CommSys_CurNetId()));
+#endif
         UndergroundMap_FetchPlayerPositions(ctx->parent->playerAvatar, ctx->playerCoords, ctx->playerMarkers);
         UndergroundMap_DrawPlayerMarkers(ctx->playerMarkers, ctx->playerMarkerSprites);
         UndergroundMap_FetchRadarAndBaseInfo(ctx->otherMarkers);
@@ -375,6 +396,9 @@ UndergroundTopScreenContext *UndergroundTopScreen_StartTask(FieldSystem *fieldSy
 void UndergroundTopScreen_EndTask(UndergroundTopScreenContext *ctx)
 {
     if (ctx->state == TOP_SCREEN_STATE_MAIN) {
+#ifdef SDK_PORT
+        UndergroundMap_SetScreen(ctx, FALSE);
+#endif
         ctx->state = TOP_SCREEN_STATE_FINISH_AFTER_TEXT;
     } else {
         GF_ASSERT("FALSE");

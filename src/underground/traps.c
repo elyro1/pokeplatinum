@@ -166,7 +166,6 @@ typedef struct TrapsEnv {
     u16 retrievedTrapCount;
     u8 retrievedTrapID;
     u8 padding3[3];
-    s8 micSample;
     u8 triggeredTrapIDClient;
     u8 triggeredTrapIDs[MAX_CONNECTED_PLAYERS];
     u8 unused2;
@@ -179,9 +178,6 @@ typedef struct LeafTrapContext {
     int printerID;
     u16 leafAngleIdx[MAX_TRAP_EFFECT_SPRITES];
     CoordinatesU16 leafCoords[MAX_TRAP_EFFECT_SPRITES];
-    u8 micBlowIntensities[40];
-    u8 micBlowDelay[MAX_TRAP_EFFECT_SPRITES];
-    u8 blowIntensityIndex;
     u8 timer;
     u8 toolInitialDir;
     u8 isTool;
@@ -222,8 +218,6 @@ typedef struct AlertTrapContext {
 typedef struct FireTrapContext {
     int state;
     int printerID;
-    u8 micSamples[10];
-    int micSampleIndex;
     u8 padding[8];
     int flameIntensity;
     int timer;
@@ -597,7 +591,6 @@ static void Traps_StartLinkSpinTask(int netID, enum Trap trapID);
 static void Traps_StopAllLinkSpinTasks(void);
 
 static TrapsEnv *trapsEnv = NULL;
-static s8 sMicSample ATTRIBUTE_ALIGN(32);
 
 static const EndTrapEffectClientFunc sEndTrapEffectClientFuncs[] = {
     [TRAP_NONE] = NULL,
@@ -3455,12 +3448,12 @@ static void Traps_DeleteSprite(int index)
     }
 }
 
-static void Traps_SwayLeaf(int index, LeafTrapContext *ctx, int micBlowIntensity)
+static void Traps_SwayLeaf(int index, LeafTrapContext *ctx, int blowIntensity)
 {
     int x = ctx->leafCoords[index].x;
     int y = ctx->leafCoords[index].y;
 
-    if (micBlowIntensity == 0) {
+    if (blowIntensity == 0) {
         ctx->leafAngleIdx[index] += 0x400;
     }
 
@@ -3477,28 +3470,12 @@ static void Traps_SwayLeaf(int index, LeafTrapContext *ctx, int micBlowIntensity
     }
 }
 
-static void Traps_MicSampleCallback(MICResult result, void *unused)
-{
-    if (result == MIC_RESULT_SUCCESS) {
-        trapsEnv->micSample = sMicSample;
-    }
-}
-
 // returns true when all leaves/petals are blown away
 static BOOL Traps_ProcessLeaves(BgConfig *unused, LeafTrapContext *ctx)
 {
     int i;
-    int micBlowIntensity = 0;
-
-    Sound_StartMicManualSampling(MIC_SAMPLING_TYPE_SIGNED_8BIT, &sMicSample, Traps_MicSampleCallback, NULL);
-
-    if (trapsEnv->triggeredTrapIDClient == TRAP_FLOWER) {
-        micBlowIntensity = abs(trapsEnv->micSample) / 33;
-        ctx->micBlowIntensities[ctx->blowIntensityIndex] = micBlowIntensity;
-    } else {
-        micBlowIntensity = abs(trapsEnv->micSample) / 25;
-        ctx->micBlowIntensities[ctx->blowIntensityIndex] = micBlowIntensity;
-    }
+    // Each fresh press pushes the leaves outward; holding A does not repeat.
+    int blowIntensity = JOY_NEW(PAD_BUTTON_A) ? 64 : 0;
 
     for (i = 0; i < ctx->leafCount; i++) {
         if (trapsEnv->sprites[i]) {
@@ -3516,43 +3493,29 @@ static BOOL Traps_ProcessLeaves(BgConfig *unused, LeafTrapContext *ctx)
             continue;
         }
 
-        int adjustedBlowIntensityIndex = ctx->blowIntensityIndex - ctx->micBlowDelay[i];
-
-        if (adjustedBlowIntensityIndex < 0) {
-            adjustedBlowIntensityIndex += 40;
-        }
-
-        micBlowIntensity = ctx->micBlowIntensities[adjustedBlowIntensityIndex];
-        fx32 fxXDistance = ctx->leafCoords[i].x - HW_LCD_WIDTH / 2;
-        fx32 fxYDistance = ctx->leafCoords[i].y - HW_LCD_HEIGHT / 2;
-        fxXDistance *= FX32_ONE;
-        fxYDistance *= FX32_ONE;
-        fx32 distance = FX_Mul(fxXDistance, fxXDistance) + FX_Mul(fxYDistance, fxYDistance);
-        distance = FX_Sqrt(distance);
-
-        if (micBlowIntensity == 0) {
-            fx32 micBlowDelay = FX_Mul(FX_Div(distance, 160 * FX32_ONE), (40 - 2) * FX32_ONE);
-            ctx->micBlowDelay[i] = FX_Whole(micBlowDelay);
-        } else {
+        if (blowIntensity != 0) {
+            fx32 fxXDistance = (ctx->leafCoords[i].x - HW_LCD_WIDTH / 2) * FX32_ONE;
+            fx32 fxYDistance = (ctx->leafCoords[i].y - HW_LCD_HEIGHT / 2) * FX32_ONE;
+            fx32 distance = FX_Sqrt(FX_Mul(fxXDistance, fxXDistance) + FX_Mul(fxYDistance, fxYDistance));
             int xDistance = ctx->leafCoords[i].x - HW_LCD_WIDTH / 2;
             int yDistance = ctx->leafCoords[i].y - HW_LCD_HEIGHT / 2;
 
             if (yDistance == 0) {
                 if (xDistance < 0) {
-                    ctx->leafCoords[i].x -= micBlowIntensity;
+                    ctx->leafCoords[i].x -= blowIntensity;
                 } else {
-                    ctx->leafCoords[i].x += micBlowIntensity;
+                    ctx->leafCoords[i].x += blowIntensity;
                 }
             } else if (xDistance == 0) {
                 if (yDistance < 0) {
-                    ctx->leafCoords[i].y -= micBlowIntensity;
+                    ctx->leafCoords[i].y -= blowIntensity;
                 } else {
-                    ctx->leafCoords[i].y += micBlowIntensity;
+                    ctx->leafCoords[i].y += blowIntensity;
                 }
             } else {
                 u16 angleIdx = FX_Atan2Idx(yDistance, xDistance);
 
-                distance += micBlowIntensity * FX32_ONE;
+                distance += blowIntensity * FX32_ONE;
                 int newDistance = FX_Whole(FX_Mul(FX_SinIdx(angleIdx), distance));
                 ctx->leafCoords[i].y = HW_LCD_HEIGHT / 2 + newDistance;
                 newDistance = FX_Whole(FX_Mul(FX_CosIdx(angleIdx), distance));
@@ -3560,13 +3523,7 @@ static BOOL Traps_ProcessLeaves(BgConfig *unused, LeafTrapContext *ctx)
             }
         }
 
-        Traps_SwayLeaf(i, ctx, micBlowIntensity);
-    }
-
-    ctx->blowIntensityIndex++;
-
-    if (ctx->blowIntensityIndex >= NELEMS(ctx->micBlowIntensities)) {
-        ctx->blowIntensityIndex = 0;
+        Traps_SwayLeaf(i, ctx, blowIntensity);
     }
 
     SpriteList_Update(trapsEnv->spriteList);
@@ -4447,8 +4404,6 @@ static void Traps_InitFireSprite(FireTrapContext *unused)
 // returns true when flame is extinguished
 static BOOL Traps_ProcessFlame(BgConfig *unused, FireTrapContext *ctx)
 {
-    int micBlowIntensity = 0;
-
     switch (ctx->subState) {
     case FIRE_TRAP_SUBSTATE_INIT:
         if (trapsEnv->triggeredTrapIDClient == TRAP_FIRE) {
@@ -4460,24 +4415,10 @@ static BOOL Traps_ProcessFlame(BgConfig *unused, FireTrapContext *ctx)
         ctx->timer = 0;
         ctx->subState = FIRE_TRAP_SUBSTATE_MAIN;
     case FIRE_TRAP_SUBSTATE_MAIN:
-        Sound_StartMicManualSampling(MIC_SAMPLING_TYPE_SIGNED_8BIT, &sMicSample, Traps_MicSampleCallback, NULL);
-
-        ctx->micSampleIndex++;
-        ctx->micSamples[ctx->micSampleIndex % 10] = abs(trapsEnv->micSample);
-
-        for (int i = 0; i < 10; i++) {
-            micBlowIntensity += ctx->micSamples[i];
-        }
-
-        if (micBlowIntensity > 500) {
+        if (JOY_NEW(PAD_BUTTON_A)) {
             ctx->timer++;
-            Sound_PlayEffect(SEQ_SE_DP_UG_024_sseq);
-        } else {
-            ctx->subState = FIRE_TRAP_SUBSTATE_INIT;
-        }
-
-        if (ctx->timer % 10 == 9) {
             ctx->flameIntensity--;
+            Sound_PlayEffect(SEQ_SE_DP_UG_024_sseq);
         }
 
         if (ctx->flameIntensity == 0) {

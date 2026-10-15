@@ -14,7 +14,12 @@
 
 #define MAX_NORMAL_RADAR_BLIPS 8
 
+// Results encode each coordinate in four bits: keep the diameter below 16.
+#ifdef SDK_PORT
+#define TOUCH_RADAR_RADIUS 7
+#else
 #define TOUCH_RADAR_RADIUS 6
+#endif
 
 #define MAX_TOUCH_RADAR_RESULTS_OF_TYPE 8
 

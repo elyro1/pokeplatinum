@@ -45,6 +45,10 @@
 #include "underground.h"
 #include "unk_020655F4.h"
 
+#ifdef SDK_PORT
+#include "port/sim_config_prj.h"
+#endif
+
 static int CommPlayerMan_GetSlideMovementSpeed(int param0, int param1);
 static BOOL CommPlayer_MoveSlide(int netId, int param1);
 static BOOL CommPlayer_SlideAnimation(int netId, int param1, int unused, int animSpeed);
@@ -674,12 +678,25 @@ static int CommPlayerMan_GetSlideMovementSpeed(int slideTilesLeft, int unused)
     return 2;
 }
 
+static int CommPlayer_ScaleMovementDuration(int duration)
+{
+#ifdef SDK_PORT
+    // Match MovementAction_InitWalk: otherwise the server advances tiles
+    // faster than the avatars can animate them at corrected 60 FPS.
+    SIM_Config_prj_type *config = SIM_Config_prj_GetConfig();
+    if (config->enable60fps) {
+        duration *= 2;
+    }
+#endif
+    return duration;
+}
+
 static int sub_020581E0(int param0)
 {
     int v0[5] = { 2, 4, 8, 16, 2 };
 
     GF_ASSERT(param0 < 5);
-    return v0[param0];
+    return CommPlayer_ScaleMovementDuration(v0[param0]);
 }
 
 static void CommPlayer_Move(SysTask *unused0, void *unused1)
@@ -742,7 +759,7 @@ static void CommPlayer_Move(SysTask *unused0, void *unused1)
             v6 = CommPlayerMan_GetSlideMovementSpeed(sCommPlayerManager->slideTilesLeft[netId], sCommPlayerManager->hurlTrapTriggered[netId]);
 
             if (CommPlayer_MoveSlide(netId, v6)) {
-                sCommPlayerManager->moveTimerServer[netId] = v6;
+                sCommPlayerManager->moveTimerServer[netId] = CommPlayer_ScaleMovementDuration(v6);
                 sCommPlayerManager->movementChanged[netId] = TRUE;
                 continue;
             }
@@ -768,7 +785,7 @@ static void CommPlayer_Move(SysTask *unused0, void *unused1)
             if ((x != 0xffff) && (z != 0xffff) && (dir != -1)) {
                 if (playerLocation->dir != dir) {
                     playerLocation->dir = dir;
-                    sCommPlayerManager->moveTimerServer[netId] = 4;
+                    sCommPlayerManager->moveTimerServer[netId] = CommPlayer_ScaleMovementDuration(4);
                     sCommPlayerManager->movementChanged[netId] = 1;
 
                     if (sCommPlayerManager->holeMovementsLeft[netId] > 2) {
@@ -782,7 +799,7 @@ static void CommPlayer_Move(SysTask *unused0, void *unused1)
                 } else if (CommPlayer_CheckCollision(x, z, netId)) {
                     playerLocation->collisionFlag = 1;
                     sCommPlayerManager->movementChanged[netId] = 1;
-                    sCommPlayerManager->moveTimerServer[netId] = 4;
+                    sCommPlayerManager->moveTimerServer[netId] = CommPlayer_ScaleMovementDuration(4);
                 } else {
                     sCommPlayerManager->movementChanged[netId] = 1;
                     playerLocation->x = x;

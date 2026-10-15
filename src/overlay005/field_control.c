@@ -362,11 +362,13 @@ BOOL FieldInput_Process_Underground(FieldInput *input, FieldSystem *fieldSystem)
         return TRUE;
     }
 
+    UndergroundMan_ProgressInteractCooldown();
+
     if (sub_020363A0() || CommPlayer_GetMovementTimer(CommSys_CurNetId()) != 0) {
+        // Keyboard radar can ping during a step; interactions still wait for it to finish.
+        UndergroundMan_CheckForTouchInput();
         return FALSE;
     }
-
-    UndergroundMan_ProgressInteractCooldown();
 
     if (input->interact) {
         UndergroundMan_ProcessInteract(0);
