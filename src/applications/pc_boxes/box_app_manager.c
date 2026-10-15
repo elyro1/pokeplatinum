@@ -2477,7 +2477,7 @@ static void BoxAppMan_RenameBoxAction(BoxApplicationManager *boxAppMan, u32 *sta
             u32 boxID = PCBoxes_GetCurrentBoxID(boxAppMan->pcBoxes);
 
             ApplicationManager_Free(boxAppMan->ApplicationManager);
-            Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_BOX_GRAPHICS, 245760);
+            Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_BOX_GRAPHICS, HEAP_SIZE_BOX_GRAPHICS);
             PCBoxes_RenameBox(boxAppMan->pcBoxes, boxID, boxAppMan->namingScreenArgs->textInputStr);
 
             PCBoxes_LoadCustomization(boxAppMan->pcBoxes, &boxAppMan->boxApp.customization);
@@ -2515,7 +2515,7 @@ static void BoxAppMan_OpenSummaryAction(BoxApplicationManager *boxAppMan, u32 *o
             u32 unused = PCBoxes_GetCurrentBoxID(boxAppMan->pcBoxes);
 
             ApplicationManager_Free(boxAppMan->ApplicationManager);
-            Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_BOX_GRAPHICS, 245760);
+            Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_BOX_GRAPHICS, HEAP_SIZE_BOX_GRAPHICS);
 
             if (BoxApp_GetPreviewMonSource(&boxAppMan->boxApp) == PREVIEW_MON_UNDER_CURSOR) {
                 BoxApp_SetCursorPosToSummaryMonPos(&boxAppMan->boxApp, boxAppMan);
@@ -2608,7 +2608,7 @@ static void BoxAppMan_GiveItemFromBagAction(BoxApplicationManager *boxAppMan, u3
                 BoxAppMan_FlagRecordBoxUseInJournal(boxAppMan);
             }
 
-            Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_BOX_GRAPHICS, 245760);
+            Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_BOX_GRAPHICS, HEAP_SIZE_BOX_GRAPHICS);
             BoxGraphics_Load(&boxAppMan->unk_114, &boxAppMan->boxApp, boxAppMan);
             BoxGraphics_TaskHandler(boxAppMan->unk_114, FUNC_ov19_021D6694);
             (*state)++;

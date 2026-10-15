@@ -156,7 +156,12 @@ enum HeapSize {
     HEAP_SIZE_POKETCH_APP = 0xC000,
     #endif
     HEAP_SIZE_BOX_DATA = 0x4000,
+    #ifdef SDK_PORT
+    // Native pointers and expanded graphics structures exceed the DS budget.
+    HEAP_SIZE_BOX_GRAPHICS = 0x3C000*2,
+    #else
     HEAP_SIZE_BOX_GRAPHICS = 0x3C000,
+    #endif
 
     #ifdef SDK_PORT
     HEAP_SIZE_FIELD1 = 0x20000*2,
