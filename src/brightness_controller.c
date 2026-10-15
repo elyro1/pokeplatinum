@@ -5,6 +5,8 @@
 
 #include "constants/graphics.h"
 
+#include "port/battle_timing.h"
+
 #define IS_SCREEN_SELECTED(screenMask, screenConst) (screenMask & screenConst)
 
 typedef struct {
@@ -24,6 +26,9 @@ typedef struct {
     u16 accumulator;
     s16 brightness;
     BOOL isActive;
+#ifdef SDK_PORT
+    BattleTimingDomain timingDomain;
+#endif
 } TransitionController;
 
 static void BrightnessController_TransitionSetup(TransitionController *controller, u8 stepCount, s16 targetBrightness, s16 startBrightness, int planeMask, u32 screenSelect);
@@ -69,6 +74,9 @@ static void BrightnessController_TransitionSetup(TransitionController *controlle
 {
     GF_ASSERT(controller->isActive == FALSE);
     controller->isActive = TRUE;
+#ifdef SDK_PORT
+    controller->timingDomain = BattleTiming_GetDomain();
+#endif
 
     TransitionData *data = &controller->data;
 
@@ -148,11 +156,19 @@ void BrightnessController_ResetScreenController(u32 screenSelect)
 
 void BrightnessController_Update(void)
 {
-    if (controllerMain.isActive) {
+    if (controllerMain.isActive
+#ifdef SDK_PORT
+        && BattleTiming_ShouldTick(controllerMain.timingDomain)
+#endif
+    ) {
         BrightnessController_StepTransition(&controllerMain);
     }
 
-    if (controllerSub.isActive) {
+    if (controllerSub.isActive
+#ifdef SDK_PORT
+        && BattleTiming_ShouldTick(controllerSub.timingDomain)
+#endif
+    ) {
         BrightnessController_StepTransition(&controllerSub);
     }
 }

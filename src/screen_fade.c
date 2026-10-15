@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "port/battle_timing.h"
+
 #ifdef SDK_PORT
 #include <simulator/sim.h>
 #endif
@@ -56,6 +58,9 @@ typedef struct ScreenFadeManager {
     u8 dummy_14E;
     u8 dummy_14F;
     u16 savedColor;
+#ifdef SDK_PORT
+    BattleTimingDomain timingDomain;
+#endif
 } ScreenFadeManager;
 
 static void ResetScreenFadeManager(ScreenFadeManager *manager);
@@ -136,6 +141,9 @@ void StartScreenFade(enum FadeMode mode, enum FadeType typeMain, enum FadeType t
 
     ScreenFadeManager *manager = &sScreenFadeManager;
     ZeroScreenFadeManager(manager);
+#ifdef SDK_PORT
+    manager->timingDomain = BattleTiming_GetDomain();
+#endif
     SetupScreenFadeParams(mode, &manager->screen);
     ClearHBlanks(&manager->hblanks);
 
@@ -166,7 +174,11 @@ void StartScreenFade(enum FadeMode mode, enum FadeType typeMain, enum FadeType t
 void ExecScreenFade(void)
 {
     ScreenFadeManager *manager = &sScreenFadeManager;
-    if (manager->active && TryScreenFade(&manager->screen, &manager->mainScreenFade, &manager->subScreenFade) == TRUE) {
+    if (manager->active
+#ifdef SDK_PORT
+        && BattleTiming_ShouldTick(manager->timingDomain)
+#endif
+        && TryScreenFade(&manager->screen, &manager->mainScreenFade, &manager->subScreenFade) == TRUE) {
         ResetScreenFadeManager(manager);
     }
 }

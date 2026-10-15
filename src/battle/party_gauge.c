@@ -272,7 +272,7 @@ static void ShowArrow(PartyGaugeArrow *arrow, enum PartyGaugeSide side, enum Par
     GF_ASSERT(arrow->managedSprite == NULL && arrow->task == NULL);
 
     MI_CpuClear8(arrow, sizeof(PartyGaugeArrow));
-    arrow->managedSprite = SpriteSystem_NewSprite(spriteSys, spriteMan, &sArrowTemplate);
+    arrow->managedSprite = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &sArrowTemplate);
 
     if (side == PARTY_GAUGE_OURS) {
         ManagedSprite_SetPositionXY(arrow->managedSprite, ARROW_X_START_OURS, sArrowYPosOurs[pos]);
@@ -287,7 +287,7 @@ static void ShowArrow(PartyGaugeArrow *arrow, enum PartyGaugeSide side, enum Par
     arrow->side = side;
     arrow->position = pos;
     arrow->state = SHOW_ARROW_INIT;
-    arrow->task = SysTask_Start(ShowArrowTask, arrow, ARROW_TASK_PRIORITY);
+    arrow->task = SysTask_StartBattleUI(ShowArrowTask, arrow, ARROW_TASK_PRIORITY);
 
     Sound_PlayEffect(SE_PARTY_GAUGE_ARROW_IN_sseq);
 }
@@ -350,7 +350,7 @@ static void HideArrow(PartyGaugeArrow *arrow, enum HideArrowType type)
         arrow->delay = 0;
     }
 
-    arrow->task = SysTask_Start(HideArrowTask, arrow, ARROW_TASK_PRIORITY);
+    arrow->task = SysTask_StartBattleUI(HideArrowTask, arrow, ARROW_TASK_PRIORITY);
 }
 
 static void HideArrowTask(SysTask *task, void *data)
@@ -423,7 +423,7 @@ static void ShowPokeballs(PartyGaugePokeballs *pokeballs, s8 *numBalls, enum Par
     GF_ASSERT(pokeballs->managedSprite == NULL && pokeballs->task == NULL);
 
     MI_CpuClear8(pokeballs, sizeof(PartyGaugePokeballs));
-    pokeballs->managedSprite = SpriteSystem_NewSprite(spriteSys, spriteMan, &sPokeballTemplate);
+    pokeballs->managedSprite = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &sPokeballTemplate);
 
     if (side == PARTY_GAUGE_OURS) {
         ManagedSprite_SetPositionXY(pokeballs->managedSprite, POKEBALL_X_START_OURS, sPokeballYPosOurs[pos]);
@@ -454,11 +454,11 @@ static void ShowPokeballs(PartyGaugePokeballs *pokeballs, s8 *numBalls, enum Par
     if (type == SHOW_PARTY_GAUGE_BATTLE_START) {
         // At the start of the battle, Poke Balls scroll behind the arrow and roll across the screen
         pokeballs->delay = POKEBALL_SLOT_SHOW_DELAY * slot + POKEBALL_FLAT_SHOW_DELAY;
-        pokeballs->task = SysTask_Start(ShowPokeballsStartOfBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
+        pokeballs->task = SysTask_StartBattleUI(ShowPokeballsStartOfBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
     } else {
         // Mid-battle, the Poke Balls scroll in alongside the arrow, and they do not roll across the screen
         pokeballs->delay = 0;
-        pokeballs->task = SysTask_Start(ShowPokeballsMidBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
+        pokeballs->task = SysTask_StartBattleUI(ShowPokeballsMidBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
     }
 }
 
@@ -623,12 +623,12 @@ static void HidePokeballs(PartyGaugePokeballs *pokeballs, int slot, enum HidePar
         pokeballs->arrowAlpha = arrowAlpha;
         pokeballs->delay = 3 * slot;
         pokeballs->startDelay = 4;
-        pokeballs->task = SysTask_Start(HidePokeballsStartOfBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
+        pokeballs->task = SysTask_StartBattleUI(HidePokeballsStartOfBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
     } else {
         pokeballs->arrowAlpha = arrowAlpha;
         pokeballs->delay = 0;
         pokeballs->startDelay = 0;
-        pokeballs->task = SysTask_Start(HidePokeballsMidBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
+        pokeballs->task = SysTask_StartBattleUI(HidePokeballsMidBattleTask, pokeballs, POKEBALL_TASK_PRIORITY);
     }
 }
 

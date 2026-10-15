@@ -1,3 +1,8 @@
+#include "port/battle_timing.h"
+#ifdef SDK_PORT
+#include "system.h"
+#endif
+
 #include "sys_task_manager.h"
 
 #include "nitro/types.h"
@@ -105,7 +110,45 @@ void SysTaskManager_ExecuteTasks(SysTaskManager *sysTaskMgr)
 
         if (sysTaskMgr->currentTask->state == TASK_STATE_ACTIVE) {
             if (sysTaskMgr->currentTask->callback != NULL) {
+#ifdef SDK_PORT
+                BattleTimingDomain domain = sysTaskMgr->currentTask->timingDomain;
+                SysTask *task = sysTaskMgr->currentTask;
+                // Preserve short input edges across a skipped presentation update.
+                // Live input/communication tasks have NONE and are never skipped.
+                task->timingPressedKeys |= gSystem.pressedKeys;
+                task->timingRepeatKeys |= gSystem.pressedKeysRepeatable;
+                if (gSystem.touchPressed) {
+                    task->timingTouchPressed = TRUE;
+                    task->timingTouchX = gSystem.touchX;
+                    task->timingTouchY = gSystem.touchY;
+                }
+                if (BattleTiming_ShouldTick(domain)) {
+                    u32 pressedKeys = gSystem.pressedKeys;
+                    u32 repeatKeys = gSystem.pressedKeysRepeatable;
+                    u16 touchPressed = gSystem.touchPressed;
+                    u16 touchX = gSystem.touchX, touchY = gSystem.touchY;
+                    gSystem.pressedKeys = task->timingPressedKeys;
+                    gSystem.pressedKeysRepeatable = task->timingRepeatKeys;
+                    if (task->timingTouchPressed) {
+                        gSystem.touchPressed = TRUE;
+                        gSystem.touchX = task->timingTouchX;
+                        gSystem.touchY = task->timingTouchY;
+                    }
+                    task->timingPressedKeys = task->timingRepeatKeys = 0;
+                    task->timingTouchPressed = FALSE;
+                    BattleTimingDomain previous = BattleTiming_SetDomain(domain);
+                    task->callback(task, task->param);
+                    // The callback may delete/reuse its task. Do not access it here.
+                    BattleTiming_SetDomain(previous);
+                    gSystem.pressedKeys = pressedKeys;
+                    gSystem.pressedKeysRepeatable = repeatKeys;
+                    gSystem.touchPressed = touchPressed;
+                    gSystem.touchX = touchX;
+                    gSystem.touchY = touchY;
+                }
+#else
                 sysTaskMgr->currentTask->callback(sysTaskMgr->currentTask, sysTaskMgr->currentTask->param);
+#endif
             }
         } else {
             sysTaskMgr->currentTask->state = TASK_STATE_ACTIVE;
@@ -136,6 +179,12 @@ static SysTask *SysTaskManager_InternalAddTask(SysTaskManager *sysTaskMgr, SysTa
     task->priority = priority;
     task->param = param;
     task->callback = callback;
+#ifdef SDK_PORT
+    task->timingDomain = BattleTiming_GetDomain();
+    task->timingPressedKeys = 0;
+    task->timingRepeatKeys = 0;
+    task->timingTouchPressed = 0;
+#endif
 
     if (sysTaskMgr->currentTask->callback != NULL) {
         // The task being added should only run starting from the next frame.
@@ -194,6 +243,7 @@ void SysTask_Delete(SysTask *task)
 
 void SysTask_SetCallback(SysTask *task, SysTaskFunc callback)
 {
+    // Callback transitions keep the task's owner and any pending input edges.
     task->callback = callback;
 }
 

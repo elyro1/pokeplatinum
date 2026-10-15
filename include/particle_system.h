@@ -7,6 +7,8 @@
 #include "constants/heap.h"
 #include "constants/narc.h"
 
+#include "port/battle_timing.h"
+
 #include "camera.h"
 #include "spl.h"
 
@@ -52,6 +54,9 @@ typedef struct ParticleSystem {
     u8 unused2;
     u8 id;
     u8 cameraProjection;
+#ifdef SDK_PORT
+    BattleTimingDomain timingDomain;
+#endif
 } ParticleSystem;
 
 void ParticleSystem_ZeroAll(void);

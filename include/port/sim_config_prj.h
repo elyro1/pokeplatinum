@@ -7,10 +7,18 @@
 extern "C" {
 #endif
 
+typedef enum {
+    BATTLE_PACING_ORIGINAL,
+    BATTLE_PACING_SMOOTH,
+    BATTLE_PACING_QUICK,
+    BATTLE_PACING_COUNT,
+} BattlePacing;
+
 typedef struct {
-    BOOL enable60fps; // When true, unlock the framerate to 60fps
-    BOOL enable60fpsSpeedFix; // When enabled, fixes things in the game that run at double speed due to being at 60fps
-	BOOL enableAsserts; //Should asserts cause a communication error?
+    BOOL enable60fps; // Speed correction is automatic at 60 FPS.
+    BattlePacing battlePacing;
+    BOOL battleUiSpeedFix; // Keep battle UI and delays at normal speed independently of animations.
+    BOOL enableAsserts; // Should asserts cause a communication error?
     BOOL breakDebuggerOnGfAssert; // When true, break the debugger when a GF_ASSERT fails
 
 	// Cheats section

@@ -75,6 +75,7 @@
 #include "string_template.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#include "port/battle_timing.h"
 #include "system.h"
 #include "text.h"
 #include "touch_pad.h"
@@ -186,6 +187,11 @@ enum BattleState {
 BOOL Battle_Main(ApplicationManager *appMan, int *state)
 {
     FieldBattleDTO *dto = ApplicationManager_Args(appMan);
+    if (*state == BATTLE_STATE_CREATE_HEAP) {
+        SpriteList_ResetBattleDrawLists();
+        BattleTiming_SetActive(TRUE);
+    }
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_UI);
 
     switch (*state) {
     case BATTLE_STATE_CREATE_HEAP:
@@ -261,6 +267,8 @@ BOOL Battle_Main(ApplicationManager *appMan, int *state)
         if (BattleMain_HandleLinkBattleResult(appMan) == TRUE) {
             *state = BATTLE_STATE_LINK_BATTLE_END;
         } else {
+            SpriteList_ResetBattleDrawLists();
+            BattleTiming_SetActive(FALSE);
             Heap_Destroy(HEAP_ID_BATTLE);
             *state = BATTLE_STATE_CHECK_EVOLUTION;
         }
@@ -268,6 +276,8 @@ BOOL Battle_Main(ApplicationManager *appMan, int *state)
     case BATTLE_STATE_LINK_BATTLE_END:
         if (BattleMain_WaitLinkBattleEnd(appMan) == TRUE) {
             Overlay_UnloadByID(FS_OVERLAY_ID(overlay10));
+            SpriteList_ResetBattleDrawLists();
+            BattleTiming_SetActive(FALSE);
             Heap_Destroy(HEAP_ID_BATTLE);
             *state = BATTLE_STATE_LINK_BATTLE_FINISH;
         }
@@ -300,9 +310,13 @@ BOOL Battle_Main(ApplicationManager *appMan, int *state)
         }
     } break;
     case BATTLE_STATE_FINISH:
+        SpriteList_ResetBattleDrawLists();
+        BattleTiming_SetActive(FALSE);
+        BattleTiming_SetDomain(previous);
         return TRUE;
     }
 
+    BattleTiming_SetDomain(previous);
     return FALSE;
 }
 
@@ -642,8 +656,8 @@ static void BattleMain_InitGraphics(ApplicationManager *appMan)
     battleSys->paletteAnimator = sub_0201567C(battleSys->paletteData, 0, 11, HEAP_ID_BATTLE);
     sub_02015738(battleSys->paletteAnimator, 1);
 
-    battleSys->taskDrawSprites = SysTask_Start(SysTask_DrawSprites, battleSys, 60000);
-    battleSys->taskUpdateRedHPSound = SysTask_Start(SysTask_UpdateRedHPSound, battleSys, 50000);
+    battleSys->taskDrawSprites = SysTask_StartUnscaled(SysTask_DrawSprites, battleSys, 60000);
+    battleSys->taskUpdateRedHPSound = SysTask_StartBattleUI(SysTask_UpdateRedHPSound, battleSys, 50000);
     battleSys->taskFlyInMessageBox = SysTask_ExecuteOnVBlank(SysTask_FlyInMessageBox, battleSys, 1200);
     battleSys->yOffset = -51;
 
@@ -1544,6 +1558,7 @@ static void SysTask_DrawSprites(SysTask *task, void *inBattleSys)
             ParticleHelper_DrawParticleSystems();
         }
 
+        SpriteList_DrawSkippedBattleLists();
         PokemonSpriteManager_DrawSprites(battleSys->monSpriteMan);
         SpriteSystem_DrawSprites(battleSys->spriteMan);
         SpriteSystem_UpdateTransfer();
@@ -1560,16 +1575,7 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
     int maxBattlers = BattleSystem_GetMaxBattlers(battleSys);
     int flags = 0;
     int redHPSoundFlag = BattleSystem_GetRedHPSoundFlag(battleSys);
-    int redHPSoundDelay = 4;
-
-#ifdef SDK_PORT
-    SIM_Config_prj_type *config = SIM_Config_prj_GetConfig();
-
-    if (config->enable60fps && config->enable60fpsSpeedFix) {
-        // The gap between beeps is counted in game frames, unlike audio playback.
-        redHPSoundDelay *= 2;
-    }
-#endif
+    int redHPSoundDelay = 4; // This task advances on the battle UI clock.
 
     if (BattleSystem_GetBattleType(battleSys) & (BATTLE_TYPE_SAFARI | BATTLE_TYPE_PAL_PARK)) {
         return;

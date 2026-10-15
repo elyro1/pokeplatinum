@@ -154,12 +154,22 @@ void ov12_02238004(UnkStruct_ov12_02238004 *param0)
 {
     param0->unk_20 = 1;
     ov12_02238054(param0, ov12_02238080);
-    param0->unk_18 = SysTask_Start(ov12_02238030, param0, 1000);
+    param0->unk_18 = SysTask_StartBattleAnimation(ov12_02238030, param0, 1000);
 }
 
 BOOL ov12_0223802C(UnkStruct_ov12_02238004 *param0)
 {
     return param0->unk_20;
+}
+
+void BattleParticleEffect_StartUnscaled(UnkStruct_ov12_02238004 *param0)
+{
+    ov12_02238004(param0);
+#ifdef SDK_PORT
+    // Intro particles must match the opening flash and fast platform slide.
+    param0->unk_10->timingDomain = BATTLE_TIMING_NONE;
+    param0->unk_18->timingDomain = BATTLE_TIMING_NONE;
+#endif
 }
 
 static void ov12_02238030(SysTask *param0, void *param1)

@@ -10,6 +10,7 @@
 #include "applications/party_menu/main.h"
 #include "applications/pokemon_summary_screen/main.h"
 #include "battle/battle_main.h"
+#include "port/battle_timing.h"
 
 #include "bag.h"
 #include "bg_window.h"
@@ -374,7 +375,9 @@ static const WindowTemplate Unk_ov10_02222A68 = {
 
 void ov10_0221F800(TrainerIntroData *trainerIntroData)
 {
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_NONE);
     UnkStruct_ov10_0221FB28 *v0 = SysTask_GetParam(SysTask_StartAndAllocateParam(ov10_0221F870, sizeof(UnkStruct_ov10_0221FB28), 100, trainerIntroData->heapID));
+    BattleTiming_SetDomain(previous);
     memset(v0, 0, sizeof(UnkStruct_ov10_0221FB28));
 
     v0->trainerIntroData = trainerIntroData;
@@ -391,42 +394,58 @@ void ov10_0221F800(TrainerIntroData *trainerIntroData)
 static void ov10_0221F870(SysTask *param0, void *param1)
 {
     UnkStruct_ov10_0221FB28 *v0 = param1;
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_UI);
+    BOOL tick = BattleTiming_ShouldTick(BATTLE_TIMING_UI);
 
-    switch (v0->unk_B73) {
-    case 0:
-        v0->unk_B73 = ov10_0221FB28(v0);
-        break;
-    case 1:
-        while (TRUE) {
-            u8 v1 = v0->unk_04[v0->unk_B74](v0);
+    if (tick) {
+        switch (v0->unk_B73) {
+        case 0:
+            v0->unk_B73 = ov10_0221FB28(v0);
+            break;
+        case 1:
+            while (TRUE) {
+                u8 v1 = v0->unk_04[v0->unk_B74](v0);
 
-            if (v1 != 0) {
-                v0->unk_B74++;
+                if (v1 != 0) {
+                    v0->unk_B74++;
+                }
+
+                if (v1 != 2) {
+                    break;
+                }
             }
 
-            if (v1 != 2) {
-                break;
+            break;
+        case 2:
+            if (ov10_02220A50(param0, v0) == 1) {
+                BattleTiming_SetDomain(previous);
+                return;
             }
-        }
-
-        if (v0->trainerIntroData->mode == 2) {
-            ov10_0221F930(v0);
-        }
-        break;
-    case 2:
-        if (ov10_02220A50(param0, v0) == 1) {
-            return;
         }
     }
 
+    // Recording choices remain responsive on intermediate presentation frames.
+    if (v0->unk_B73 == 1 && v0->trainerIntroData->mode == 2) {
+        ov10_0221F930(v0);
+    }
+
+    if (v0->trainerIntroData->mode == 1 && v0->unk_B50 != NULL) {
+        G3_ResetG3X();
+        ParticleSystem_DrawAll();
+        ParticleSystem_UpdateAll();
+    }
+
     if (v0->unk_B74 != 0) {
-        ov10_02220C2C(v0);
+        if (tick) {
+            ov10_02220C2C(v0);
+        }
         SpriteSystem_DrawSprites(v0->unk_194);
     }
 
     if (v0->trainerIntroData->mode != 0) {
         G3_SwapBuffers(GX_SORTMODE_MANUAL, GX_BUFFERMODE_Z);
     }
+    BattleTiming_SetDomain(previous);
 }
 
 static void ov10_0221F900(void)
@@ -1752,21 +1771,13 @@ static void ov10_022217CC(UnkStruct_ov10_0221FB28 *param0)
 
 static int ov10_022218BC(UnkStruct_ov10_0221FB28 *param0)
 {
-    const MtxFx43 *v0;
-    int v1;
-
     if (param0->trainerIntroData->mode != 1) {
         return 0;
     }
 
-    G3_ResetG3X();
-
     if (ParticleSystem_GetActiveEmitterCount(param0->unk_B50) == 0) {
         return 0;
     }
-
-    ParticleSystem_DrawAll();
-    ParticleSystem_UpdateAll();
 
     return 1;
 }

@@ -27,6 +27,7 @@
 #include "string_template.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#include "port/battle_timing.h"
 #include "text.h"
 #include "unk_0208C098.h"
 
@@ -618,7 +619,7 @@ static void HealthBox_LoadMainPalette(SpriteSystem *spriteSys, SpriteManager *ha
 ManagedSprite *HealthBox_DrawSprite(SpriteSystem *spriteSys, SpriteManager *handler, int type)
 {
     const SpriteTemplate *template = HealthBox_MainSpriteTemplate(type);
-    ManagedSprite *managedSprite = SpriteSystem_NewSprite(spriteSys, handler, template);
+    ManagedSprite *managedSprite = SpriteSystem_NewBattleUISprite(spriteSys, handler, template);
 
     Sprite_TickFrame(managedSprite->sprite);
     return managedSprite;
@@ -921,6 +922,9 @@ void HealthBox_CalcHP(HealthBox *healthbox, int damage) // CLEANUP: all calls pa
 
 s32 Healthbox_DrawHPBar(HealthBox *healthbox)
 {
+    if (!BattleTiming_ShouldTick(BATTLE_TIMING_UI)) {
+        return 0; // Still active; do not signal completion on an intermediate frame.
+    }
     s32 result = HealthBox_DrawGauge(healthbox, HEALTHBOX_GAUGE_HP);
 
     if (result == -1) {
@@ -958,6 +962,9 @@ void HealthBox_CalcExp(HealthBox *healthbox, int expReward)
 
 s32 Healthbox_DrawExpBar(HealthBox *healthbox)
 {
+    if (!BattleTiming_ShouldTick(BATTLE_TIMING_UI)) {
+        return 0; // Still active; do not signal completion on an intermediate frame.
+    }
     s32 result = HealthBox_DrawGauge(healthbox, HEALTHBOX_GAUGE_EXP);
 
     if (result == -1) {
@@ -1075,7 +1082,7 @@ void HealthBox_Scroll(HealthBox *healthbox, enum HealthBoxScrollDirection direct
         HealthBox_OffsetPositionXY(healthbox, 0, 0);
     }
 
-    SysTask_Start(Healthbox_Task_Scroll, healthbox, 990);
+    SysTask_StartBattleUI(Healthbox_Task_Scroll, healthbox, 990);
 }
 
 /**
@@ -1839,7 +1846,7 @@ void Healthbox_StartLevelUpFlash(HealthBox *healthbox, u8 *doneFlag)
     flashState->healthbox = healthbox;
     flashState->done = doneFlag;
 
-    SysTask_Start(Healthbox_Task_LevelUpFlashAnimation, flashState, 1000);
+    SysTask_StartBattleUI(Healthbox_Task_LevelUpFlashAnimation, flashState, 1000);
 }
 
 static void Healthbox_Task_LevelUpFlashAnimation(SysTask *task, void *param1)
@@ -1905,7 +1912,7 @@ void Healthbox_StartBobAnimation(HealthBox *healthbox)
     }
 
     healthbox->degrees = 0;
-    healthbox->bobbingAnimTask = SysTask_Start(Healthbox_Task_Bob, healthbox, 1010);
+    healthbox->bobbingAnimTask = SysTask_StartBattleUI(Healthbox_Task_Bob, healthbox, 1010);
 }
 
 void Healthbox_StopBobAnimation(HealthBox *healthbox)

@@ -1015,6 +1015,8 @@ pokeplatinum_c = files(
 
 if(build_target != 'arm')
 pokeplatinum_c += files(
+    'port/battle_smoothing.c',
+    'port/battle_timing.c',
     'port/charcode_convert.c',
     'port/debug_field.c',
     'port/scripted_npc_scene.c',

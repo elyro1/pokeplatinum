@@ -4,6 +4,8 @@
 #include <nitro/fx/fx_trig.h>
 #include <string.h>
 
+#include "port/battle_timing.h"
+
 #include "camera.h"
 #include "fx_util.h"
 #include "heap.h"
@@ -107,6 +109,13 @@ ParticleSystem *ParticleSystem_New(SPLTexVRAMAllocFunc texAllocFunc, SPLPalVRAMA
     }
 
     memset(particleSystem, 0, sizeof(ParticleSystem));
+#ifdef SDK_PORT
+    particleSystem->timingDomain = BattleTiming_GetDomain();
+    if (particleSystem->timingDomain == BATTLE_TIMING_NONE
+        && heapID == HEAP_ID_BATTLE && BattleTiming_IsActive()) {
+        particleSystem->timingDomain = BATTLE_TIMING_ANIMATION;
+    }
+#endif
 
     particleSystem->texAllocFunc = texAllocFunc;
     particleSystem->palAllocFunc = palAllocFunc;
@@ -439,6 +448,11 @@ void ParticleSystem_Draw(ParticleSystem *particleSystem)
 
 void ParticleSystem_Update(ParticleSystem *particleSystem)
 {
+#ifdef SDK_PORT
+    if (!BattleTiming_ShouldTick(particleSystem->timingDomain)) {
+        return;
+    }
+#endif
     SPLManager_Update(particleSystem->manager);
 }
 

@@ -3,6 +3,10 @@
 
 #include <nnsys.h>
 
+#ifdef SDK_PORT
+#include "port/battle_smoothing.h"
+#endif
+
 #include "constants/heap.h"
 #include "constants/narc.h"
 #include "generated/pokemon_sprite_attributes.h"
@@ -104,6 +108,11 @@ struct PokemonSprite {
     PokemonSpriteShadow shadow;
     PokemonSpriteShadow shadowBackup;
     SpriteAnimFrame animFrames[MAX_ANIMATION_FRAMES];
+#ifdef SDK_PORT
+    u8 battleFadeTimingDomain;
+    BOOL battleSmoothDisabled;
+    BattleVisualHistory battleVisualHistory;
+#endif
 };
 
 typedef struct PokemonSpriteManager {
@@ -148,6 +157,7 @@ BOOL PokemonSprite_IsAnimActive(PokemonSprite *monSprite);
 PokemonSprite *PokemonSpriteManager_CreateSprite(PokemonSpriteManager *monSpriteMan, PokemonSpriteTemplate *spriteTemplate, int x, int y, int z, int polygonID, SpriteAnimFrame *animFrames, PokemonSpriteCallback *callback);
 PokemonSprite *PokemonSpriteManager_CreateSpriteAtIndex(PokemonSpriteManager *monSpriteMan, PokemonSpriteTemplate *spriteTemplate, int x, int y, int z, int polygonID, int index, SpriteAnimFrame *animFrames, PokemonSpriteCallback *callback);
 void PokemonSprite_Delete(PokemonSprite *monSprite);
+void PokemonSprite_SetBattleSmoothingEnabled(PokemonSprite *monSprite, BOOL enabled);
 void PokemonSpriteManager_DeleteAll(PokemonSpriteManager *monSpriteMan);
 void PokemonSprite_SetAttribute(PokemonSprite *monSprite, enum PokemonSpriteAttribute attribute, int value);
 int PokemonSprite_GetAttribute(PokemonSprite *monSprite, enum PokemonSpriteAttribute attribute);

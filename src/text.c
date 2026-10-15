@@ -6,6 +6,8 @@
 #include "constants/heap.h"
 #include "constants/narc.h"
 
+#include "port/battle_timing.h"
+
 #include "bg_window.h"
 #include "font.h"
 #include "graphics.h"
@@ -43,7 +45,9 @@ static u8 Text_CreatePrinterTask(SysTaskFunc taskFunc, TextPrinter *printer, u32
     int i;
     for (i = 0; i < MAX_TEXT_PRINTERS; i++) {
         if (sTextPrinterTasks[i] == NULL) {
+            BattleTimingDomain previous = BattleTiming_SetDomain(BattleTiming_IsActive() ? BATTLE_TIMING_UI : BATTLE_TIMING_NONE);
             sTextPrinterTasks[i] = SysTask_CreateOnPrintQueue(taskFunc, printer, priority);
+            BattleTiming_SetDomain(previous);
 
             if (sTextPrinterTasks[i] == NULL) {
                 i = MAX_TEXT_PRINTERS;

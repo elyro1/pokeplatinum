@@ -1,5 +1,7 @@
 #include "billboard.h"
 
+#include "port/battle_timing.h"
+
 #include "billboard_vram_transfer.h"
 #include "easy3d.h"
 #include "heap.h"
@@ -825,7 +827,7 @@ static int GetAndAdvanceAnim(Billboard *billboard, fx32 numFrames)
 {
 #ifdef SDK_PORT
     SIM_Config_prj_type * myConfig = SIM_Config_prj_GetConfig();
-    if(myConfig->enable60fps && myConfig->enable60fpsSpeedFix) {
+    if (!BattleTiming_IsActive() && myConfig->enable60fps) {
         numFrames = numFrames >> 1;
     }
 #endif

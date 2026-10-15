@@ -5,6 +5,10 @@
 #include <nitro/gx.h>
 #include <nnsys.h>
 
+#ifdef SDK_PORT
+#include "port/battle_smoothing.h"
+#endif
+
 #include "constants/graphics.h"
 #include "constants/heap.h"
 
@@ -75,6 +79,11 @@ typedef struct Sprite {
     enum NNS_G2D_VRAM_TYPE vramType;
     struct Sprite *prev;
     struct Sprite *next;
+#ifdef SDK_PORT
+    u8 battleTimingDomain;
+    BOOL battleSmoothDisabled;
+    BattleVisualHistory battleVisualHistory;
+#endif
 } Sprite;
 
 struct SpriteList {
@@ -87,6 +96,11 @@ struct SpriteList {
     void *rawAnimData;
     NNSG2dCellAnimBankData *defaultAnimBank;
     BOOL active;
+#ifdef SDK_PORT
+    SpriteList *battleDrawNext;
+    u32 battleDrawFrame;
+    u8 battleDrawDomain;
+#endif
 };
 
 typedef struct SpriteListParams {
@@ -145,6 +159,9 @@ BOOL SpriteList_Delete(SpriteList *collection);
 BOOL SpriteList_SetActive(SpriteList *collection, u8 active);
 BOOL SpriteList_DeleteAll(SpriteList *collection);
 void SpriteList_Update(const SpriteList *collection);
+void SpriteList_DrawSkippedBattleLists(void);
+void SpriteList_ResetBattleDrawLists(void);
+void Sprite_SetBattleSmoothingEnabled(Sprite *sprite, BOOL enabled);
 void Sprite_Reset(Sprite *sprite);
 Sprite *SpriteList_AddAffine(const AffineSpriteListTemplate *template);
 Sprite *SpriteList_Add(const SpriteListTemplate *template);

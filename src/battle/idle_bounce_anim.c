@@ -26,7 +26,7 @@ void BattlerData_StartIdleBounceAnim(BattlerData *battlerData, BattleSystem *bat
     }
 
     battlerData->degrees = 180;
-    battlerData->sysTask = SysTask_Start(SysTask_IdleBounceAnim, battlerData, 1010);
+    battlerData->sysTask = SysTask_StartBattleAnimation(SysTask_IdleBounceAnim, battlerData, 1010);
 }
 
 void BattlerData_StopIdleBounceAnim(BattlerData *battlerData)

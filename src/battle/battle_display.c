@@ -73,6 +73,7 @@
 #include "sprite_system.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#include "port/battle_timing.h"
 #include "system.h"
 #include "text.h"
 #include "trainer_info.h"
@@ -197,7 +198,9 @@ void BattleDisplay_InitTaskSetupUI(BattleSystem *battleSys, BattlerData *battler
     uiSetupTaskData->frameCount = 0;
     uiSetupTaskData->fadeStep = 0;
 
-    SysTask_Start(SysTask_SetupUI, uiSetupTaskData, 0);
+    // The opening flash/palette reveal shares the fast platform entrance clock.
+    // Slowing it independently hides the terrain while the Pokemon slides in.
+    SysTask_StartUnscaled(SysTask_SetupUI, uiSetupTaskData, 0);
 }
 
 typedef struct MonEncounterData {
@@ -272,6 +275,8 @@ void BattleDisplay_InitTaskSetEncounter(BattleSystem *battleSys, BattlerData *ba
         &animFrames[0],
         NULL);
 
+    PokemonSprite_SetBattleSmoothingEnabled(monEncounterData->sprite, FALSE);
+
     if (monEncounterData->face == FACE_FRONT) {
         PokemonSprite_StartFade(monEncounterData->sprite, 8, 8, 0, 0);
     }
@@ -301,9 +306,9 @@ void BattleDisplay_InitTaskSetEncounter(BattleSystem *battleSys, BattlerData *ba
     monEncounterData->isShiny = message->isShiny;
 
     if (monEncounterData->face == FACE_FRONT && (BattleSystem_GetBattleStatusMask(battleSys) & BATTLE_STATUS_GIRATINA)) {
-        SysTask_Start(Task_SetGiratinaEncounter, monEncounterData, 0);
+        SysTask_StartUnscaled(Task_SetGiratinaEncounter, monEncounterData, 0);
     } else {
-        SysTask_Start(Task_SetEncounter, monEncounterData, 0);
+        SysTask_StartUnscaled(Task_SetEncounter, monEncounterData, 0);
     }
 
     Sound_Set2PokemonCriesAllowed(TRUE);
@@ -380,7 +385,7 @@ void BattleDisplay_InitTaskShowEncounter(BattleSystem *battleSys, BattlerData *b
     monShowData->isQuickSendOut = 0;
 
     Sound_Set2PokemonCriesAllowed(TRUE);
-    SysTask_Start(Task_ShowEncounter, monShowData, 0);
+    SysTask_StartBattleAnimation(Task_ShowEncounter, monShowData, 0);
 }
 
 void BattleDisplay_InitTaskShowPokemon(BattleSystem *battleSys, BattlerData *battlerData, MonShowMessage *message)
@@ -432,7 +437,7 @@ void BattleDisplay_InitTaskShowPokemon(BattleSystem *battleSys, BattlerData *bat
         monShowData->moveAnim.personalities[i] = message->battleMonPersonalities[i];
     }
 
-    SysTask_Start(Task_ShowPokemon, monShowData, 0);
+    SysTask_StartBattleAnimation(Task_ShowPokemon, monShowData, 0);
 }
 
 typedef struct MonReturnData {
@@ -473,7 +478,7 @@ void BattleDisplay_InitTaskReturnPokemon(BattleSystem *battleSys, BattlerData *b
         monReturnData->moveAnim.personalities[i] = message->battleMonPersonalities[i];
     }
 
-    SysTask_Start(Task_ReturnPokemon, monReturnData, 0);
+    SysTask_StartBattleAnimation(Task_ReturnPokemon, monReturnData, 0);
 }
 
 typedef struct OpenCaptureBallData {
@@ -502,7 +507,7 @@ void BattleDisplay_InitTaskOpenCaptureBall(BattleSystem *battleSys, BattlerData 
 
     PokemonSprite_StartFade(captureOpenBallData->monSprite, 0, 16, 0, sFadeColors[message->ball]);
     PokemonSprite_SetAttribute(captureOpenBallData->monSprite, MON_SPRITE_SHADOW_IS_AFFINE, TRUE);
-    SysTask_Start(Task_OpenCaptureBall, captureOpenBallData, 0);
+    SysTask_StartBattleAnimation(Task_OpenCaptureBall, captureOpenBallData, 0);
 }
 
 void BattleDisplay_InitTaskSetTrainerEncounter(BattleSystem *battleSys, BattlerData *battlerData, TrainerEncounterMessage *message)
@@ -549,7 +554,7 @@ void BattleDisplay_InitTaskSetTrainerEncounter(BattleSystem *battleSys, BattlerD
         Bg_SetOffset(BattleSystem_GetBgConfig(battleSys), BG_LAYER_MAIN_3, BG_OFFSET_UPDATE_SUB_X, 4 * 33);
     }
 
-    SysTask_Start(Task_SetTrainerEncounter, trainerEncounterData, 0);
+    SysTask_StartUnscaled(Task_SetTrainerEncounter, trainerEncounterData, 0);
 }
 
 typedef struct TrainerThrowBallData {
@@ -585,7 +590,7 @@ void BattleDisplay_InitTaskThrowTrainerBall(BattleSystem *battleSys, BattlerData
         trainerThrowBallData->backSpriteIdx = SpriteSystem_TrainerClassBackSpriteIndex(BattleDisplay_GetLinkTrainerClass(battleSys, battlerData->battler, trainer->header.trainerType));
     }
 
-    SysTask_Start(Task_ThrowTrainerBall, trainerThrowBallData, 0);
+    SysTask_StartBattleAnimation(Task_ThrowTrainerBall, trainerThrowBallData, 0);
 }
 
 typedef struct SlideTrainerOutData {
@@ -614,7 +619,7 @@ void BattleDisplay_InitTaskSlideTrainerOut(BattleSystem *battleSys, BattlerData 
         slideTrainerOutData->face = FACE_BACK;
     }
 
-    SysTask_Start(Task_SlideTrainerOut, slideTrainerOutData, 0);
+    SysTask_StartBattleUI(Task_SlideTrainerOut, slideTrainerOutData, 0);
 }
 
 typedef struct SlideTrainerInData {
@@ -651,7 +656,7 @@ void BattleDisplay_InitTaskSlideTrainerIn(BattleSystem *battleSys, BattlerData *
     slideTrainerInData->command = message->command;
     slideTrainerInData->battler = battlerData->battler;
 
-    SysTask_Start(Task_SlideTrainerIn, slideTrainerInData, 0);
+    SysTask_StartBattleUI(Task_SlideTrainerIn, slideTrainerInData, 0);
 }
 
 void BattleDisplay_InitTaskSlideHealthBoxIn(BattleSystem *battleSys, BattlerData *battlerData, HealthBoxData *healthboxData)
@@ -679,7 +684,7 @@ void BattleDisplay_InitTaskSlideHealthBoxIn(BattleSystem *battleSys, BattlerData
     HealthBox_Enable(healthbox, FALSE);
     HealthBox_DrawInfo(healthbox, healthbox->curHP, HEALTHBOX_INFO_ALL);
 
-    healthbox->task_10 = SysTask_Start(Task_SlideHealthBoxIn, healthbox, 1000);
+    healthbox->task_10 = SysTask_StartBattleUI(Task_SlideHealthBoxIn, healthbox, 1000);
 }
 
 void BattleDisplay_InitTaskSlideHealthBoxOut(BattleSystem *battleSys, BattlerData *battlerData)
@@ -693,7 +698,7 @@ void BattleDisplay_InitTaskSlideHealthBoxOut(BattleSystem *battleSys, BattlerDat
 
     HealthBox_Scroll(healthbox, HEALTHBOX_SCROLL_OUT);
 
-    healthbox->task_10 = SysTask_Start(Task_SlideHealthBoxOut, healthbox, 1000);
+    healthbox->task_10 = SysTask_StartBattleUI(Task_SlideHealthBoxOut, healthbox, 1000);
 }
 
 typedef struct CommandSetData {
@@ -758,7 +763,7 @@ void BattleDisplay_InitTaskSetCommandSelection(BattleSystem *battleSys, BattlerD
         commandSetData->maxPP[battler] = message->maxPP[battler];
     }
 
-    SysTask_Start(battlerData->taskFuncs.setCommandSelection, commandSetData, 0);
+    SysTask_StartUnscaled(battlerData->taskFuncs.setCommandSelection, commandSetData, 0);
 }
 
 typedef struct MoveSelectMenuData {
@@ -797,7 +802,7 @@ void BattleDisplay_InitTaskShowMoveSelectMenu(BattleSystem *battleSys, BattlerDa
 
     moveSelectMenuData->invalidMoves = message->invalidMoves;
 
-    SysTask_Start(battlerData->taskFuncs.showMoveSelectMenu, moveSelectMenuData, 0);
+    SysTask_StartUnscaled(battlerData->taskFuncs.showMoveSelectMenu, moveSelectMenuData, 0);
 }
 
 typedef struct TargetSelectMenuData {
@@ -839,7 +844,7 @@ void BattleDisplay_InitTaskShowTargetSelectMenu(BattleSystem *battleSys, Battler
         targetSelectMenuData->targetMon[i] = message->targetMon[i];
     }
 
-    SysTask_Start(battlerData->taskFuncs.showTargetSelectMenu, targetSelectMenuData, 0);
+    SysTask_StartUnscaled(battlerData->taskFuncs.showTargetSelectMenu, targetSelectMenuData, 0);
 }
 
 #include "battle_sub_menus/battle_party.h"
@@ -1029,7 +1034,7 @@ void BattleDisplay_InitTaskShowBagMenu(BattleSystem *battleSys, BattlerData *bat
         bagMenuData->embargoTurns[i] = message->embargoTurns[i];
     }
 
-    SysTask_Start(battlerData->taskFuncs.showBagMenu, bagMenuData, 0);
+    SysTask_StartUnscaled(battlerData->taskFuncs.showBagMenu, bagMenuData, 0);
 }
 
 void BattleDisplay_InitTaskShowPartyMenu(BattleSystem *battleSys, BattlerData *battlerData, PartyMenuMessage *message)
@@ -1054,7 +1059,7 @@ void BattleDisplay_InitTaskShowPartyMenu(BattleSystem *battleSys, BattlerData *b
         }
     }
 
-    SysTask_Start(battlerData->taskFuncs.showPartyMenu, partyMenuData, 0);
+    SysTask_StartUnscaled(battlerData->taskFuncs.showPartyMenu, partyMenuData, 0);
 }
 
 typedef struct YesNoMenuData {
@@ -1085,7 +1090,7 @@ void BattleDisplay_InitTaskShowYesNoMenu(BattleSystem *battleSys, BattlerData *b
     yesNoMenuData->move = message->move;
     yesNoMenuData->nickname = message->nickname;
 
-    SysTask_Start(battlerData->taskFuncs.showYesNoMenu, yesNoMenuData, 0);
+    SysTask_StartUnscaled(battlerData->taskFuncs.showYesNoMenu, yesNoMenuData, 0);
 }
 
 typedef struct BattleMessageWaitTask {
@@ -1113,7 +1118,7 @@ void BattleDisplay_PrintAttackMessage(BattleSystem *battleSys, BattlerData *batt
 
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintMessage(BattleSystem *battleSys, BattlerData *battlerData, BattleMessage *battleMsg)
@@ -1126,7 +1131,7 @@ void BattleDisplay_PrintMessage(BattleSystem *battleSys, BattlerData *battlerDat
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 typedef struct SetMoveAnimationData {
@@ -1165,7 +1170,7 @@ void BattleDisplay_InitTaskSetMoveAnimation(BattleSystem *battleSys, BattlerData
     }
 
     BattleDisplay_GetAnimHideFlags(&setMoveAnimationData->hideHealthboxes, &setMoveAnimationData->hideShadows, animation->animMode, animation->secondaryAnimID, animation->move);
-    SysTask_Start(Task_SetMoveAnimation, setMoveAnimationData, 0);
+    SysTask_StartBattleAnimation(Task_SetMoveAnimation, setMoveAnimationData, 0);
 }
 
 typedef struct FlickerBattlerData {
@@ -1187,7 +1192,7 @@ void BattleDisplay_InitTaskFlickerBattler(BattleSystem *battleSys, BattlerData *
     flickerBattlerData->battler = battlerData->battler;
     flickerBattlerData->delay = 0;
 
-    SysTask_Start(Task_FlickerBattler, flickerBattlerData, 0);
+    SysTask_StartBattleAnimation(Task_FlickerBattler, flickerBattlerData, 0);
 }
 
 void BattleDisplay_InitTaskUpdateHPGauge(BattleSystem *battleSys, BattlerData *battlerData, HPGaugeUpdateMessage *message)
@@ -1213,7 +1218,7 @@ void BattleDisplay_InitTaskUpdateHPGauge(BattleSystem *battleSys, BattlerData *b
         healthbox->damage = 0;
     }
 
-    healthbox->task_10 = SysTask_Start(Task_UpdateHPGauge, healthbox, 1000);
+    healthbox->task_10 = SysTask_StartBattleUI(Task_UpdateHPGauge, healthbox, 1000);
 }
 
 void BattleDisplay_InitTaskUpdateExpGauge(BattleSystem *battleSys, BattlerData *battlerData, ExpGaugeUpdateMessage *message)
@@ -1234,7 +1239,7 @@ void BattleDisplay_InitTaskUpdateExpGauge(BattleSystem *battleSys, BattlerData *
     healthbox->expReward = message->gainedExp - healthbox->curExp;
 
     if (battlerData->battlerType == BATTLER_TYPE_SOLO_PLAYER) {
-        healthbox->task_10 = SysTask_Start(Task_UpdateExpGauge, healthbox, 1000);
+        healthbox->task_10 = SysTask_StartBattleUI(Task_UpdateExpGauge, healthbox, 1000);
         return;
     } else {
         BattleController_EmitClearCommand(healthbox->battleSys, healthbox->battler, healthbox->command);
@@ -1289,7 +1294,7 @@ void BattleDisplay_InitTaskPlayFaintingSequence(BattleSystem *battleSys, Battler
         faintingSequenceData->moveAnim.personalities[i] = message->monPersonalities[i];
     }
 
-    SysTask_Start(Task_PlayFaintingSequence, faintingSequenceData, 0);
+    SysTask_StartBattleAnimation(Task_PlayFaintingSequence, faintingSequenceData, 0);
 }
 
 void BattleDisplay_PlaySound(BattleSystem *battleSys, BattlerData *battlerData, PlaySoundMessage *message)
@@ -1323,7 +1328,7 @@ void BattleDisplay_InitTaskFadeOut(BattleSystem *battleSys, BattlerData *battler
     fadeOutData->command = battlerData->data[0];
     fadeOutData->battler = battlerData->battler;
 
-    SysTask_Start(Task_FadeOut, fadeOutData, 0);
+    SysTask_StartBattleUI(Task_FadeOut, fadeOutData, 0);
 }
 
 typedef struct ToggleVanishData {
@@ -1357,7 +1362,7 @@ void BattleDisplay_InitTaskToggleVanish(BattleSystem *battleSys, BattlerData *ba
         toggleVanishData->moveAnim.personalities[i] = message->personality[i];
     }
 
-    SysTask_Start(Task_ToggleVanish, toggleVanishData, 0);
+    SysTask_StartBattleAnimation(Task_ToggleVanish, toggleVanishData, 0);
 }
 
 void BattleDisplay_SetStatusIcon(BattleSystem *battleSys, BattlerData *battlerData, SetStatusIconMessage *message)
@@ -1381,7 +1386,7 @@ void BattleDisplay_PrintTrainerMessage(BattleSystem *battleSys, BattlerData *bat
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_PrintTrainerMessage(battleSys, trainerID, battlerData->battler, message->msg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintRecallMessage(BattleSystem *battleSys, BattlerData *battlerData, RecallMsgMessage *message)
@@ -1400,7 +1405,7 @@ void BattleDisplay_PrintRecallMessage(BattleSystem *battleSys, BattlerData *batt
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintSendOutMessage(BattleSystem *battleSys, BattlerData *battlerData, SendOutMsgMessage *message)
@@ -1419,7 +1424,7 @@ void BattleDisplay_PrintSendOutMessage(BattleSystem *battleSys, BattlerData *bat
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintBattleStartMessage(BattleSystem *battleSys, BattlerData *battlerData)
@@ -1438,7 +1443,7 @@ void BattleDisplay_PrintBattleStartMessage(BattleSystem *battleSys, BattlerData 
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintLeadMonMessage(BattleSystem *battleSys, BattlerData *battlerData, LeadMonMsgMessage *message)
@@ -1457,7 +1462,7 @@ void BattleDisplay_PrintLeadMonMessage(BattleSystem *battleSys, BattlerData *bat
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 typedef struct PlayLevelUpAnimationData {
@@ -1479,7 +1484,7 @@ void BattleDisplay_InitTaskPlayLevelUpAnimation(BattleSystem *battleSys, Battler
     playLevelUpAnimationData->state = 0;
     playLevelUpAnimationData->healthbox = &battlerData->healthbox;
 
-    SysTask_Start(Task_PlayLevelUpAnimation, playLevelUpAnimationData, 0);
+    SysTask_StartBattleUI(Task_PlayLevelUpAnimation, playLevelUpAnimationData, 0);
 }
 
 typedef struct {
@@ -1507,7 +1512,7 @@ void BattleDisplay_SetAlertMessage(BattleSystem *battleSys, BattlerData *battler
         alertMsgData->state = 0;
         alertMsgData->msgIdx = BattleMessage_Print(battleSys, msgLoader, &message->msg, BattleSystem_GetTextSpeed(battleSys));
 
-        SysTask_Start(Task_WaitForAlertMessagePrint, alertMsgData, 0);
+        SysTask_StartBattleUI(Task_WaitForAlertMessagePrint, alertMsgData, 0);
     } else if (battlerData->bootState == BATTLER_BOOT_STATE_AI) {
         BattleController_EmitAlertMessageAck(battleSys, battlerData->battler);
         BattleController_EmitClearCommand(battleSys, battlerData->battler, message->command);
@@ -1570,7 +1575,7 @@ void BattleDisplay_InitTaskForgetMove(BattleSystem *battleSys, BattlerData *batt
     forgetMoveData->move = message->move;
     forgetMoveData->slot = message->slot;
 
-    SysTask_Start(Task_ForgetMove, forgetMoveData, 0);
+    SysTask_StartBattleUI(Task_ForgetMove, forgetMoveData, 0);
 }
 
 typedef struct SetMosaicData {
@@ -1598,7 +1603,7 @@ void BattleDisplay_InitTaskSetMosaic(BattleSystem *battleSys, BattlerData *battl
     setMosaicData->counter = 0;
     setMosaicData->wait = message->wait;
 
-    SysTask_Start(Task_SetMosaic, setMosaicData, 0);
+    SysTask_StartBattleAnimation(Task_SetMosaic, setMosaicData, 0);
 }
 
 typedef struct PartyGaugeTask {
@@ -1626,7 +1631,7 @@ void BattleDisplay_InitTaskShowBattleStartPartyGauge(BattleSystem *battleSys, Ba
     }
 
     task->midBattle = FALSE;
-    SysTask_Start(Task_ShowPartyGauge, task, 0);
+    SysTask_StartBattleUI(Task_ShowPartyGauge, task, 0);
 }
 
 void BattleDisplay_InitTaskHideBattleStartPartyGauge(BattleSystem *battleSys, BattlerData *battlerData, PartyGaugeData *partyGauge)
@@ -1640,7 +1645,7 @@ void BattleDisplay_InitTaskHideBattleStartPartyGauge(BattleSystem *battleSys, Ba
     task->battlerType = battlerData->battlerType;
     task->midBattle = FALSE;
 
-    SysTask_Start(Task_HidePartyGauge, task, 0);
+    SysTask_StartBattleUI(Task_HidePartyGauge, task, 0);
 }
 
 void BattleDisplay_InitTaskShowPartyGauge(BattleSystem *battleSys, BattlerData *battlerData, PartyGaugeData *partyGauge)
@@ -1658,7 +1663,7 @@ void BattleDisplay_InitTaskShowPartyGauge(BattleSystem *battleSys, BattlerData *
     }
 
     task->midBattle = TRUE;
-    SysTask_Start(Task_ShowPartyGauge, task, 0);
+    SysTask_StartBattleUI(Task_ShowPartyGauge, task, 0);
 }
 
 void BattleDisplay_InitTaskHidePartyGauge(BattleSystem *battleSys, BattlerData *battlerData, PartyGaugeData *partyGauge)
@@ -1672,7 +1677,7 @@ void BattleDisplay_InitTaskHidePartyGauge(BattleSystem *battleSys, BattlerData *
     task->battlerType = battlerData->battlerType;
     task->midBattle = TRUE;
 
-    SysTask_Start(Task_HidePartyGauge, task, 0);
+    SysTask_StartBattleUI(Task_HidePartyGauge, task, 0);
 }
 
 void BattleDisplay_PrintLinkWaitMessage(BattleSystem *battleSys, BattlerData *battlerData)
@@ -1723,7 +1728,7 @@ void BattleDisplay_InitTaskSpriteToOAM(BattleSystem *battleSys, BattlerData *bat
     spriteToOAMData->battler = battlerData->battler;
     spriteToOAMData->monSprite = battlerData->monSprite;
 
-    SysTask_Start(Task_SpriteToOAM, spriteToOAMData, 0);
+    SysTask_StartBattleAnimation(Task_SpriteToOAM, spriteToOAMData, 0);
 }
 
 typedef struct OAMToSpriteData {
@@ -1747,7 +1752,7 @@ void BattleDisplay_InitTaskOAMToSprite(BattleSystem *battleSys, BattlerData *bat
     oamToSpriteData->battler = battlerData->battler;
     oamToSpriteData->monSprite = battlerData->monSprite;
 
-    SysTask_Start(Task_OAMToSprite, oamToSpriteData, 0);
+    SysTask_StartBattleAnimation(Task_OAMToSprite, oamToSpriteData, 0);
 }
 
 void BattleDisplay_PrintResultMessage(BattleSystem *battleSys, BattlerData *battlerData)
@@ -1766,7 +1771,7 @@ void BattleDisplay_PrintResultMessage(BattleSystem *battleSys, BattlerData *batt
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintEscapeMessage(BattleSystem *battleSys, BattlerData *battlerData, EscapeMsgMessage *message)
@@ -1785,7 +1790,7 @@ void BattleDisplay_PrintEscapeMessage(BattleSystem *battleSys, BattlerData *batt
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_PrintForfeitMessage(BattleSystem *battleSys, BattlerData *battlerData)
@@ -1804,7 +1809,7 @@ void BattleDisplay_PrintForfeitMessage(BattleSystem *battleSys, BattlerData *bat
     waitTask->battler = battlerData->battler;
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
-    SysTask_Start(Task_WaitForBattleMessagePrint, waitTask, 0);
+    SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
 }
 
 void BattleDisplay_RefreshSprite(BattleSystem *battleSys, BattlerData *battlerData, MoveAnimation *animation)
@@ -1847,7 +1852,7 @@ void BattleDisplay_PlayMusic(BattleSystem *battleSys, BattlerData *battlerData, 
     BattleController_EmitClearCommand(battleSys, battlerData->battler, message->command);
 }
 
-static void Task_SetEncounter(SysTask *task, void *data)
+static void Task_SetEncounterStep(SysTask *task, void *data)
 {
     MonEncounterData *monEncounterData = data;
     BattleAnimSystem *battleAnimSys = BattleSystem_GetBattleAnimSystem(monEncounterData->battleSys);
@@ -2008,7 +2013,23 @@ static void Task_SetEncounter(SysTask *task, void *data)
     }
 }
 
-static void Task_SetGiratinaEncounter(SysTask *task, void *data)
+static void Task_SetEncounter(SysTask *task, void *data)
+{
+    MonEncounterData *monEncounterData = data;
+    if (monEncounterData->state >= 3) {
+        PokemonSprite_SetBattleSmoothingEnabled(monEncounterData->sprite, TRUE);
+    }
+    // The entrance delay and platform slide share the fast clock on both sides.
+    // Once in position, Pokemon/trainer animation waits use the animation clock.
+    if (monEncounterData->state >= 3 && !BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)) {
+        return;
+    }
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_ANIMATION);
+    Task_SetEncounterStep(task, data);
+    BattleTiming_SetDomain(previous);
+}
+
+static void Task_SetGiratinaEncounterStep(SysTask *task, void *data)
 {
     MonEncounterData *monEncounterData = data;
     BattleAnimSystem *battleAnimSys = BattleSystem_GetBattleAnimSystem(monEncounterData->battleSys);
@@ -2103,6 +2124,22 @@ static void Task_SetGiratinaEncounter(SysTask *task, void *data)
         SysTask_Done(task);
         break;
     }
+}
+
+static void Task_SetGiratinaEncounter(SysTask *task, void *data)
+{
+    MonEncounterData *monEncounterData = data;
+    if (monEncounterData->state >= 3) {
+        PokemonSprite_SetBattleSmoothingEnabled(monEncounterData->sprite, TRUE);
+    }
+    // The entrance delay and platform slide share the fast clock on both sides.
+    // Once in position, Pokemon/trainer animation waits use the animation clock.
+    if (monEncounterData->state >= 3 && !BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)) {
+        return;
+    }
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_ANIMATION);
+    Task_SetGiratinaEncounterStep(task, data);
+    BattleTiming_SetDomain(previous);
 }
 
 static void Task_ShowEncounter(SysTask *task, void *data)
@@ -2776,7 +2813,7 @@ static void Task_OpenCaptureBall(SysTask *task, void *data)
     }
 }
 
-static void Task_SetTrainerEncounter(SysTask *task, void *data)
+static void Task_SetTrainerEncounterStep(SysTask *task, void *data)
 {
     TrainerEncounterData *trainerEncounterData = data;
     s16 x1, y1, x2, y2;
@@ -2905,6 +2942,20 @@ static void Task_SetTrainerEncounter(SysTask *task, void *data)
         SysTask_Done(task);
         break;
     }
+}
+
+static void Task_SetTrainerEncounter(SysTask *task, void *data)
+{
+    TrainerEncounterData *trainerEncounterData = data;
+    Sprite_SetBattleSmoothingEnabled(trainerEncounterData->managedSprite->sprite, trainerEncounterData->state >= 3);
+    // The entrance delay and platform slide share the fast clock on both sides.
+    // Once in position, Pokemon/trainer animation waits use the animation clock.
+    if (trainerEncounterData->state >= 3 && !BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)) {
+        return;
+    }
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_ANIMATION);
+    Task_SetTrainerEncounterStep(task, data);
+    BattleTiming_SetDomain(previous);
 }
 
 static void Task_ThrowTrainerBall(SysTask *task, void *data)
@@ -4222,7 +4273,7 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
         break;
     case 10:
         if (Text_IsPrinterActive(bagMenuData->msgIdx) == FALSE) {
-            if (--bagMenuData->delay == 0) {
+            if (BattleTiming_ShouldTick(BATTLE_TIMING_UI) && --bagMenuData->delay == 0) {
                 bagMenuData->state = bagMenuData->stateAfterDelay;
             }
         }
@@ -4494,7 +4545,7 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
     case 24:
     case 30:
         if (Text_IsPrinterActive(bagMenuData->msgIdx) == FALSE) {
-            if (--bagMenuData->delay == 0) {
+            if (BattleTiming_ShouldTick(BATTLE_TIMING_UI) && --bagMenuData->delay == 0) {
                 BattleSystem_LoadFightOverlay(bagMenuData->battleSys, TRUE);
                 bagMenuData->state = 8;
             }
@@ -5314,7 +5365,7 @@ static void Task_FadeOut(SysTask *task, void *data)
         Sound_FadeOutBGM(0, 16);
         fadeOutData->state++;
     case 1:
-        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
+        if (PaletteData_GetSelectedBuffersMask(paletteData) == 0 && BattleDisplay_IsSceneFadeComplete(fadeOutData->battleSys)) {
             fadeOutData->state++;
         }
         break;
@@ -5530,7 +5581,7 @@ static void SysTask_SetupUI(SysTask *task, void *data)
 
         uiSetupTaskData->animObjects[1] = ov12_02237F38(uiSetupTaskData->animContext, &particleEffectTemplate);
 
-        ov12_02238004(uiSetupTaskData->animObjects[0]);
+        BattleParticleEffect_StartUnscaled(uiSetupTaskData->animObjects[0]);
         Sound_PlayEffect(SEQ_SE_DP_PASA2_sseq);
 
         uiSetupTaskData->step = 1;
@@ -5559,7 +5610,7 @@ static void SysTask_SetupUI(SysTask *task, void *data)
         }
 
         if (uiSetupTaskData->frameCount == 20) {
-            ov12_02238004(uiSetupTaskData->animObjects[1]);
+            BattleParticleEffect_StartUnscaled(uiSetupTaskData->animObjects[1]);
         }
 
         if (uiSetupTaskData->frameCount == 23) {
@@ -6530,7 +6581,9 @@ static ManagedSprite *BattleDisplay_NewManagedSpriteTrainer(BattleSystem *battle
         face = FACE_BACK;
     }
 
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_ANIMATION);
     ManagedSprite *managedSprite = SpriteSystem_NewManagedSpriteTrainer(spriteSys, spriteMan, paletteData, x, y, trainerClass, face, battlerType, HEAP_ID_BATTLE);
+    BattleTiming_SetDomain(previous);
 
     return managedSprite;
 }
@@ -6654,7 +6707,7 @@ static BOOL BattleDisplay_AdvanceTrainerThrowAnim(TrainerEncounterData *trainerE
             ballThrowFlashData->state = 0;
             ballThrowFlashData->unread_04 = 0;
 
-            SysTask_Start(SysTask_ScreenFlashForThrow, ballThrowFlashData, 0);
+            SysTask_StartBattleAnimation(SysTask_ScreenFlashForThrow, ballThrowFlashData, 0);
         }
 
         break;

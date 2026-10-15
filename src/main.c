@@ -24,6 +24,7 @@
 #include "screen_fade.h"
 #include "sound_system.h"
 #include "sys_task_manager.h"
+#include "port/battle_timing.h"
 #include "system.h"
 #include "timer.h"
 #include "touch_pad.h"
@@ -152,6 +153,7 @@ void NitroMain(void)
 
         if (CommSys_Update()) {
             CheckHeapCanary();
+            BattleTiming_BeginFrame();
             RunApplication();
             SysTaskManager_ExecuteTasks(gSystem.mainTaskMgr);
             SysTaskManager_ExecuteTasks(gSystem.printTaskMgr);

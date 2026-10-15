@@ -947,7 +947,7 @@ void *BattleSubscreen_New(NARC *unused1, NARC *unused2, BattleSystem *battleSys,
     }
 
     btlSubscreen->fontOAMManager = sub_02012744(13, HEAP_ID_BATTLE);
-    btlSubscreen->pulseCursorTask = SysTask_Start(SysTask_PulseCursorHighlight, btlSubscreen, 1310);
+    btlSubscreen->pulseCursorTask = SysTask_StartBattleUI(SysTask_PulseCursorHighlight, btlSubscreen, 1310);
 
     NNSG2dScreenData *screenData;
     int bgNarcIndex;
@@ -1024,7 +1024,7 @@ void *BattleSubscreen_New(NARC *unused1, NARC *unused2, BattleSystem *battleSys,
     RenderControlFlags_ZeroSpeedUpBattle();
     RenderControlFlags_ZeroWaitBattle();
 
-    btlSubscreen->speedUpPaletteTask = SysTask_Start(SysTask_UpdateSpeedUpPalette, btlSubscreen, 55000);
+    btlSubscreen->speedUpPaletteTask = SysTask_StartBattleUI(SysTask_UpdateSpeedUpPalette, btlSubscreen, 55000);
 
     return btlSubscreen;
 }
@@ -1161,18 +1161,18 @@ void BattleSubscreen_LoadSprites(NARC *spriteNarc, BattleSubscreen *btlSubscreen
     SpriteSystem_LoadAnimResObjFromOpenNarc(spriteSys, spriteMan, spriteNarc, 206, TRUE, 20016);
 
     for (i = 0; i < SNELEMS(btlSubscreen->playerPartyBallSprites); i++) {
-        btlSubscreen->playerPartyBallSprites[i] = SpriteSystem_NewSprite(spriteSys, spriteMan, &sPlayerPartyBallTemplate);
+        btlSubscreen->playerPartyBallSprites[i] = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &sPlayerPartyBallTemplate);
         Sprite_SetPositionXYWithSubscreenOffset(btlSubscreen->playerPartyBallSprites[i]->sprite, 12 + 19 * i, 13, (192 + 80) << FX32_SHIFT);
         ManagedSprite_SetAffineOverwriteMode(btlSubscreen->playerPartyBallSprites[i], AFFINE_OVERWRITE_MODE_NORMAL);
 
-        btlSubscreen->opponentPartyBallSprites[i] = SpriteSystem_NewSprite(spriteSys, spriteMan, &sOpponentPartyBallTemplate);
+        btlSubscreen->opponentPartyBallSprites[i] = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &sOpponentPartyBallTemplate);
         Sprite_SetPositionXYWithSubscreenOffset(btlSubscreen->opponentPartyBallSprites[i]->sprite, 246 + -12 * i, 9, (192 + 80) << FX32_SHIFT);
     }
 
     BattleSubscreen_HideBallSprites(btlSubscreen);
 
     GF_ASSERT(!btlSubscreen->animatePartyBallsTask);
-    btlSubscreen->animatePartyBallsTask = SysTask_Start(SysTask_AnimatePartyBalls, btlSubscreen, 1300);
+    btlSubscreen->animatePartyBallsTask = SysTask_StartBattleUI(SysTask_AnimatePartyBalls, btlSubscreen, 1300);
 
     PaletteData *pltData = BattleSystem_GetPaletteData(btlSubscreen->battleSys);
     CursorRenderer_LoadResources(spriteSys, spriteMan, pltData, 5, 20411, 20035, 20405, 20394);
@@ -1477,7 +1477,7 @@ void BattleSubscreen_StartPanelSlide(BattleSubscreen *btlSubscreen, int slideSpe
     btlSubscreen->slideSpeed = slideSpeed;
     btlSubscreen->targetOffset = targetOffset << 8;
 
-    SysTask_Start(SysTask_SlidePanel, btlSubscreen, 1200);
+    SysTask_StartBattleUI(SysTask_SlidePanel, btlSubscreen, 1200);
 }
 
 static void SysTask_SlidePanel(SysTask *task, void *subscreen)
@@ -1526,7 +1526,7 @@ static void BattleSubscreen_SlideInPanel(BattleSubscreen *btlSubscreen, int dire
     slideInPanelState->bgYOffset = (40 * 100 - slideInPanelState->yShift) / 100;
 
     Sound_PlayEffect(SEQ_SE_DP_SLIDEIN_sseq);
-    SysTask_Start(SysTask_SlideInPanel, slideInPanelState, 1210);
+    SysTask_StartBattleUI(SysTask_SlideInPanel, slideInPanelState, 1210);
 
     BOOL success = SetHBlankCallback(HBlankCallback_SlideInPanel, slideInPanelState);
     GF_ASSERT(success == TRUE);
@@ -2559,7 +2559,7 @@ static ManagedSprite *BattleSubscreen_NewPokeIconSprite(BattleSubscreen *btlSubs
     template.resources[0] = charResID;
     template.x = sTargetSelectIconPositions[iconIndex][0];
     template.y = sTargetSelectIconPositions[iconIndex][1];
-    ManagedSprite *sprite = SpriteSystem_NewSprite(spriteSys, spriteMan, &template);
+    ManagedSprite *sprite = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &template);
 
     ManagedSprite_SetPositionXYWithSubscreenOffset(sprite, template.x, template.y, (192 + 80) << FX32_SHIFT);
     Sprite_SetExplicitPaletteOffsetAutoAdjust(sprite->sprite, Pokemon_IconPaletteIndex(mon));
@@ -2592,7 +2592,7 @@ static ManagedSprite *BattleSubscreen_NewPokeIconSprite(BattleSubscreen *btlSubs
     ManagedSprite_TickFrame(sprite);
 
     btlSubscreen->targetSelectPokeIconSprites[iconIndex] = sprite;
-    btlSubscreen->pokeIconAnimTasks[iconIndex] = SysTask_Start(SysTask_TickPokeIconAnim, sprite, 1300);
+    btlSubscreen->pokeIconAnimTasks[iconIndex] = SysTask_StartBattleUI(SysTask_TickPokeIconAnim, sprite, 1300);
 
     return sprite;
 }
@@ -3057,7 +3057,7 @@ static void StartMenuTransitionTask(SysTaskFunc callback, BattleSubscreen *btlSu
     GF_ASSERT(!btlSubscreen->menuTransitionTask);
 
     MI_CpuClear8(&btlSubscreen->menuButtonPressAnimState, sizeof(MenuButtonPressAnimState));
-    btlSubscreen->menuTransitionTask = SysTask_Start(callback, btlSubscreen, 1300);
+    btlSubscreen->menuTransitionTask = SysTask_StartBattleUI(callback, btlSubscreen, 1300);
 }
 
 static void StopMenuTransitionTask(BattleSubscreen *btlSubscreen)

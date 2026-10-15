@@ -116,7 +116,7 @@ void BattleAnimScriptFunc_GenericExample(BattleAnimSystem *system)
     ctx->state = TASK_STATE_RUNNING;
     ctx->system = system;
 
-    SysTask_Start(BattleAnimTask_GenericExample, ctx, 0x1000);
+    SysTask_StartBattleAnimation(BattleAnimTask_GenericExample, ctx, 0x1000);
 }
 
 static void BattleAnimTask_SpriteExample(SysTask *task, void *param)

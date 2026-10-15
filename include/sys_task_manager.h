@@ -1,6 +1,8 @@
 #ifndef POKEPLATINUM_SYS_TASK_MANAGER_H
 #define POKEPLATINUM_SYS_TASK_MANAGER_H
 
+#include "port/battle_timing.h"
+
 typedef struct SysTask SysTask;
 typedef struct SysTaskManager SysTaskManager;
 typedef void (*SysTaskFunc)(SysTask *, void *);
@@ -18,6 +20,14 @@ typedef struct SysTask {
     void *param;
     SysTaskFunc callback;
     enum TaskState state;
+#ifdef SDK_PORT
+    BattleTimingDomain timingDomain;
+    u32 timingPressedKeys;
+    u32 timingRepeatKeys;
+    u16 timingTouchPressed;
+    u16 timingTouchX;
+    u16 timingTouchY;
+#endif
 } SysTask;
 
 typedef struct SysTaskManager {

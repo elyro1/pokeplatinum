@@ -1,4 +1,5 @@
 #include "pokemon_sprite.h"
+#include "port/battle_timing.h"
 
 #include "constants/graphics.h"
 #include "generated/shadow_sizes.h"
@@ -450,6 +451,60 @@ void *PokemonSpriteManager_New(enum HeapID heapID)
     return monSpriteMan;
 }
 
+#ifdef SDK_PORT
+static void PokemonSprite_PrepareRenderPose(PokemonSprite *sprite, PokemonSprite *rendered, VecFx32 *fraction, BOOL battle, BOOL shadowVisible)
+{
+    if (shadowVisible) {
+        if (sprite->shadow.shouldFollowX) {
+            sprite->shadow.x = sprite->transforms.xCenter + sprite->transforms.xOffset + sprite->shadow.xOffset;
+        }
+        if (sprite->shadow.shouldFollowY) {
+            sprite->shadow.y = sprite->transforms.yCenter + sprite->transforms.yOffset + sprite->shadow.yOffset;
+        }
+    }
+    *rendered = *sprite;
+    BattleVisualPose pose = {0}, renderPose;
+    const PokemonSpriteTransforms *t = &sprite->transforms;
+    pose.position[0] = t->xCenter * 4096;
+    pose.position[1] = t->yCenter * 4096;
+    pose.position[2] = t->zCenter * 4096;
+    pose.offset[0] = t->xOffset * 4096;
+    pose.offset[1] = t->yOffset * 4096;
+    pose.offset[2] = t->zOffset * 4096;
+    pose.scale[0] = t->scaleX * 16;
+    pose.scale[1] = t->scaleY * 16;
+    pose.scale[2] = 4096;
+    pose.pivot[0] = t->xPivot * 4096;
+    pose.pivot[1] = t->yPivot * 4096;
+    pose.rotation[0] = t->rotationX;
+    pose.rotation[1] = t->rotationY;
+    pose.rotation[2] = t->rotationZ;
+    u64 identity = sprite->template.character | ((u64)sprite->template.narcID << 16)
+        | ((u64)sprite->template.palette << 32) | ((u64)t->flipH << 48)
+        | ((u64)t->flipV << 49) | ((u64)t->partialDraw << 50);
+    BattleSmoothing_Sample(&sprite->battleVisualHistory, &pose, identity, t->alpha != 0,
+        battle && !sprite->battleSmoothDisabled, &renderPose);
+    PokemonSpriteTransforms *r = &rendered->transforms;
+    r->xCenter = renderPose.position[0] / 4096;
+    r->yCenter = renderPose.position[1] / 4096;
+    r->zCenter = renderPose.position[2] / 4096;
+    r->xOffset = renderPose.offset[0] / 4096;
+    r->yOffset = renderPose.offset[1] / 4096;
+    r->zOffset = renderPose.offset[2] / 4096;
+    r->scaleX = renderPose.scale[0] / 16;
+    r->scaleY = renderPose.scale[1] / 16;
+    r->xPivot = renderPose.pivot[0] / 4096;
+    r->yPivot = renderPose.pivot[1] / 4096;
+    r->rotationX = renderPose.rotation[0];
+    r->rotationY = renderPose.rotation[1];
+    r->rotationZ = renderPose.rotation[2];
+    // Preserve subpixel motion while the native sprite geometry uses integer pixels.
+    fraction->x = renderPose.position[0] + renderPose.offset[0] - (r->xCenter + r->xOffset) * 4096;
+    fraction->y = renderPose.position[1] + renderPose.offset[1] - (r->yCenter + r->yOffset) * 4096;
+    fraction->z = renderPose.position[2] + renderPose.offset[2] - (r->zCenter + r->zOffset) * 4096;
+}
+#endif
+
 void PokemonSpriteManager_DrawSprites(PokemonSpriteManager *monSpriteMan)
 {
     int width, height;
@@ -467,7 +522,8 @@ void PokemonSpriteManager_DrawSprites(PokemonSpriteManager *monSpriteMan)
         if (monSpriteMan->sprites[i].active
             && monSpriteMan->sprites[i].transforms.hide == FALSE
             && monSpriteMan->sprites[i].transforms.hide2 == FALSE) {
-            if (monSpriteMan->sprites[i].callback != NULL) {
+            if ((monSpriteMan->heapID != HEAP_ID_BATTLE || BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION))
+                && monSpriteMan->sprites[i].callback != NULL) {
                 monSpriteMan->sprites[i].callback(&monSpriteMan->sprites[i], &monSpriteMan->sprites[i].transforms);
             }
 
@@ -477,46 +533,60 @@ void PokemonSpriteManager_DrawSprites(PokemonSpriteManager *monSpriteMan)
                 G3_Identity();
             }
 
-            PokemonSprite_TickAnim(&monSpriteMan->sprites[i]);
+            if (monSpriteMan->heapID != HEAP_ID_BATTLE || BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)) {
+                PokemonSprite_TickAnim(&monSpriteMan->sprites[i]);
+            }
+
+            PokemonSprite *drawSprite = &monSpriteMan->sprites[i];
+#ifdef SDK_PORT
+            PokemonSprite rendered;
+            VecFx32 drawFraction;
+            PokemonSprite_PrepareRenderPose(drawSprite, &rendered, &drawFraction,
+                monSpriteMan->heapID == HEAP_ID_BATTLE,
+                drawSprite->shadow.plttSlot && drawSprite->shadow.size != SHADOW_SIZE_NONE
+                    && !drawSprite->transforms.partialDraw && !(monSpriteMan->hideShadows & 1));
+            drawSprite = &rendered;
+            G3_Translate(drawFraction.x, drawFraction.y, drawFraction.z);
+#endif
 
             G3_TexPlttBase(monSpriteMan->plttBaseAddr + PLTT_OFFSET_CAST(i), monSpriteMan->imageProxy.attr.fmt);
-            G3_Translate((monSpriteMan->sprites[i].transforms.xCenter + monSpriteMan->sprites[i].transforms.xPivot) << FX32_SHIFT, (monSpriteMan->sprites[i].transforms.yCenter + monSpriteMan->sprites[i].transforms.yPivot) << FX32_SHIFT, monSpriteMan->sprites[i].transforms.zCenter << FX32_SHIFT);
-            G3_RotX(FX_SinIdx(monSpriteMan->sprites[i].transforms.rotationX), FX_CosIdx(monSpriteMan->sprites[i].transforms.rotationX));
-            G3_RotY(FX_SinIdx(monSpriteMan->sprites[i].transforms.rotationY), FX_CosIdx(monSpriteMan->sprites[i].transforms.rotationY));
-            G3_RotZ(FX_SinIdx(monSpriteMan->sprites[i].transforms.rotationZ), FX_CosIdx(monSpriteMan->sprites[i].transforms.rotationZ));
-            G3_Translate(-((monSpriteMan->sprites[i].transforms.xCenter + monSpriteMan->sprites[i].transforms.xPivot) << FX32_SHIFT), -((monSpriteMan->sprites[i].transforms.yCenter + monSpriteMan->sprites[i].transforms.yPivot) << FX32_SHIFT), -(monSpriteMan->sprites[i].transforms.zCenter << FX32_SHIFT));
-            G3_MaterialColorDiffAmb(GX_RGB(monSpriteMan->sprites[i].transforms.diffuseR, monSpriteMan->sprites[i].transforms.diffuseG, monSpriteMan->sprites[i].transforms.diffuseB), GX_RGB(monSpriteMan->sprites[i].transforms.ambientR, monSpriteMan->sprites[i].transforms.ambientG, monSpriteMan->sprites[i].transforms.ambientB), TRUE);
+            G3_Translate((drawSprite->transforms.xCenter + drawSprite->transforms.xPivot) << FX32_SHIFT, (drawSprite->transforms.yCenter + drawSprite->transforms.yPivot) << FX32_SHIFT, drawSprite->transforms.zCenter << FX32_SHIFT);
+            G3_RotX(FX_SinIdx(drawSprite->transforms.rotationX), FX_CosIdx(drawSprite->transforms.rotationX));
+            G3_RotY(FX_SinIdx(drawSprite->transforms.rotationY), FX_CosIdx(drawSprite->transforms.rotationY));
+            G3_RotZ(FX_SinIdx(drawSprite->transforms.rotationZ), FX_CosIdx(drawSprite->transforms.rotationZ));
+            G3_Translate(-((drawSprite->transforms.xCenter + drawSprite->transforms.xPivot) << FX32_SHIFT), -((drawSprite->transforms.yCenter + drawSprite->transforms.yPivot) << FX32_SHIFT), -(drawSprite->transforms.zCenter << FX32_SHIFT));
+            G3_MaterialColorDiffAmb(GX_RGB(drawSprite->transforms.diffuseR, drawSprite->transforms.diffuseG, drawSprite->transforms.diffuseB), GX_RGB(drawSprite->transforms.ambientR, drawSprite->transforms.ambientG, drawSprite->transforms.ambientB), TRUE);
             G3_MaterialColorSpecEmi(GX_RGB(16, 16, 16), GX_RGB(0, 0, 0), FALSE);
-            G3_PolygonAttr(GX_LIGHTMASK_NONE, GX_POLYGONMODE_MODULATE, GX_CULL_NONE, monSpriteMan->sprites[i].polygonID, monSpriteMan->sprites[i].transforms.alpha, 0);
+            G3_PolygonAttr(GX_LIGHTMASK_NONE, GX_POLYGONMODE_MODULATE, GX_CULL_NONE, drawSprite->polygonID, drawSprite->transforms.alpha, 0);
 
-            if (monSpriteMan->sprites[i].transforms.partialDraw) {
-                u0 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][0] + monSpriteMan->sprites[i].transforms.drawXOffset;
-                u1 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][0] + monSpriteMan->sprites[i].transforms.drawXOffset + monSpriteMan->sprites[i].transforms.drawWidth;
-                v0 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][1] + monSpriteMan->sprites[i].transforms.drawYOffset;
-                v1 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][1] + monSpriteMan->sprites[i].transforms.drawYOffset + monSpriteMan->sprites[i].transforms.drawHeight;
+            if (drawSprite->transforms.partialDraw) {
+                u0 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][0] + drawSprite->transforms.drawXOffset;
+                u1 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][0] + drawSprite->transforms.drawXOffset + drawSprite->transforms.drawWidth;
+                v0 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][1] + drawSprite->transforms.drawYOffset;
+                v1 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][1] + drawSprite->transforms.drawYOffset + drawSprite->transforms.drawHeight;
 
                 NNS_G2dDrawSpriteFast(
-                    monSpriteMan->sprites[i].transforms.xCenter - MON_SPRITE_FRAME_WIDTH / 2 + monSpriteMan->sprites[i].transforms.drawXOffset + monSpriteMan->sprites[i].transforms.xOffset,
-                    monSpriteMan->sprites[i].transforms.yCenter - MON_SPRITE_FRAME_HEIGHT / 2 + monSpriteMan->sprites[i].transforms.drawYOffset + monSpriteMan->sprites[i].transforms.yOffset - monSpriteMan->sprites[i].shadow.height,
-                    monSpriteMan->sprites[i].transforms.zCenter + monSpriteMan->sprites[i].transforms.zOffset,
-                    monSpriteMan->sprites[i].transforms.drawWidth,
-                    monSpriteMan->sprites[i].transforms.drawHeight,
+                    drawSprite->transforms.xCenter - MON_SPRITE_FRAME_WIDTH / 2 + drawSprite->transforms.drawXOffset + drawSprite->transforms.xOffset,
+                    drawSprite->transforms.yCenter - MON_SPRITE_FRAME_HEIGHT / 2 + drawSprite->transforms.drawYOffset + drawSprite->transforms.yOffset - drawSprite->shadow.height,
+                    drawSprite->transforms.zCenter + drawSprite->transforms.zOffset,
+                    drawSprite->transforms.drawWidth,
+                    drawSprite->transforms.drawHeight,
                     u0,
                     v0,
                     u1,
                     v1);
             } else {
-                width = (MON_SPRITE_FRAME_WIDTH * monSpriteMan->sprites[i].transforms.scaleX) >> MON_AFFINE_SHIFT;
-                height = (MON_SPRITE_FRAME_HEIGHT * monSpriteMan->sprites[i].transforms.scaleY) >> MON_AFFINE_SHIFT;
-                u0 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][0];
-                u1 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][2];
-                v0 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][1];
-                v1 = sMonSpriteTextureCoords[i][monSpriteMan->sprites[i].currSpriteFrame][3];
+                width = (MON_SPRITE_FRAME_WIDTH * drawSprite->transforms.scaleX) >> MON_AFFINE_SHIFT;
+                height = (MON_SPRITE_FRAME_HEIGHT * drawSprite->transforms.scaleY) >> MON_AFFINE_SHIFT;
+                u0 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][0];
+                u1 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][2];
+                v0 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][1];
+                v1 = sMonSpriteTextureCoords[i][drawSprite->currSpriteFrame][3];
 
                 NNS_G2dDrawSpriteFast(
-                    monSpriteMan->sprites[i].transforms.xCenter - width / 2 + monSpriteMan->sprites[i].transforms.xOffset,
-                    monSpriteMan->sprites[i].transforms.yCenter - height / 2 + monSpriteMan->sprites[i].transforms.yOffset - monSpriteMan->sprites[i].shadow.height,
-                    monSpriteMan->sprites[i].transforms.zCenter + monSpriteMan->sprites[i].transforms.zOffset,
+                    drawSprite->transforms.xCenter - width / 2 + drawSprite->transforms.xOffset,
+                    drawSprite->transforms.yCenter - height / 2 + drawSprite->transforms.yOffset - drawSprite->shadow.height,
+                    drawSprite->transforms.zCenter + drawSprite->transforms.zOffset,
                     width,
                     height,
                     u0,
@@ -525,41 +595,50 @@ void PokemonSpriteManager_DrawSprites(PokemonSpriteManager *monSpriteMan)
                     v1);
             }
 
-            if (monSpriteMan->sprites[i].shadow.plttSlot
-                && monSpriteMan->sprites[i].shadow.size != SHADOW_SIZE_NONE
-                && monSpriteMan->sprites[i].transforms.partialDraw == FALSE
+            if (drawSprite->shadow.plttSlot
+                && drawSprite->shadow.size != SHADOW_SIZE_NONE
+                && drawSprite->transforms.partialDraw == FALSE
                 && (monSpriteMan->hideShadows & 1) == 0) {
 
                 if (monSpriteMan->excludeIdentity != TRUE) {
                     G3_Identity();
+#ifdef SDK_PORT
+                    G3_Translate(drawSprite->shadow.shouldFollowX ? drawFraction.x : 0,
+                        drawSprite->shadow.shouldFollowY ? drawFraction.y : 0, 0);
+#endif
                 }
 
-                G3_TexPlttBase(monSpriteMan->plttBaseAddr + PLTT_OFFSET(MON_SHADOW_BASE_PLTT_SLOT + monSpriteMan->sprites[i].shadow.plttSlot), monSpriteMan->imageProxy.attr.fmt);
+                G3_TexPlttBase(monSpriteMan->plttBaseAddr + PLTT_OFFSET(MON_SHADOW_BASE_PLTT_SLOT + drawSprite->shadow.plttSlot), monSpriteMan->imageProxy.attr.fmt);
 
-                if (monSpriteMan->sprites[i].shadow.isAffine) {
-                    width = (SHADOW_SPRITE_FRAME_WIDTH * monSpriteMan->sprites[i].transforms.scaleX) >> MON_AFFINE_SHIFT;
-                    height = (SHADOW_SPRITE_FRAME_HEIGHT * monSpriteMan->sprites[i].transforms.scaleY) >> MON_AFFINE_SHIFT;
+                if (drawSprite->shadow.isAffine) {
+                    width = (SHADOW_SPRITE_FRAME_WIDTH * drawSprite->transforms.scaleX) >> MON_AFFINE_SHIFT;
+                    height = (SHADOW_SPRITE_FRAME_HEIGHT * drawSprite->transforms.scaleY) >> MON_AFFINE_SHIFT;
                 } else {
                     width = SHADOW_SPRITE_FRAME_WIDTH;
                     height = SHADOW_SPRITE_FRAME_HEIGHT;
                 }
 
-                if (monSpriteMan->sprites[i].shadow.shouldFollowX) {
-                    monSpriteMan->sprites[i].shadow.x = monSpriteMan->sprites[i].transforms.xCenter + monSpriteMan->sprites[i].transforms.xOffset + monSpriteMan->sprites[i].shadow.xOffset;
+                if (drawSprite->shadow.shouldFollowX) {
+                    drawSprite->shadow.x = drawSprite->transforms.xCenter + drawSprite->transforms.xOffset + drawSprite->shadow.xOffset;
                 }
 
-                if (monSpriteMan->sprites[i].shadow.shouldFollowY) {
-                    monSpriteMan->sprites[i].shadow.y = monSpriteMan->sprites[i].transforms.yCenter + monSpriteMan->sprites[i].transforms.yOffset + monSpriteMan->sprites[i].shadow.yOffset;
+                if (drawSprite->shadow.shouldFollowY) {
+                    drawSprite->shadow.y = drawSprite->transforms.yCenter + drawSprite->transforms.yOffset + drawSprite->shadow.yOffset;
                 }
 
-                u0 = sShadowTextureCoords[monSpriteMan->sprites[i].shadow.size][0];
-                v0 = sShadowTextureCoords[monSpriteMan->sprites[i].shadow.size][1];
-                u1 = sShadowTextureCoords[monSpriteMan->sprites[i].shadow.size][2];
-                v1 = sShadowTextureCoords[monSpriteMan->sprites[i].shadow.size][3];
+                u0 = sShadowTextureCoords[drawSprite->shadow.size][0];
+                v0 = sShadowTextureCoords[drawSprite->shadow.size][1];
+                u1 = sShadowTextureCoords[drawSprite->shadow.size][2];
+                v1 = sShadowTextureCoords[drawSprite->shadow.size][3];
 
-                NNS_G2dDrawSpriteFast(monSpriteMan->sprites[i].shadow.x - width / 2, monSpriteMan->sprites[i].shadow.y - height / 2, -1000, width, height, u0, v0, u1, v1);
+                NNS_G2dDrawSpriteFast(drawSprite->shadow.x - width / 2, drawSprite->shadow.y - height / 2, -1000, width, height, u0, v0, u1, v1);
             }
         }
+#ifdef SDK_PORT
+        else {
+            monSpriteMan->sprites[i].battleVisualHistory.valid = FALSE;
+        }
+#endif
     }
 
     G3_PopMtx(1);
@@ -623,6 +702,10 @@ PokemonSprite *PokemonSpriteManager_CreateSpriteAtIndex(PokemonSpriteManager *mo
     MI_CpuClearFast(&monSpriteMan->sprites[index], sizeof(PokemonSprite));
 
     monSpriteMan->sprites[index].active = TRUE;
+#ifdef SDK_PORT
+    monSpriteMan->sprites[index].battleVisualHistory.valid = FALSE;
+    monSpriteMan->sprites[index].battleSmoothDisabled = FALSE;
+#endif
     monSpriteMan->sprites[index].needReloadChar = TRUE;
     monSpriteMan->sprites[index].needReloadPltt = TRUE;
     monSpriteMan->sprites[index].polygonID = polygonID;
@@ -652,6 +735,16 @@ PokemonSprite *PokemonSpriteManager_CreateSpriteAtIndex(PokemonSpriteManager *mo
     }
 
     return &monSpriteMan->sprites[index];
+}
+
+void PokemonSprite_SetBattleSmoothingEnabled(PokemonSprite *monSprite, BOOL enabled)
+{
+#ifdef SDK_PORT
+    if (monSprite->battleSmoothDisabled != !enabled) {
+        monSprite->battleVisualHistory.valid = FALSE;
+    }
+    monSprite->battleSmoothDisabled = !enabled;
+#endif
 }
 
 void PokemonSprite_Delete(PokemonSprite *monSprite)
@@ -1088,6 +1181,13 @@ void PokemonSprite_SetPartialDraw(PokemonSprite *monSprite, int xOffset, int yOf
 
 void PokemonSprite_StartFade(PokemonSprite *monSprite, int initAlpha, int targetAlpha, int delay, int color)
 {
+#ifdef SDK_PORT
+    // Scene fades follow their UI owner; move/send-out fades follow animation.
+    monSprite->battleFadeTimingDomain = BattleTiming_GetDomain();
+    if (monSprite->battleFadeTimingDomain == BATTLE_TIMING_NONE) {
+        monSprite->battleFadeTimingDomain = BATTLE_TIMING_ANIMATION;
+    }
+#endif
     monSprite->transforms.fadeActive = TRUE;
     monSprite->transforms.fadeInitAlpha = initAlpha;
     monSprite->transforms.fadeTargetAlpha = targetAlpha;
@@ -1100,12 +1200,7 @@ void PokemonSpriteManager_StartFadeAll(PokemonSpriteManager *monSpriteMan, int i
 {
     for (int i = 0; i < MAX_MON_SPRITES; i++) {
         if (monSpriteMan->sprites[i].active) {
-            monSpriteMan->sprites[i].transforms.fadeActive = TRUE;
-            monSpriteMan->sprites[i].transforms.fadeInitAlpha = initAlpha;
-            monSpriteMan->sprites[i].transforms.fadeTargetAlpha = targetAlpha;
-            monSpriteMan->sprites[i].transforms.fadeDelayCounter = 0;
-            monSpriteMan->sprites[i].transforms.fadeDelayLength = delay;
-            monSpriteMan->sprites[i].transforms.fadeTargetColor = color;
+            PokemonSprite_StartFade(&monSpriteMan->sprites[i], initAlpha, targetAlpha, delay, color);
         }
     }
 }
@@ -1464,7 +1559,13 @@ static void BufferPokemonSpritePlttData(PokemonSpriteManager *monSpriteMan)
             }
         }
 
-        if (monSpriteMan->sprites[i].active && monSpriteMan->sprites[i].transforms.fadeActive) {
+        BOOL tickFade = TRUE;
+#ifdef SDK_PORT
+        if (monSpriteMan->heapID == HEAP_ID_BATTLE) {
+            tickFade = BattleTiming_ShouldTick(monSpriteMan->sprites[i].battleFadeTimingDomain);
+        }
+#endif
+        if (monSpriteMan->sprites[i].active && monSpriteMan->sprites[i].transforms.fadeActive && tickFade) {
             if (monSpriteMan->sprites[i].transforms.fadeDelayCounter == 0) {
                 needReloadPltt = TRUE;
                 monSpriteMan->sprites[i].transforms.fadeDelayCounter = monSpriteMan->sprites[i].transforms.fadeDelayLength;

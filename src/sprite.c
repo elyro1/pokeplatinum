@@ -3,6 +3,8 @@
 #include <nitro.h>
 #include <string.h>
 
+#include "port/battle_timing.h"
+
 #include "heap.h"
 #include "system.h"
 
@@ -33,6 +35,11 @@ static void SpriteList_InitSprites(SpriteList *list);
 static Sprite *SpriteList_AllocSprite(SpriteList *list);
 static BOOL SpriteList_FreeSprite(SpriteList *list, Sprite *sprite);
 
+#ifdef SDK_PORT
+// Render lists survive skipped animation callbacks; registration follows list lifetime.
+static SpriteList *sBattleDrawLists;
+#endif
+
 SpriteList *SpriteList_New(const SpriteListParams *params)
 {
     GF_ASSERT(params);
@@ -60,6 +67,15 @@ SpriteList *SpriteList_New(const SpriteListParams *params)
 
     NNS_G2dGetUnpackedAnimBank(list->rawAnimData, &list->defaultAnimBank);
     list->active = TRUE;
+#ifdef SDK_PORT
+    list->battleDrawFrame = 0;
+    list->battleDrawDomain = BATTLE_TIMING_NONE;
+    list->battleDrawNext = NULL;
+    if (BattleTiming_IsActive() && params->heapID == HEAP_ID_BATTLE) {
+        list->battleDrawNext = sBattleDrawLists;
+        sBattleDrawLists = list;
+    }
+#endif
 
     return list;
 }
@@ -73,6 +89,16 @@ BOOL SpriteList_Delete(SpriteList *list)
     if (list->sprites == NULL) {
         return TRUE;
     }
+
+#ifdef SDK_PORT
+    SpriteList **link = &sBattleDrawLists;
+    while (*link != NULL && *link != list) {
+        link = &(*link)->battleDrawNext;
+    }
+    if (*link == list) {
+        *link = list->battleDrawNext;
+    }
+#endif
 
     SpriteList_DeleteAll(list);
 
@@ -99,6 +125,13 @@ BOOL SpriteList_SetActive(SpriteList *list, u8 active)
     }
 
     list->active = active;
+#ifdef SDK_PORT
+    if (!active) {
+        for (Sprite *sprite = list->sentinelData.next; sprite != &list->sentinelData; sprite = sprite->next) {
+            sprite->battleVisualHistory.valid = FALSE;
+        }
+    }
+#endif
 
     return TRUE;
 }
@@ -140,13 +173,61 @@ void SpriteList_Update(const SpriteList *list)
         return;
     }
 
+#ifdef SDK_PORT
+    // Rendering is logically mutable even though the legacy API takes const.
+    SpriteList *renderList = (SpriteList *)list;
+    renderList->battleDrawFrame = BattleTiming_GetFrame();
+    renderList->battleDrawDomain = BattleTiming_GetDomain();
+#endif
+
     Sprite *sprite = list->sentinelData.next;
 
     while (sprite != &list->sentinelData) {
+#ifdef SDK_PORT
+        if (!sprite->draw) {
+            sprite->battleVisualHistory.valid = FALSE;
+        }
+#endif
         sDrawFuncs[sprite->draw](list, sprite);
+#ifdef SDK_PORT
+        if (BattleTiming_ShouldTick(sprite->battleTimingDomain)) {
+            sAnimUpdateFuncs[sprite->animate](sprite);
+        }
+#else
         sAnimUpdateFuncs[sprite->animate](sprite);
+#endif
         sprite = sprite->next;
     }
+}
+
+void SpriteList_ResetBattleDrawLists(void)
+{
+#ifdef SDK_PORT
+    sBattleDrawLists = NULL;
+#endif
+}
+
+void SpriteList_DrawSkippedBattleLists(void)
+{
+#ifdef SDK_PORT
+    if (!BattleTiming_IsActive()) {
+        return;
+    }
+    u32 frame = BattleTiming_GetFrame();
+    for (SpriteList *list = sBattleDrawLists; list != NULL; list = list->battleDrawNext) {
+        if (!list->active || list->battleDrawFrame != frame - 1
+            || BattleTiming_ShouldTick(list->battleDrawDomain)) {
+            continue;
+        }
+        // Replay only OAM/geometry submission. Never advance cell animations here.
+        for (Sprite *sprite = list->sentinelData.next; sprite != &list->sentinelData; sprite = sprite->next) {
+            if (sprite->draw) {
+                SpriteList_DrawSprite(list, sprite);
+            }
+        }
+        list->battleDrawFrame = frame;
+    }
+#endif
 }
 
 static void SpriteList_Reset(SpriteList *list)
@@ -180,6 +261,13 @@ Sprite *SpriteList_AddAffine(const AffineSpriteListTemplate *template)
     }
 
     sprite->list = template->list;
+#ifdef SDK_PORT
+    sprite->battleTimingDomain = BattleTiming_GetDomain();
+    if (sprite->battleTimingDomain == BATTLE_TIMING_NONE
+        && template->heapID == HEAP_ID_BATTLE && BattleTiming_IsActive()) {
+        sprite->battleTimingDomain = BATTLE_TIMING_UI;
+    }
+#endif
     sprite->activeAnimID = 0;
     sprite->position = template->position;
     sprite->affineScale = template->affineScale;
@@ -308,6 +396,11 @@ void Sprite_SetDrawFlag(Sprite *sprite, BOOL draw)
     GF_ASSERT(draw < 2); // This value is used as an index into an array of size 2 inside SpriteList_Update
 
     sprite->draw = draw;
+#ifdef SDK_PORT
+    if (!draw) {
+        sprite->battleVisualHistory.valid = FALSE;
+    }
+#endif
 }
 
 void Sprite_SetAnimateFlag(Sprite *sprite, BOOL animate)
@@ -781,11 +874,47 @@ static u32 GetPaletteIndexForProxy(const NNSG2dImagePaletteProxy *paletteProxy, 
         : 0;
 }
 
+void Sprite_SetBattleSmoothingEnabled(Sprite *sprite, BOOL enabled)
+{
+#ifdef SDK_PORT
+    if (sprite->battleSmoothDisabled != !enabled) {
+        sprite->battleVisualHistory.valid = FALSE;
+    }
+    sprite->battleSmoothDisabled = !enabled;
+#endif
+}
+
 static void SpriteList_DrawSprite(const SpriteList *list, Sprite *sprite)
 {
+    const Sprite *assetSprite = sprite;
+#ifdef SDK_PORT
+    // Draw a copy: even G2D renderer callbacks cannot observe interpolated game state.
+    Sprite rendered = *sprite;
+    BattleVisualPose pose = {0}, renderPose;
+    pose.position[0] = sprite->position.x;
+    pose.position[1] = sprite->position.y;
+    pose.position[2] = sprite->position.z;
+    pose.offset[0] = sprite->affineTranslation.x;
+    pose.offset[1] = sprite->affineTranslation.y;
+    pose.offset[2] = sprite->affineTranslation.z;
+    pose.scale[0] = sprite->affineScale.x;
+    pose.scale[1] = sprite->affineScale.y;
+    pose.scale[2] = sprite->affineScale.z;
+    pose.rotation[2] = sprite->affineZRotation;
+    u64 identity = sprite->activeAnimID | ((u64)sprite->type << 16)
+        | ((u64)sprite->flip << 24) | ((u64)sprite->affineOverwriteMode << 32)
+        | ((u64)sprite->vramType << 40);
+    BattleSmoothing_Sample(&sprite->battleVisualHistory, &pose, identity, sprite->draw,
+        sprite->battleTimingDomain == BATTLE_TIMING_ANIMATION && !sprite->battleSmoothDisabled, &renderPose);
+    rendered.position = (VecFx32){renderPose.position[0], renderPose.position[1], renderPose.position[2]};
+    rendered.affineTranslation = (VecFx32){renderPose.offset[0], renderPose.offset[1], renderPose.offset[2]};
+    rendered.affineScale = (VecFx32){renderPose.scale[0], renderPose.scale[1], renderPose.scale[2]};
+    rendered.affineZRotation = renderPose.rotation[2];
+    sprite = &rendered;
+#endif
     VecFx32 pos = sprite->position;
 
-    NNS_G2dSetRendererImageProxy(list->renderer, &sprite->imageProxy, &sprite->paletteProxy);
+    NNS_G2dSetRendererImageProxy(list->renderer, &assetSprite->imageProxy, &assetSprite->paletteProxy);
     NNS_G2dBeginRendering(list->renderer);
     NNS_G2dPushMtx();
 
@@ -825,10 +954,10 @@ static void SpriteList_DrawSprite(const SpriteList *list, Sprite *sprite)
     NNS_G2dSetRendererOverwritePriority(list->renderer, sprite->explicitPriority);
 
     if (sprite->type == CELL_ANIM_TYPE_CELL || sprite->type == CELL_ANIM_TYPE_VRAM_CELL) {
-        CellAnimationData *cellAnim = (CellAnimationData *)&sprite->animData;
+        CellAnimationData *cellAnim = (CellAnimationData *)&assetSprite->animData;
         NNS_G2dDrawCellAnimation(&cellAnim->anim);
     } else {
-        MultiCellAnimationData *multiCellAnim = (MultiCellAnimationData *)&sprite->animData;
+        MultiCellAnimationData *multiCellAnim = (MultiCellAnimationData *)&assetSprite->animData;
         NNS_G2dDrawMultiCellAnimation(&multiCellAnim->anim);
     }
 

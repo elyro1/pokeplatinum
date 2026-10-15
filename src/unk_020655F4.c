@@ -58,7 +58,11 @@ typedef struct JumpMovementData {
     u16 unk_0A;
     s8 dir;
     s8 duration;
+#ifdef SDK_PORT
+    u8 interpolateHeight;
+#else
     u8 unused;
+#endif
     s8 unk_0F;
 } JumpMovementData;
 
@@ -443,7 +447,7 @@ static void MovementAction_InitWalk(MapObject *mapObj, int dir, fx32 distance, s
 {
     #ifdef SDK_PORT
     SIM_Config_prj_type * myConfig = SIM_Config_prj_GetConfig();
-    if(myConfig->enable60fps && myConfig->enable60fpsSpeedFix) {
+    if(myConfig->enable60fps) {
         duration = duration << 1;
         distance = distance >> 1;
     }
@@ -654,7 +658,7 @@ static void MovementAction_InitWalkOnSpot(MapObject *mapObj, int dir, s16 durati
 {
 #ifdef SDK_PORT
     SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
-    if (myConfig->enable60fps && myConfig->enable60fpsSpeedFix) {
+    if (myConfig->enable60fps) {
         // Wall collisions retry after this action, so preserve their original cadence.
         duration *= 2;
     }
@@ -809,14 +813,26 @@ static BOOL MovementAction_WalkOnSpotFasterEast_Step0(MapObject *mapObj)
 
 static void MovementAction_InitJumpCustomSound(MapObject *mapObj, int dir, fx32 distance, s16 duration, u16 param4, s16 param5, u16 param6, u32 seqID)
 {
+#ifdef SDK_PORT
+    if (SIM_Config_prj_GetConfig()->enable60fps) {
+        duration *= 2;
+        distance /= 2;
+        param6 /= 2;
+    }
+#endif
     JumpMovementData *data = MapObject_InitMovementData(mapObj, sizeof(JumpMovementData));
 
     data->dir = dir;
     data->distance = distance;
     data->duration = duration;
+#ifndef SDK_PORT
     data->unused = param4;
+#endif
     data->unk_0F = param5;
     data->unk_08 = param6;
+#ifdef SDK_PORT
+    data->interpolateHeight = SIM_Config_prj_GetConfig()->enable60fps;
+#endif
 
     if (distance == 0) {
         MapObject_UpdateCoords(mapObj);
@@ -874,6 +890,13 @@ static BOOL MovementAction_Jump_Step1(MapObject *mapObj)
 
     v2.x = 0;
     v2.y = jumpHeightsTable[jumpHeightIndex];
+#ifdef SDK_PORT
+    // Half-frame heights keep the arc smooth without changing its trajectory.
+    if (data->interpolateHeight && jumpHeightIndex < 15) {
+        v2.y += (jumpHeightsTable[jumpHeightIndex + 1] - v2.y)
+            * (data->unk_0A % 0x100) / 0x100;
+    }
+#endif
     v2.z = 0;
 
     MapObject_SetSpriteJumpOffset(mapObj, &v2);
@@ -1272,7 +1295,7 @@ static void MovementAction_InitWalkUneven(MapObject *mapObj, int dir, s16 durati
 
 #ifdef SDK_PORT
     SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
-    data->frameMultiplier = (myConfig->enable60fps && myConfig->enable60fpsSpeedFix) ? 2 : 1;
+    data->frameMultiplier = myConfig->enable60fps ? 2 : 1;
     data->duration *= data->frameMultiplier;
 #endif
 
@@ -1507,7 +1530,7 @@ static void sub_02066824(MapObject *mapObj, const VecFx32 *param1, int param2, i
 
 #ifdef SDK_PORT
     SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
-    if (myConfig->enable60fps && myConfig->enable60fpsSpeedFix) {
+    if (myConfig->enable60fps) {
         data->duration *= 2;
         data->unk_04.x /= 2;
         data->unk_04.y /= 2;

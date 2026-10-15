@@ -47,6 +47,7 @@
 #include "sprite_util.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#include "port/battle_timing.h"
 #include "system.h"
 #include "vram_transfer.h"
 
@@ -300,7 +301,7 @@ static SysTask *BattleAnimSystem_StartTask(u8 kind, BattleAnimSystem *system, Sy
         break;
     }
 
-    return SysTask_Start(func, param, priority);
+    return SysTask_StartBattleAnimation(func, param, priority);
 }
 
 static void BattleAnimSystem_EndTask(u8 kind, BattleAnimSystem *system, SysTask *task)
@@ -536,7 +537,11 @@ BOOL BattleAnimSystem_ExecuteScript(BattleAnimSystem *system)
         return FALSE;
     }
 
-    system->executeAnimScriptFunc(system);
+    if (BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)) {
+        BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_ANIMATION);
+        system->executeAnimScriptFunc(system);
+        BattleTiming_SetDomain(previous);
+    }
     return TRUE;
 }
 
@@ -686,7 +691,7 @@ static BattleAnimSoundContext *BattleAnimSystem_CreateSoundContext(BattleAnimSys
 static void BattleAnimSystem_StartSoundTaskInternal(BattleAnimSystem *system, BattleAnimSoundContext *ctx)
 {
     ctx->system = system;
-    SysTask_Start(BattleAnimSound_Task, ctx, 1100);
+    SysTask_StartBattleAnimation(BattleAnimSound_Task, ctx, 1100);
 }
 
 static void BattleAnimSound_Task(SysTask *task, void *param)
@@ -1741,7 +1746,7 @@ static void BattleAnimScriptCmd_LoadPokemonSpriteIntoBg(BattleAnimSystem *system
         system->bgTrackingTask->data.frameCount = 0;
         system->bgTrackingTask->data.interval = 0;
 
-        system->bgTrackingTask->task = SysTask_Start(BattleAnimSystem_BgTrackingTaskFunc, system->bgTrackingTask, 0x1001);
+        system->bgTrackingTask->task = SysTask_StartBattleAnimation(BattleAnimSystem_BgTrackingTaskFunc, system->bgTrackingTask, 0x1001);
     }
 
     s16 x = PokemonSprite_GetAttribute(BattleAnimSystem_GetBattlerSprite(system, battler), MON_SPRITE_X_CENTER);
@@ -1948,7 +1953,7 @@ static void BattleAnimScriptCmd_AddPokemonSprite(BattleAnimSystem *system)
         system->spriteTrackingTasks[spriteID]->data.sprite = BattleAnimSystem_GetBattlerSprite(system, battler);
         system->spriteTrackingTasks[spriteID]->data.frameCount = 0;
         system->spriteTrackingTasks[spriteID]->data.interval = 0;
-        system->spriteTrackingTasks[spriteID]->task = SysTask_Start(BattleAnimSystem_SpriteTrackingTaskFunc, system->spriteTrackingTasks[spriteID], 0x1001);
+        system->spriteTrackingTasks[spriteID]->task = SysTask_StartBattleAnimation(BattleAnimSystem_SpriteTrackingTaskFunc, system->spriteTrackingTasks[spriteID], 0x1001);
     }
 }
 
@@ -2088,7 +2093,7 @@ static void BattleAnimScriptCmd_StartPokemonSpriteDrawTask(BattleAnimSystem *sys
             break;
         }
 
-        SysTask_Start(BattleAnimPokemonSprite_DrawTask, &system->pokemonSpriteDrawContexts[slotIdx], 0x1000);
+        SysTask_StartUnscaled(BattleAnimPokemonSprite_DrawTask, &system->pokemonSpriteDrawContexts[slotIdx], 0x1000);
     }
 }
 
@@ -2695,7 +2700,7 @@ static BOOL BattleBgSwitch_AnimMoveStart(BattleBgSwitch *bgSwitch)
     bgSwitch->battleAnimSystem->bgAnim = bgAnim;
     bgSwitch->bgMoveAnimActive = TRUE;
 
-    SysTask_Start(BattleBgAnimTask_Move, bgAnim, 0x1001);
+    SysTask_StartBattleAnimation(BattleBgAnimTask_Move, bgAnim, 0x1001);
 
     return FALSE;
 }
@@ -2728,7 +2733,7 @@ static BOOL BattleBgSwitch_AnimStartWave(BattleBgSwitch *bgSwitch)
         }
     }
 
-    SysTask_Start(BattleBgAnim_WaveTask, battleBgAnim, 0x1000);
+    SysTask_StartBattleAnimation(BattleBgAnim_WaveTask, battleBgAnim, 0x1000);
     return 0;
 }
 
@@ -2848,7 +2853,7 @@ static void BattleAnimScriptCmd_SwitchBg(BattleAnimSystem *system)
     bgSwitch->mode = BATTLE_BG_SWITCH_MODE(param);
     bgSwitch->flags = BATTLE_BG_SWITCH_FLAGS(param);
 
-    SysTask_Start(BattleBgSwitchTask_Start, bgSwitch, 1100);
+    SysTask_StartBattleAnimation(BattleBgSwitchTask_Start, bgSwitch, 1100);
 }
 
 static void BattleAnimScriptCmd_SetBgSwitchVar(BattleAnimSystem *system)
@@ -2896,7 +2901,7 @@ static void BattleAnimScriptCmd_RestoreBg(BattleAnimSystem *system)
     bgSwitch->mode = BATTLE_BG_SWITCH_MODE(param) + BATTLE_BG_SWITCH_MODE_COUNT;
     bgSwitch->flags = BATTLE_BG_SWITCH_FLAGS(param);
 
-    SysTask_Start(BattleBgSwitchTask_Start, bgSwitch, 1100);
+    SysTask_StartBattleAnimation(BattleBgSwitchTask_Start, bgSwitch, 1100);
 }
 
 static void BattleAnimScriptCmd_WaitForPartialBgSwitch(BattleAnimSystem *system)
@@ -2979,7 +2984,7 @@ static void BattleAnimScriptCmd_SwitchBgEx(BattleAnimSystem *system)
         }
     }
 
-    SysTask_Start(BattleBgSwitchTask_Start, bgSwitch, 1100);
+    SysTask_StartBattleAnimation(BattleBgSwitchTask_Start, bgSwitch, 1100);
 }
 
 static void BattleAnimScriptCmd_Nop4(BattleAnimSystem *)

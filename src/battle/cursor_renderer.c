@@ -88,11 +88,11 @@ static CursorRenderer *CursorRenderer_NewForScreen(SpriteSystem *spriteSys, Spri
     MI_CpuClear8(cursorRenderer, sizeof(CursorRenderer));
 
     for (i = 0; i < 5; i++) {
-        cursorRenderer->sprites[i] = SpriteSystem_NewSprite(spriteSys, spriteMan, &spriteTemplate);
+        cursorRenderer->sprites[i] = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &spriteTemplate);
         ManagedSprite_SetDrawFlag(cursorRenderer->sprites[i], 0);
     }
 
-    cursorRenderer->animTask = SysTask_Start(SysTask_AnimateCursorSprites, cursorRenderer, 40000);
+    cursorRenderer->animTask = SysTask_StartBattleUI(SysTask_AnimateCursorSprites, cursorRenderer, 40000);
     return cursorRenderer;
 }
 

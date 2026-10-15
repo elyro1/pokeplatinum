@@ -55,6 +55,7 @@
 #include "pokemon.h"
 #include "pokemon_icon.h"
 #include "pokemon_sprite.h"
+#include "port/battle_timing.h"
 #include "render_window.h"
 #include "screen_fade.h"
 #include "sound_chatot.h"
@@ -1841,7 +1842,9 @@ static BOOL BtlCmd_WaitButtonABTime(BattleSystem *battleSys, BattleContext *batt
     // Go back through this command until the specified number of frames have elapsed
     if (frames > battleCtx->waitCounter) {
         BattleScript_Iter(battleCtx, -2); // jump back to the instruction
-        battleCtx->waitCounter += inc;
+        if (BattleTiming_ShouldTick(BATTLE_TIMING_UI)) {
+            battleCtx->waitCounter += inc;
+        }
     } else {
         battleCtx->waitCounter = 0;
     }
@@ -9372,7 +9375,9 @@ static BOOL BtlCmd_WaitTime(BattleSystem *battleSys, BattleContext *battleCtx)
 
     if (wait > battleCtx->waitCounter) {
         BattleScript_Iter(battleCtx, -2);
-        battleCtx->waitCounter += inc;
+        if (BattleTiming_ShouldTick(BATTLE_TIMING_UI)) {
+            battleCtx->waitCounter += inc;
+        }
     } else {
         battleCtx->waitCounter = 0;
     }

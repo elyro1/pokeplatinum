@@ -6,6 +6,7 @@
 #include "constants/heap.h"
 
 #include "nnsys/g2d/g2d_Image.h"
+#include "port/battle_timing.h"
 
 #include "cell_transfer.h"
 #include "char_transfer.h"
@@ -472,6 +473,14 @@ BOOL SpriteSystem_LoadAnimResObj(SpriteSystem *spriteSys, SpriteManager *spriteM
 BOOL SpriteSystem_LoadAnimResObjFromOpenNarc(SpriteSystem *spriteSys, SpriteManager *spriteMan, NARC *narc, int memberIdx, BOOL compressed, int resourceID)
 {
     return LoadResObjFromNarcInternal(spriteSys, spriteMan, narc, memberIdx, compressed, SPRITE_RESOURCE_ANIM, resourceID);
+}
+
+ManagedSprite *SpriteSystem_NewBattleUISprite(SpriteSystem *spriteSys, SpriteManager *spriteMan, const SpriteTemplate *template)
+{
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_UI);
+    ManagedSprite *sprite = SpriteSystem_NewSprite(spriteSys, spriteMan, template);
+    BattleTiming_SetDomain(previous);
+    return sprite;
 }
 
 ManagedSprite *SpriteSystem_NewSprite(SpriteSystem *spriteSys, SpriteManager *spriteMan, const SpriteTemplate *template)

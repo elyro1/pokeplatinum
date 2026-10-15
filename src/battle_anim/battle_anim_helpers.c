@@ -765,7 +765,7 @@ void AlphaFadeContext_Init(AlphaFadeContext *ctx, s16 startEv1, s16 endEv1, s16 
     PosLerpContext_Init(&ctx->lerp, startEv1, endEv1, startEv2, endEv2, steps);
 
     ctx->done = FALSE;
-    SysTask_Start(AlphaFadeContext_Update, ctx, 0);
+    SysTask_StartBattleAnimation(AlphaFadeContext_Update, ctx, 0);
 }
 
 BOOL AlphaFadeContext_IsDone(const AlphaFadeContext *ctx)
@@ -1118,7 +1118,7 @@ PaletteFadeContext *PaletteFadeContext_New(PaletteData *paletteData, enum HeapID
     }
 
     ctx->active = TRUE;
-    ctx->task = SysTask_Start(PaletteFadeContext_FadeTask, ctx, priority);
+    ctx->task = SysTask_StartBattleAnimation(PaletteFadeContext_FadeTask, ctx, priority);
 
     return ctx;
 }

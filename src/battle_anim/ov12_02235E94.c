@@ -30,6 +30,7 @@
 #include "sprite_util.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
+#include "port/battle_timing.h"
 
 #include "res/graphics/battle/sprites.naix"
 
@@ -563,7 +564,7 @@ void ov12_02236320(BallCapsuleSealEffect *ballCapSealEff)
         {
             SysTask *v5;
 
-            v5 = SysTask_Start(ov12_022360A0, ballCapSealEff, 1000);
+            v5 = SysTask_StartBattleAnimation(ov12_022360A0, ballCapSealEff, 1000);
             ov12_022360A0(v5, ballCapSealEff);
         }
     }
@@ -585,7 +586,7 @@ void ov12_02236384(BallCapsuleSealEffect *ballCapSealEff, SPLEmitterCallback par
     BattleAnimSystem_SetDefaultAlphaBlending();
     ov12_0223646C(ballCapSealEff, param1);
 
-    ballCapSealEff->task = SysTask_Start(ov12_022363CC, ballCapSealEff, 1000);
+    ballCapSealEff->task = SysTask_StartBattleAnimation(ov12_022363CC, ballCapSealEff, 1000);
 }
 
 void ov12_022363B4(BallCapsuleSealEffect *ballCapSealEff)
@@ -683,7 +684,7 @@ static void ov12_0223646C(BallCapsuleSealEffect *ballCapSealEff, SPLEmitterCallb
             GF_ASSERT(v4->unk_14 != NULL);
             v4->unk_04 = ov12_02237EA0(v4->unk_14);
 
-            SysTask_Start(ov12_02236430, v4, 1001);
+            SysTask_StartBattleAnimation(ov12_02236430, v4, 1001);
         }
     }
 }
@@ -2017,12 +2018,14 @@ BallRotation *ov12_02237728(BallThrow *param0)
     }
 
     ov12_02237C54(v0);
+    BattleTimingDomain previous = BattleTiming_SetDomain(BATTLE_TIMING_ANIMATION);
     ov12_02237D8C(v0);
+    BattleTiming_SetDomain(previous);
     ov12_022378A0(v0);
 
     v0->unk_1C = 1;
     v0->unk_28 = 0;
-    v0->unk_CC = SysTask_Start(ov12_022376D0, v0, 1000);
+    v0->unk_CC = SysTask_StartBattleAnimation(ov12_022376D0, v0, 1000);
 
     return v0;
 }

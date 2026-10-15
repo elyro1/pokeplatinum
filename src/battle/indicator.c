@@ -67,11 +67,11 @@ Indicator *Indicator_New(SpriteSystem *spriteSys, SpriteManager *spriteMan, enum
     indicator = Heap_Alloc(heapID, sizeof(Indicator));
     MI_CpuClear8(indicator, sizeof(Indicator));
 
-    indicator->sprite = SpriteSystem_NewSprite(spriteSys, spriteMan, &spriteTemplate);
+    indicator->sprite = SpriteSystem_NewBattleUISprite(spriteSys, spriteMan, &spriteTemplate);
     ManagedSprite_SetDrawFlag(indicator->sprite, 0);
 
     indicator->subscreenOffset = (192 << FX32_SHIFT);
-    indicator->animTask = SysTask_Start(SysTask_AnimateIndicator, indicator, 999);
+    indicator->animTask = SysTask_StartBattleUI(SysTask_AnimateIndicator, indicator, 999);
 
     return indicator;
 }

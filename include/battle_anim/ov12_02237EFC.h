@@ -15,5 +15,6 @@ void ov12_02237F98(UnkStruct_ov12_02237F98 *param0);
 UnkStruct_ov12_02238004 *ov12_02237FC8(enum HeapID heapID, ParticleEffectTemplate *param1);
 void ov12_02238004(UnkStruct_ov12_02238004 *param0);
 BOOL ov12_0223802C(UnkStruct_ov12_02238004 *param0);
+void BattleParticleEffect_StartUnscaled(UnkStruct_ov12_02238004 *param0);
 
 #endif // POKEPLATINUM_OV12_02237EFC_H

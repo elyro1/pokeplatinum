@@ -5,8 +5,18 @@
 
 #define SIM_CONFIG_PRJ_FILE_PATH "./sim_config_prj.ini"
 
-static int IniHandler(void* user, const char* section, const char* name,
-                   const char* value);
+typedef struct {
+    SIM_Config_prj_type *config;
+    BOOL hasPreset;
+    BOOL hasLegacyBattleSettings;
+    BOOL legacyAnimation;
+    BOOL hasUiSetting;
+    BOOL legacySmooth;
+} ConfigLoadContext;
+
+static const char *sBattlePacingNames[BATTLE_PACING_COUNT] = { "Original", "Smooth", "Quick" };
+
+static int IniHandler(void *user, const char *section, const char *name, const char *value);
 static const char * BoolToString(BOOL arg);
 static BOOL StringToBool(const char * str);
 
@@ -17,14 +27,36 @@ static int IniHandler(void* user, const char* section, const char* name,
 {
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
 
-    SIM_Config_prj_type * config = (SIM_Config_prj_type *)user;
+    ConfigLoadContext *context = user;
+    SIM_Config_prj_type *config = context->config;
 
     // General section
     if(MATCH("General", "60Fps")) {
         config->enable60fps = StringToBool(value);
     }
-    if(MATCH("General", "60FpsSpeedFix")) {
-        config->enable60fpsSpeedFix = StringToBool(value);
+    // Field speed correction is automatic; battle animation and UI timing are independent.
+    if (MATCH("General", "BattlePacing")) {
+        context->hasPreset = TRUE;
+        config->battlePacing = BATTLE_PACING_SMOOTH;
+        for (int i = 0; i < BATTLE_PACING_COUNT; i++) {
+            if (strcmp(value, sBattlePacingNames[i]) == 0) {
+                config->battlePacing = (BattlePacing)i;
+                break;
+            }
+        }
+    }
+    if (MATCH("General", "BattleAnimationSpeedFix")) {
+        context->hasLegacyBattleSettings = TRUE;
+        context->legacyAnimation = StringToBool(value);
+    }
+    if (MATCH("General", "SmoothBattleAnimations")) {
+        context->hasLegacyBattleSettings = TRUE;
+        context->legacySmooth = StringToBool(value);
+    }
+    if (MATCH("General", "BattleUiSpeedFix")) {
+        context->hasLegacyBattleSettings = TRUE;
+        context->hasUiSetting = TRUE;
+        config->battleUiSpeedFix = StringToBool(value);
     }
     if(MATCH("General", "EnableAsserts")) {
         config->enableAsserts = StringToBool(value);
@@ -42,6 +74,7 @@ static int IniHandler(void* user, const char* section, const char* name,
     if(MATCH("Cheats", "RunFromTrainerBattles")) {
         config->runFromTrainerBattles = StringToBool(value);
     }
+    return 1;
 }
 
 static const char * BoolToString(BOOL arg)
@@ -70,7 +103,8 @@ static BOOL StringToBool(const char * str)
 void SIM_Config_prj_LoadDefaults(SIM_Config_prj_type * aConfig)
 {
   aConfig->enable60fps = TRUE;
-  aConfig->enable60fpsSpeedFix = TRUE;
+  aConfig->battlePacing = BATTLE_PACING_SMOOTH;
+  aConfig->battleUiSpeedFix = FALSE;
   aConfig->enableAsserts = FALSE;
   aConfig->breakDebuggerOnGfAssert = FALSE;
 
@@ -81,7 +115,21 @@ void SIM_Config_prj_LoadDefaults(SIM_Config_prj_type * aConfig)
 // Loads the configuration file. If it does not exist, return false
 BOOL SIM_Config_prj_LoadConfigFile(SIM_Config_prj_type * aConfig)
 {
-    return (ini_parse(SIM_CONFIG_PRJ_FILE_PATH, IniHandler, aConfig) >= 0);
+    ConfigLoadContext context = {
+        .config = aConfig,
+        .legacyAnimation = TRUE,
+    };
+    if (ini_parse(SIM_CONFIG_PRJ_FILE_PATH, IniHandler, &context) < 0) {
+        return FALSE;
+    }
+    if (!context.hasPreset && context.hasLegacyBattleSettings) {
+        aConfig->battlePacing = !context.legacyAnimation ? BATTLE_PACING_QUICK
+            : (context.legacySmooth ? BATTLE_PACING_SMOOTH : BATTLE_PACING_ORIGINAL);
+    }
+    if (!context.hasUiSetting) {
+        aConfig->battleUiSpeedFix = FALSE;
+    }
+    return TRUE;
 }
 
 // Save a SIM_Config_prj_type to the configuration file
@@ -91,7 +139,8 @@ void SIM_Config_prj_SaveConfigFile(SIM_Config_prj_type * aConfig)
     
     fprintf(configFile, "[General]\n");
     fprintf(configFile, "60Fps=%s\n", BoolToString(aConfig->enable60fps));
-    fprintf(configFile, "60FpsSpeedFix=%s\n", BoolToString(aConfig->enable60fpsSpeedFix));
+    fprintf(configFile, "BattlePacing=%s\n", sBattlePacingNames[aConfig->battlePacing]);
+    fprintf(configFile, "BattleUiSpeedFix=%s\n", BoolToString(aConfig->battleUiSpeedFix));
     fprintf(configFile, "EnableAsserts=%s\n", BoolToString(aConfig->enableAsserts));
     fprintf(configFile, "BreakDebuggerOnAssert=%s\n", BoolToString(aConfig->breakDebuggerOnGfAssert));
     fprintf(configFile, "\n");

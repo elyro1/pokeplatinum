@@ -155,7 +155,7 @@ void PokemonAnimManager_InitAnim(PokemonAnimManager *monAnimMan, PokemonSprite *
     monAnimMan->anims[index].waitForTransform = FALSE;
     monAnimMan->anims[index].yNormalization = Y_NORMALIZATION_OFF;
     monAnimMan->anims[index].fadeActive = FALSE;
-    monAnimMan->anims[index].task = SysTask_Start(Task_RunPokemonAnim, &monAnimMan->anims[index], 0);
+    monAnimMan->anims[index].task = (monAnimMan->heapID == HEAP_ID_BATTLE ? SysTask_StartBattleAnimation : SysTask_Start)(Task_RunPokemonAnim, &monAnimMan->anims[index], 0);
     monAnimMan->anims[index].startDelay = startDelay;
     monAnimMan->anims[index].originalX = PokemonSprite_GetAttribute(monSprite, MON_SPRITE_X_CENTER);
     monAnimMan->anims[index].originalY = PokemonSprite_GetAttribute(monSprite, MON_SPRITE_Y_CENTER);
