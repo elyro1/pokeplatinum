@@ -1,0 +1,6 @@
+# original-sha256: ed5e5b9c55c8dc31ca76c81d001972baf73a7c356b560e7a95c43de04ab09d40
+--- res/text/underground_common.json
++++ retail/underground_common.json
+@@ -455 +455 @@
+-      "en_US": "Press A repeatedly to get free!"
++      "en_US": "Blow the Trap away!"

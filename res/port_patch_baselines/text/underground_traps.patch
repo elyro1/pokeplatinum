@@ -1,0 +1,15 @@
+# original-sha256: 9a308ffe04b328d7e0cc01454beabe7626dbeb513bccf194d084e4f5ab5a40ff
+--- res/text/underground_traps.json
++++ retail/underground_traps.json
+@@ -337 +337 @@
+-        "Press A repeatedly to get free."
++        "Blow the leaves away to get free."
+@@ -344 +344 @@
+-        "Press A repeatedly to get free."
++        "Blow the flowers away to get free."
+@@ -351 +351 @@
+-        "Press A repeatedly to get free."
++        "Blow the embers away to get free."
+@@ -358 +358 @@
+-        "Press A repeatedly to get free."
++        "Blow the flames away to get free."
