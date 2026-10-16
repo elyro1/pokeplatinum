@@ -72,6 +72,15 @@ static PMBackLightSwitch sSavedBacklightState;
 BOOL gIgnoreCartridgeForWake;
 extern const ApplicationManagerTemplate gOpeningCutsceneAppTemplate;
 
+#ifdef SDK_PORT
+static BOOL sForce30Hz;
+
+void SetForce30Hz(BOOL force)
+{
+    sForce30Hz = force;
+}
+#endif
+
 void NitroMain(void)
 {
 #ifdef SDK_PORT
@@ -140,6 +149,7 @@ void NitroMain(void)
 
 #ifdef SDK_PORT
     SIM_Config_prj_type * myConfig = SIM_Config_prj_GetConfig();
+    sForce30Hz = FALSE;
 #endif
 
     while (TRUE) {
@@ -160,7 +170,7 @@ void NitroMain(void)
 
             if (!gSystem.frameCounter
 #ifdef SDK_PORT
-             && myConfig && !(myConfig->enable60fps)
+             && myConfig && (!myConfig->enable60fps || sForce30Hz)
 #endif
             ) {
                 OS_WaitIrq(TRUE, OS_IE_V_BLANK);

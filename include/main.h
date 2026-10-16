@@ -21,4 +21,15 @@ void EnqueueApplication(FSOverlayID overlayID, const ApplicationManagerTemplate 
 void InitRNG(void);
 void HandleConsoleFold(void);
 
+#ifdef SDK_PORT
+// Keeps the main loop at the original 30 Hz even when 60 FPS is enabled, for
+// sequences whose frame counts are timed against real-time audio.
+void SetForce30Hz(BOOL force);
+#else
+static inline void SetForce30Hz(BOOL force)
+{
+    (void)force;
+}
+#endif
+
 #endif // POKEPLATINUM_MAIN_H

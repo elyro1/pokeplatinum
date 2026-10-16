@@ -55,4 +55,8 @@
 #define CLOSING_FRAME_FADE_IN_WHITE 2205
 #define CLOSING_FRAME_FADE_OUT      2420
 
+// Single screen: hard cut from the boy to the girl while both are running. The
+// other cuts happen on scene transitions where the screens are faded out.
+#define CUT_FRAME_RUN_GIRL 1715
+
 #endif // POKEPLATINUM_GAME_OPENING_OPENING_TIMELINE_H

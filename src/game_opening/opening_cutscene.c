@@ -44,6 +44,20 @@ FS_EXTERN_OVERLAY(game_opening);
 
 #define OFFSCREEN_BG_OFFSET 256
 
+// Single screen layout of the Game Freak logo: the sub screen's "GAME FREAK
+// PRESENTS" line is shown below the gem, which moves up to keep both centered.
+#define LOGO_GEM_SHIFT_Y   18
+#define LOGO_TEXT_SHIFT_Y  -39
+#define LOGO_TEXT_PALETTE  2
+#define LOGO_SOURCE_PALETTE 1
+
+// The intro plays on the top screen only, which presents what the original
+// intro showed on the current shot's screen.
+enum OpeningShot {
+    SHOT_TOP_SCREEN = 0,
+    SHOT_BOTTOM_SCREEN,
+};
+
 enum BgLayout {
     BG_LAYOUT_LANDSCAPE = 0,
     BG_LAYOUT_SCROLLING,
@@ -74,6 +88,7 @@ typedef struct {
     SysTask *fadeTask;
     LogoSparkles *sparkles;
     u8 *canSkip;
+    u16 textPalette[16];
 } LogoScene;
 
 typedef struct {
@@ -133,6 +148,7 @@ typedef struct {
     MainScene mainScene;
     ClosingScene closingScene;
     u8 canSkip;
+    u8 shot;
 } OpeningCutscene;
 
 static BOOL OpeningCutscene_Init(ApplicationManager *appMan, int *state);
@@ -228,6 +244,25 @@ static const GXRgb sLightColors[4] = {
     GX_RGB(2, 2, 12),
     GX_RGB(31, 31, 31),
 };
+
+// Replaces GXLayers_SwapDisplay for the cutscene: the engine that the original
+// intro showed on the current shot's screen is displayed on the top screen.
+static void OpeningCutscene_SelectDisplay(const OpeningCutscene *cutscene)
+{
+    BOOL mainOnTop = gSystem.whichScreenIs3D == DS_SCREEN_MAIN;
+
+    if (cutscene->shot == SHOT_BOTTOM_SCREEN) {
+        mainOnTop = !mainOnTop;
+    }
+
+    GX_SetDispSelect(mainOnTop ? GX_DISP_SELECT_MAIN_SUB : GX_DISP_SELECT_SUB_MAIN);
+}
+
+static void OpeningCutscene_Cut(OpeningCutscene *cutscene, enum OpeningShot shot)
+{
+    cutscene->shot = shot;
+    OpeningCutscene_SelectDisplay(cutscene);
+}
 
 static void OpeningCutscene_SetLogoVRAMBanks(void)
 {
@@ -830,7 +865,7 @@ static void OpeningCutscene_MainVBlank(void *param)
     if (scene->swapScreensPending == TRUE) {
         gSystem.whichScreenIs3D = DS_SCREEN_SUB;
 
-        GXLayers_SwapDisplay();
+        OpeningCutscene_SelectDisplay(cutscene);
         GXLayers_EngineBToggleLayers(GX_PLANEMASK_BG0, 1);
         GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG2, 0);
         GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG3, 0);
@@ -905,6 +940,8 @@ static BOOL OpeningCutscene_Init(ApplicationManager *appMan, int *state)
     GXLayers_DisableEngineALayers();
     GXLayers_DisableEngineBLayers();
     SetAutorepeat(4, 8);
+    // The timeline is in 30 Hz frames and has to stay in step with the music.
+    SetForce30Hz(TRUE);
     Heap_Create(HEAP_ID_APPLICATION, HEAP_ID_76, 0xa0000);
 
     cutscene = ApplicationManager_NewData(appMan, sizeof(OpeningCutscene), HEAP_ID_76);
@@ -915,7 +952,7 @@ static BOOL OpeningCutscene_Init(ApplicationManager *appMan, int *state)
     cutscene->canSkip = FALSE;
 
     gSystem.whichScreenIs3D = DS_SCREEN_MAIN;
-    GXLayers_SwapDisplay();
+    OpeningCutscene_SelectDisplay(cutscene);
     cutscene->savedRngSeed = LCRNG_GetSeed();
 
     LCRNG_SetSeed(0);
@@ -983,6 +1020,10 @@ static BOOL OpeningCutscene_Exit(ApplicationManager *appMan, int *state)
     LCRNG_SetSeed(cutscene->savedRngSeed);
     ApplicationManager_FreeData(appMan);
     Heap_Destroy(HEAP_ID_76);
+    // The title screen's intro continues the opening and releases the lock.
+    SetForce30Hz(gSystem.showTitleScreenIntro);
+    // Undo any cut, which may still be presenting the bottom screen's engine.
+    GXLayers_SwapDisplay();
     EnqueueApplication(FS_OVERLAY_ID(game_opening), &gTitleScreenAppTemplate);
 
     return TRUE;
@@ -1037,6 +1078,7 @@ static void LogoScene_LoadGraphics(LogoScene *scene)
     Graphics_LoadTilesToBgLayer(NARC_INDEX_DEMO__TITLE__OP_DEMO, 16, scene->bgConfig, BG_LAYER_SUB_2, 0, 0, FALSE, HEAP_ID_76);
     Graphics_LoadTilemapToBgLayer(NARC_INDEX_DEMO__TITLE__OP_DEMO, 17, scene->bgConfig, BG_LAYER_MAIN_2, 0, 0, FALSE, HEAP_ID_76);
     Graphics_LoadTilemapToBgLayer(NARC_INDEX_DEMO__TITLE__OP_DEMO, 18, scene->bgConfig, BG_LAYER_SUB_2, 0, 0, FALSE, HEAP_ID_76);
+    Bg_SetOffset(scene->bgConfig, BG_LAYER_MAIN_2, BG_OFFSET_UPDATE_SET_Y, LOGO_GEM_SHIFT_Y);
 
     Graphics_LoadPalette(NARC_INDEX_DEMO__TITLE__OP_DEMO, 15, PAL_LOAD_MAIN_BG, 0, 0, HEAP_ID_76);
     Graphics_LoadPalette(NARC_INDEX_DEMO__TITLE__OP_DEMO, 15, PAL_LOAD_SUB_BG, 0, 0, HEAP_ID_76);
@@ -1064,6 +1106,49 @@ static void LogoScene_LoadGraphics(LogoScene *scene)
     ResetScreenMasterBrightness(DS_SCREEN_MAIN);
     ResetScreenMasterBrightness(DS_SCREEN_SUB);
     GXLayers_TurnBothDispOn();
+}
+
+// The text fades in through its own palette, as the main screen's blend is
+// still needed to keep the gem additively blended over the background.
+static void LogoScene_SetTextFade(LogoScene *scene, int level)
+{
+    int i;
+    u16 color;
+    u16 palette[16];
+
+    for (i = 0; i < 16; i++) {
+        color = scene->textPalette[i];
+        palette[i] = GX_RGB(
+            (((color & GX_RGB_R_MASK) >> GX_RGB_R_SHIFT) * level) / 16,
+            (((color & GX_RGB_G_MASK) >> GX_RGB_G_SHIFT) * level) / 16,
+            (((color & GX_RGB_B_MASK) >> GX_RGB_B_SHIFT) * level) / 16);
+    }
+
+    MI_CpuCopy16(palette, (u16 *)HW_BG_PLTT + 16 * LOGO_TEXT_PALETTE, sizeof(palette));
+}
+
+// Shows the sub screen's "GAME FREAK PRESENTS" line on the main screen, on the
+// layer the copyright notice used, sharing the gem's tiles.
+static void LogoScene_LoadTextOnMainScreen(LogoScene *scene)
+{
+    int i;
+    u16 *tilemap;
+
+    Bg_ClearTilemap(scene->bgConfig, BG_LAYER_MAIN_1);
+    Bg_SetControlParam(scene->bgConfig, BG_LAYER_MAIN_1, BG_CONTROL_PARAM_CHAR_BASE, GX_BG_CHARBASE_0x08000);
+    Graphics_LoadTilemapToBgLayer(NARC_INDEX_DEMO__TITLE__OP_DEMO, 18, scene->bgConfig, BG_LAYER_MAIN_1, 0, 0, FALSE, HEAP_ID_76);
+
+    tilemap = Bg_GetTilemapBuffer(scene->bgConfig, BG_LAYER_MAIN_1);
+
+    for (i = 0; i < 32 * 32; i++) {
+        tilemap[i] = (tilemap[i] & 0xfff) | (LOGO_TEXT_PALETTE << 12);
+    }
+
+    Bg_CopyTilemapBufferToVRAM(scene->bgConfig, BG_LAYER_MAIN_1);
+    Bg_SetOffset(scene->bgConfig, BG_LAYER_MAIN_1, BG_OFFSET_UPDATE_SET_Y, LOGO_TEXT_SHIFT_Y);
+
+    MI_CpuCopy16((u16 *)HW_DB_BG_PLTT + 16 * LOGO_SOURCE_PALETTE, scene->textPalette, sizeof(scene->textPalette));
+    LogoScene_SetTextFade(scene, 0);
 }
 
 static BOOL LogoScene_Update(LogoScene *scene, const int frame)
@@ -1094,11 +1179,12 @@ static BOOL LogoScene_Update(LogoScene *scene, const int frame)
         if ((scene->fadeDone) && (frame >= LOGO_FRAME_SHOW_SECOND)) {
             GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG1, 0);
             GXLayers_EngineBToggleLayers(GX_PLANEMASK_BG1, 0);
+            LogoScene_LoadTextOnMainScreen(scene);
 
-            G2_SetBlendAlpha(GX_BLEND_PLANEMASK_BG2, GX_BLEND_PLANEMASK_BG3, 0, 16);
+            G2_SetBlendAlpha(GX_BLEND_PLANEMASK_BG1 | GX_BLEND_PLANEMASK_BG2, GX_BLEND_PLANEMASK_BG3, 0, 16);
             G2S_SetBlendAlpha(GX_BLEND_PLANEMASK_BG2, GX_BLEND_PLANEMASK_BG3, 0, 16);
 
-            GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG2, 1);
+            GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG1 | GX_PLANEMASK_BG2, 1);
             GXLayers_EngineBToggleLayers(GX_PLANEMASK_BG2, 1);
 
             scene->fadeTimer = 0;
@@ -1217,7 +1303,7 @@ static void LogoScene_FadeInSecondMainTask(SysTask *task, void *param)
         scene->fadeDone = TRUE;
     }
 
-    G2_SetBlendAlpha(GX_BLEND_PLANEMASK_BG2, GX_BLEND_PLANEMASK_BG3, scene->fadeLevel, 16);
+    G2_SetBlendAlpha(GX_BLEND_PLANEMASK_BG1 | GX_BLEND_PLANEMASK_BG2, GX_BLEND_PLANEMASK_BG3, scene->fadeLevel, 16);
 }
 
 static void LogoScene_FadeInSecondSubTask(SysTask *task, void *param)
@@ -1238,6 +1324,7 @@ static void LogoScene_FadeInSecondSubTask(SysTask *task, void *param)
     }
 
     G2S_SetBlendAlpha(GX_BLEND_PLANEMASK_BG2, GX_BLEND_PLANEMASK_BG3, scene->fadeLevel, 16);
+    LogoScene_SetTextFade(scene, scene->fadeLevel);
 }
 
 static BOOL OpeningCutscene_RunMainScene(OpeningCutscene *cutscene)
@@ -1311,7 +1398,7 @@ static void OpeningCutscene_SetUpMainScene(OpeningCutscene *cutscene)
     cutscene->mainScene.bgConfig = cutscene->bgConfig;
 
     gSystem.whichScreenIs3D = DS_SCREEN_MAIN;
-    GXLayers_SwapDisplay();
+    OpeningCutscene_SelectDisplay(cutscene);
 
     for (i = 0; i < 4; i++) {
         NNS_G3dGlbLightVector(i, sLightVectors[i].x, sLightVectors[i].y, sLightVectors[i].z);
@@ -1838,6 +1925,7 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
         }
 
         if (frame >= MAIN_FRAME_START_LANDSCAPE) {
+            OpeningCutscene_Cut(cutscene, SHOT_BOTTOM_SCREEN);
             GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG0, 1);
             StartScreenFade(FADE_MAIN_ONLY, FADE_TYPE_BRIGHTNESS_IN, FADE_TYPE_BRIGHTNESS_IN, COLOR_WHITE, 18, 1, HEAP_ID_76);
             scene->twinkleInterval = 16;
@@ -1866,6 +1954,7 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
         OpeningSprites_UpdateSlideFromRight(scene->sprites, frame);
 
         if (IsScreenFadeDone() && (frame >= LANDSCAPE_FRAME_END)) {
+            OpeningCutscene_Cut(cutscene, SHOT_TOP_SCREEN);
             Bg_ToggleLayer(BG_LAYER_SUB_0, FALSE);
             OpeningSprites_HideTwinkleSprites(scene->twinkles);
             scene->hideTwinkles = TRUE;
@@ -1914,6 +2003,10 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
         // Scrolling backgrounds
         MainScene_UpdateScrollingBgs(scene);
         OpeningSprites_SpreadLeftRight(scene->sprites);
+
+        if (frame == CUT_FRAME_RUN_GIRL) {
+            OpeningCutscene_Cut(cutscene, SHOT_BOTTOM_SCREEN);
+        }
 
         if (IsScreenFadeDone()) {
             if (frame >= SCROLL_FRAME_END) {
@@ -1992,7 +2085,7 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
             OpeningSprites_SetBandPalettes(scene->sprites, FALSE);
             MainScene_LoadStarterBgs(cutscene, scene);
             gSystem.whichScreenIs3D = DS_SCREEN_MAIN;
-            GXLayers_SwapDisplay();
+            OpeningCutscene_Cut(cutscene, SHOT_TOP_SCREEN);
             MainScene_ArrangeLayers(scene);
             scene->disableWindowsPending = TRUE;
             (*subState)++;
@@ -2039,7 +2132,7 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
 
         if (IsScreenFadeDone()) {
             gSystem.whichScreenIs3D = DS_SCREEN_SUB;
-            GXLayers_SwapDisplay();
+            OpeningCutscene_Cut(cutscene, SHOT_BOTTOM_SCREEN);
             MainScene_ArrangeLayers(scene);
 
             StartScreenFade(FADE_BOTH_SCREENS, FADE_TYPE_BRIGHTNESS_IN, FADE_TYPE_BRIGHTNESS_IN, COLOR_BLACK, 4, 1, HEAP_ID_76);
@@ -2066,7 +2159,7 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
             MI_CpuCopy16(scene->savedPalette, (void *)HW_BG_PLTT, 0x200);
 
             gSystem.whichScreenIs3D = DS_SCREEN_MAIN;
-            GXLayers_SwapDisplay();
+            OpeningCutscene_Cut(cutscene, SHOT_TOP_SCREEN);
 
             MainScene_LoadFinalBgs(cutscene, scene);
             MainScene_ArrangeLayers(scene);
@@ -2112,7 +2205,7 @@ static BOOL MainScene_Update(OpeningCutscene *cutscene, MainScene *scene, const 
 
         if (IsScreenFadeDone()) {
             gSystem.whichScreenIs3D = DS_SCREEN_SUB;
-            GXLayers_SwapDisplay();
+            OpeningCutscene_Cut(cutscene, SHOT_BOTTOM_SCREEN);
             (*subState)++;
         }
         break;

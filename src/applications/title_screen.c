@@ -350,6 +350,11 @@ static BOOL TitleScreen_Main(ApplicationManager *appMan, int *state)
                 appData->inputEnableDelay = 0;
                 gSystem.showTitleScreenIntro = FALSE;
                 appData->titleScreen.introShown = TRUE;
+                // The intro still plays over the opening's music, in 30 Hz frames.
+                SetForce30Hz(TRUE);
+                // Single screen: the intro plays on the 3D screen, so show that one
+                // on top until the logo appears.
+                GX_SetDispSelect(GX_DISP_SELECT_MAIN_SUB);
                 *state = TITLE_SCREEN_APP_STATE_SHOW_INTRO;
             }
         }
@@ -361,6 +366,7 @@ static BOOL TitleScreen_Main(ApplicationManager *appMan, int *state)
         }
         break;
     case TITLE_SCREEN_APP_STATE_INIT_SOUND:
+        SetForce30Hz(FALSE);
         Sound_SetScene(SOUND_SCENE_NONE);
         Sound_SetSceneAndPlayBGM(SOUND_SCENE_TITLE_SCREEN, SEQ_TITLE01_sseq, 1);
         *state = TITLE_SCREEN_APP_STATE_MAIN;
@@ -1067,6 +1073,7 @@ static BOOL TitleScreen_ShowIntro(TitleScreen *titleScreen, BgConfig *bgConfig, 
     if (TitleScreen_ShouldSkipIntro() == TRUE) {
         titleScreen->giratinaShown = TRUE;
         titleScreen->introShown = FALSE;
+        GXLayers_SwapDisplay();
         FinishScreenFade();
         BrightnessController_ResetScreenController(BRIGHTNESS_BOTH_SCREENS);
         return TRUE;
@@ -1192,6 +1199,8 @@ static BOOL TitleScreen_ShowIntro(TitleScreen *titleScreen, BgConfig *bgConfig, 
         titleScreen->titleCamMoveInCounter++;
 
         if (titleScreen->titleCamMoveInCounter >= TITLE_CAM_MOVE_IN_FRAMES) {
+            // Cut back to the top screen as the logo fades in from white.
+            GXLayers_SwapDisplay();
             ToggleLogoLayer(TRUE);
             TitleScreen_LoadTopScreenBg(bgConfig, heapID);
             StartScreenFade(FADE_SUB_ONLY, FADE_TYPE_BRIGHTNESS_IN, FADE_TYPE_BRIGHTNESS_IN, COLOR_WHITE, 16, 3, heapID);
