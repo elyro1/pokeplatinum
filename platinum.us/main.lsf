@@ -1283,10 +1283,10 @@ Overlay game_opening
 {
 	After main
 	Object main.nef.p/src_applications_title_screen.c.o
-	Object main.nef.p/src_game_opening_ov77_021D25B0.c.o
-	Object main.nef.p/src_game_opening_ov77_021D54B0.c.o
-	Object main.nef.p/src_game_opening_ov77_021D6670.c.o
-	Object main.nef.p/src_game_opening_ov77_021D6C70.c.o
+	Object main.nef.p/src_game_opening_opening_cutscene.c.o
+	Object main.nef.p/src_game_opening_opening_sprites.c.o
+	Object main.nef.p/src_game_opening_opening_sparkles.c.o
+	Object main.nef.p/src_game_opening_opening_starters.c.o
 }
 
 Overlay choose_starter
