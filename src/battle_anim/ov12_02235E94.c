@@ -32,6 +32,19 @@
 #include "sys_task_manager.h"
 #include "port/battle_timing.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+
+// BW2's battle view draws its own balls and their effects: Platinum's run on unseen
+static ParticleSystem *BallParticles_HideForBw(ParticleSystem *particleSystem)
+{
+    if (particleSystem != NULL && BwAdapter_IsDrawing()) {
+        particleSystem->portHidden = TRUE;
+    }
+    return particleSystem;
+}
+#endif
+
 #include "res/graphics/battle/sprites.naix"
 
 typedef struct {
@@ -422,6 +435,9 @@ static void ov12_022360A0(SysTask *param0, void *ballCapSealEffPtr)
             ballCapSealEff->seals[ballCapSealEff->sealCount] = v5;
             GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL);
             ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] = BattleParticleUtil_CreateParticleSystemFromOpenNarc(ballCapSealEff->particleNarc, ballCapSealEff->heapID, v3, 0);
+#ifdef SDK_PORT
+            BallParticles_HideForBw(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount]);
+#endif
 
             if (ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL) {
                 GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] != NULL);
@@ -456,6 +472,9 @@ static void ov12_022360A0(SysTask *param0, void *ballCapSealEffPtr)
             ballCapSealEff->seals[ballCapSealEff->sealCount] = v5;
             GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL);
             ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] = BattleParticleUtil_CreateParticleSystemFromOpenNarc(ballCapSealEff->particleNarc, ballCapSealEff->heapID, v3, 0);
+#ifdef SDK_PORT
+            BallParticles_HideForBw(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount]);
+#endif
 
             if (ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL) {
                 GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] != NULL);
@@ -490,6 +509,9 @@ static void ov12_022360A0(SysTask *param0, void *ballCapSealEffPtr)
             ballCapSealEff->seals[ballCapSealEff->sealCount] = v5;
             GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL);
             ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] = BattleParticleUtil_CreateParticleSystemFromOpenNarc(ballCapSealEff->particleNarc, ballCapSealEff->heapID, v3, 0);
+#ifdef SDK_PORT
+            BallParticles_HideForBw(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount]);
+#endif
 
             if (ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL) {
                 GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] != NULL);
@@ -524,6 +546,9 @@ static void ov12_022360A0(SysTask *param0, void *ballCapSealEffPtr)
             ballCapSealEff->seals[ballCapSealEff->sealCount] = v5;
             GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL);
             ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] = BattleParticleUtil_CreateParticleSystemFromOpenNarc(ballCapSealEff->particleNarc, ballCapSealEff->heapID, v3, 0);
+#ifdef SDK_PORT
+            BallParticles_HideForBw(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount]);
+#endif
 
             if (ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] == NULL) {
                 GF_ASSERT(ballCapSealEff->sealParticleSystems[ballCapSealEff->sealCount] != NULL);
@@ -556,6 +581,9 @@ void ov12_02236320(BallCapsuleSealEffect *ballCapSealEff)
 
         ballCapSealEff->sealCount = 1;
         ballCapSealEff->sealParticleSystems[0] = BattleParticleUtil_CreateParticleSystemEx(ballCapSealEff->heapID, 99, v3, 0);
+#ifdef SDK_PORT
+        BallParticles_HideForBw(ballCapSealEff->sealParticleSystems[0]);
+#endif
         ballCapSealEff->state = 0xFF;
     } else {
         ballCapSealEff->sealCount = 0;
@@ -838,6 +866,9 @@ UnkStruct_ov12_02236648 *ov12_02236690(UnkStruct_ov12_02236690 *param0)
     }
 
     v0->unk_18 = BattleParticleUtil_CreateParticleSystemEx(v0->unk_00.heapID, 99, v0->unk_20, 0);
+#ifdef SDK_PORT
+    BallParticles_HideForBw(v0->unk_18);
+#endif
 
     return v0;
 }
@@ -2026,9 +2057,21 @@ BallRotation *ov12_02237728(BallThrow *param0)
     v0->unk_1C = 1;
     v0->unk_28 = 0;
     v0->unk_CC = SysTask_StartBattleAnimation(ov12_022376D0, v0, 1000);
+#ifdef SDK_PORT
+    if (BwAdapter_IsDrawing()) {
+        v0->unk_30->sprite->portHidden = TRUE;
+    }
+#endif
 
     return v0;
 }
+
+#ifdef SDK_PORT
+void BallRotation_Hide(BallRotation *ballRotation)
+{
+    ManagedSprite_SetDrawFlag(ballRotation->unk_30, FALSE);
+}
+#endif
 
 BOOL ov12_022377F8(BallRotation *param0)
 {

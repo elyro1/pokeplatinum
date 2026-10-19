@@ -150,6 +150,9 @@ typedef struct {
 
 void *PokemonSpriteManager_New(enum HeapID heapID);
 void PokemonSpriteManager_DrawSprites(PokemonSpriteManager *monSpriteMan);
+#ifdef SDK_PORT
+void PokemonSpriteManager_UpdateWithoutDrawing(PokemonSpriteManager *monSpriteMan);
+#endif
 void PokemonSpriteManager_Free(PokemonSpriteManager *monSpriteMan);
 void PokemonSprite_InitAnim(PokemonSprite *monSprite, int dummy);
 void PokemonSprite_SetAnimFrames(PokemonSprite *monSprite, SpriteAnimFrame *animFrames);

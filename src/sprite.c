@@ -184,11 +184,13 @@ void SpriteList_Update(const SpriteList *list)
 
     while (sprite != &list->sentinelData) {
 #ifdef SDK_PORT
-        if (!sprite->draw) {
+        if (!sprite->draw || sprite->portHidden) {
             sprite->battleVisualHistory.valid = FALSE;
         }
-#endif
+        sDrawFuncs[sprite->draw && !sprite->portHidden](list, sprite);
+#else
         sDrawFuncs[sprite->draw](list, sprite);
+#endif
 #ifdef SDK_PORT
         if (BattleTiming_ShouldTick(sprite->battleTimingDomain)) {
             sAnimUpdateFuncs[sprite->animate](sprite);
@@ -221,7 +223,7 @@ void SpriteList_DrawSkippedBattleLists(void)
         }
         // Replay only OAM/geometry submission. Never advance cell animations here.
         for (Sprite *sprite = list->sentinelData.next; sprite != &list->sentinelData; sprite = sprite->next) {
-            if (sprite->draw) {
+            if (sprite->draw && !sprite->portHidden) {
                 SpriteList_DrawSprite(list, sprite);
             }
         }
@@ -291,6 +293,9 @@ Sprite *SpriteList_AddAffine(const AffineSpriteListTemplate *template)
     sprite->draw = TRUE;
     sprite->animate = FALSE;
     sprite->animSpeed = (FX32_ONE * 2);
+#ifdef SDK_PORT
+    sprite->portHidden = FALSE;
+#endif
 
     if (SpriteList_InitSprite(template->list, template->resourceData, sprite, template->heapID) == FALSE) {
         Sprite_Delete(sprite);

@@ -1,5 +1,9 @@
 #include "g3d_pipeline.h"
 
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include "nitro/hw/common/lcd.h"
 #include <nitro.h>
 
@@ -28,7 +32,8 @@ G3DPipelineBuffers *G3DPipeline_InitEx(enum HeapID heapID, enum VramManagerType 
         // Widescreen field traversal keeps more map/NPC textures resident than
         // the DS bank budget permits. Preserve its physical banks and use the
         // simulator's extended storage for the additional textures.
-        if (heapID == HEAP_ID_FIELD1) {
+        // BW2's battle view (docs/bwbattle.md) loads its arena and sprites beside Platinum's battle textures
+        if (heapID == HEAP_ID_FIELD1 || (heapID == HEAP_ID_BATTLE && BwAdapter_IsEnabled())) {
             int bufferSize = NNS_GfdGetLnkTexVramManagerWorkSize(512);
             buffers->textureBuffer = Heap_Alloc(buffers->heapID, bufferSize);
             NNS_GfdInitLnkTexVramManagerEx(4 * 1024 * 1024, texVramSize * TEXTURE_VRAM_BLOCK_SIZE, 0, buffers->textureBuffer, bufferSize, TRUE);

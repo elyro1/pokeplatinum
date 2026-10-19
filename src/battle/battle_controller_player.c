@@ -1,5 +1,9 @@
 #include "battle/battle_controller_player.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include "nitro/types.h"
 #include <nitro.h>
 #include <string.h>
@@ -283,6 +287,9 @@ static void BattleControllerPlayer_InitCommandSelection(BattleSystem *battleSys,
 
     BattleSystem_SetCommandSelectionFlags(battleSys, 0);
     BattleSystem_LoadFightOverlay(battleSys, TRUE);
+#ifdef SDK_PORT
+    BwAdapter_OnCommandSelection(battleSys, TRUE);
+#endif
 
     battleCtx->command = BATTLE_CONTROL_COMMAND_SELECTION_INPUT;
 }
@@ -724,6 +731,10 @@ static void BattleControllerPlayer_CalcTurnOrder(BattleSystem *battleSys, Battle
     int maxBattlers = BattleSystem_GetMaxBattlers(battleSys);
     u32 battleType = BattleSystem_GetBattleType(battleSys);
     int order = 0;
+
+#ifdef SDK_PORT
+    BwAdapter_OnCommandSelection(battleSys, FALSE);
+#endif
 
     if (battleType & (BATTLE_TYPE_SAFARI | BATTLE_TYPE_PAL_PARK)) {
         // The player always acts before a wild mon encountered in the Safari Zone or the Pal Park.

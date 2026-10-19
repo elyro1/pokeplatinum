@@ -86,6 +86,14 @@ typedef struct HealthBox {
     u8 padding : 4;
     SysTask *bobbingAnimTask;
     u16 degrees;
+#ifdef SDK_PORT
+    // What the bars last showed (HealthBox_DrawGauge), with the value they held then: the bar's own while it moves,
+    // and its new value once there, which the box then holds (BW2's battle view follows them, src/bwbattle/adapter)
+    s32 portShownHP;
+    s32 portShownHPHeld;
+    s32 portShownExp;
+    s32 portShownExpHeld;
+#endif
 } HealthBox;
 
 /**

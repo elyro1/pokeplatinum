@@ -1,5 +1,9 @@
 #include "battle_anim/battle_anim_system.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include <nitro.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1901,6 +1905,10 @@ static void BattleAnimScriptCmd_AddPokemonSprite(BattleAnimSystem *system)
     }
 
     sprite = SpriteSystem_NewSprite(system->context->spriteSystem, system->pokemonSpriteManager, &template);
+#ifdef SDK_PORT
+    // Animation scripts can show these copies again later; keep them hidden independently of their draw flag.
+    sprite->sprite->portHidden = BwAdapter_IsDrawing();
+#endif
 
     if (battlerSprite == NULL) {
         ManagedSprite_SetDrawFlag(sprite, FALSE);
@@ -3933,6 +3941,10 @@ BattleMonOBJData *BattleMonOBJData_New(BattleSystem *battleSys, enum HeapID heap
                 }
 
                 managedSprite = SpriteSystem_NewSprite(btlMonObjData->spriteContext.spriteSys, btlMonObjData->spriteContext.spriteMan, &spriteTemplate);
+#ifdef SDK_PORT
+                // Catch effects keep their own copies outside BattlerData, so hide them before their first draw.
+                managedSprite->sprite->portHidden = BwAdapter_IsDrawing();
+#endif
                 ManagedSprite_TickFrame(managedSprite);
                 btlMonObjData->managedSprites[battler] = managedSprite;
 

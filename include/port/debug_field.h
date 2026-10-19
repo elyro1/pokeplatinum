@@ -12,6 +12,7 @@ FieldSystem *DEBUG_GetFieldSystem();
 void DEBUG_SetFieldSystem(FieldSystem *fieldSystem);
 int DEBUG_GetPoketchAppCount(void);
 BOOL DEBUG_UnlockAllPoketchApps(void);
+void DEBUG_FieldFrame(FieldSystem *fieldSystem);
 
 #ifdef __cplusplus
 }

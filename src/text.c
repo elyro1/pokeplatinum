@@ -342,6 +342,13 @@ void Text_RenderScreenIndicator(TextPrinter *printer, u16 unusedX, u16 unusedY, 
 {
     Window *window = printer->template.window;
 
+#ifdef SDK_PORT
+    // Both battle presentations use this text renderer; the original touchscreen hint is redundant on PC.
+    if (BgConfig_GetHeapID(Window_GetBgConfig(window)) == HEAP_ID_BATTLE) {
+        return;
+    }
+#endif
+
     if (printer->iconGfx == NULL) {
         printer->iconGfx = Text_LoadScreenIndicatorGfx();
     }

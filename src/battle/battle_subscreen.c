@@ -1,5 +1,9 @@
 #include "battle/battle_subscreen.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include <nitro.h>
 
 #include "constants/moves.h"
@@ -1626,6 +1630,9 @@ static void BattleSubscreen_InitMainMenuWindow(BattleSubscreen *btlSubscreen, Wi
     // Dialogue colors plus the existing battle font's low-PP colors.
     PaletteData_LoadBufferFromFileStart(BattleSystem_GetPaletteData(battleSys), NARC_INDEX_GRAPHIC__PL_FONT, 7, HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, PALETTE_SIZE_BYTES, PLTT_DEST(MAIN_MENU_TEXT_PALETTE));
     PaletteData_LoadBufferFromFile(BattleSystem_GetPaletteData(battleSys), NARC_INDEX_BATTLE__GRAPHIC__PL_BATT_OBJ, 72, HEAP_ID_BATTLE, PLTTBUF_MAIN_BG, 6 * sizeof(u16), PLTT_DEST(MAIN_MENU_TEXT_PALETTE) + 3, PLTT_DEST(4) + 3);
+#ifdef SDK_PORT
+    BwAdapter_StyleTextbox(battleSys);
+#endif
     Window_Init(window);
     Window_Add(bgConfig, window, BG_LAYER_MAIN_1, 2, 19, 27, 4, MAIN_MENU_TEXT_PALETTE, MAIN_MENU_BASE_TILE);
     Window_FillTilemap(window, 15);

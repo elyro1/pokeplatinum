@@ -11,6 +11,9 @@ void Encounter_NewVsWild(FieldSystem *fieldSystem, FieldBattleDTO *dto);
 void Encounter_StartVsWild(FieldSystem *fieldSystem, FieldTask *task, FieldBattleDTO *dto);
 void Encounter_NewVsHoneyTree(FieldTask *task, int *resultMaskPtr);
 void Encounter_NewVsSpeciesAtLevel(FieldTask *task, u16 species, u8 level, int *resultMaskPtr, BOOL isLegendary);
+#ifdef SDK_PORT
+void Encounter_NewDebugVsSpeciesAtLevel(FieldTask *task, u16 species, u8 level, BOOL palPark);
+#endif
 void Encounter_NewFatefulVsSpeciesAtLevel(FieldTask *taskMan, u16 species, u8 level, int *resultMaskPtr, BOOL isLegendary);
 void Encounter_NewVsPalParkTransfer(FieldSystem *fieldSystem, FieldBattleDTO *dto);
 void Encounter_NewVsFirstBattle(FieldTask *task, int trainerID, enum HeapID heapID, int *resultMaskPtr);

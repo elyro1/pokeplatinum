@@ -505,6 +505,30 @@ static void PokemonSprite_PrepareRenderPose(PokemonSprite *sprite, PokemonSprite
 }
 #endif
 
+#ifdef SDK_PORT
+// What PokemonSpriteManager_DrawSprites does besides drawing: the sprites' callbacks and animations, which the battle
+// waits on. For when another renderer shows the Pokemon (BW2's battle view, docs/bwbattle.md)
+void PokemonSpriteManager_UpdateWithoutDrawing(PokemonSpriteManager *monSpriteMan)
+{
+    // The sprites' characters and palettes are still buffered: the battle's animations read the buffers
+    BufferPokemonSpriteCharData(monSpriteMan);
+    BufferPokemonSpritePlttData(monSpriteMan);
+
+    for (int i = 0; i < MAX_MON_SPRITES; i++) {
+        if (monSpriteMan->sprites[i].active
+            && monSpriteMan->sprites[i].transforms.hide == FALSE
+            && monSpriteMan->sprites[i].transforms.hide2 == FALSE
+            && (monSpriteMan->heapID != HEAP_ID_BATTLE || BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION))) {
+            if (monSpriteMan->sprites[i].callback != NULL) {
+                monSpriteMan->sprites[i].callback(&monSpriteMan->sprites[i], &monSpriteMan->sprites[i].transforms);
+            }
+
+            PokemonSprite_TickAnim(&monSpriteMan->sprites[i]);
+        }
+    }
+}
+#endif
+
 void PokemonSpriteManager_DrawSprites(PokemonSpriteManager *monSpriteMan)
 {
     int width, height;

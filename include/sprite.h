@@ -83,6 +83,9 @@ typedef struct Sprite {
     u8 battleTimingDomain;
     BOOL battleSmoothDisabled;
     BattleVisualHistory battleVisualHistory;
+    // Not drawn although its draw flag is set, which stays the game's (BW2's battle view hides the healthboxes it
+    // replaces, src/bwbattle/adapter)
+    BOOL portHidden;
 #endif
 } Sprite;
 

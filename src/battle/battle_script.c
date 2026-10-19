@@ -74,6 +74,10 @@
 #include "unk_0201567C.h"
 #include "unk_0208C098.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include "res/battle/scripts/sub_seq.naix"
 #include "res/text/bank/battle_strings.h"
 
@@ -1298,7 +1302,12 @@ static BOOL BtlCmd_HealthBoxSlideOut(BattleSystem *battleSys, BattleContext *bat
  */
 static BOOL BtlCmd_Wait(BattleSystem *battleSys, BattleContext *battleCtx)
 {
+#ifdef SDK_PORT
+    // BW2's battle start and send-out effects play to their end too (src/bwbattle/adapter)
+    if (BattleIO_QueueIsEmpty(battleCtx) && !BwAdapter_IsBusy()) {
+#else
     if (BattleIO_QueueIsEmpty(battleCtx)) {
+#endif
         BattleScript_Iter(battleCtx, 1);
     } else {
         BattleIO_UpdateTimeout(battleCtx);
@@ -10354,6 +10363,9 @@ enum CatchMonTaskState {
     SEQ_CATCH_MON_PRINT_POKEMON_BROKE_FREE,
     SEQ_CATCH_MON_DONE_POKEMON_BROKE_FREE,
     SEQ_CATCH_MON_DONE,
+#ifdef SDK_PORT
+    SEQ_CATCH_MON_WAIT_BW_BALL, // BW2's view plays the throw (src/bwbattle/adapter)
+#endif
 };
 
 enum CatchMonTaskDataIndex {
@@ -10382,6 +10394,13 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
     switch (data->seqNum) {
     case SEQ_CATCH_MON_START:
         if (data->flag == 0) {
+#ifdef SDK_PORT
+            // The camera can still be returning from command selection (including after a replacement). Wait before
+            // creating Platinum's hidden ball, so a busy BW2 effect can't make the visible throw fall back to it.
+            if (BwAdapter_IsDrawing() && !BwAdapter_CanStartCatch()) {
+                break;
+            }
+#endif
             BallThrow ballThrow;
 
             ballThrow.mode = BALL_THROW_MODE_THROW;
@@ -10410,6 +10429,25 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
             Sound_PlayEffect(SEQ_SE_DP_NAGERU_sseq);
             data->battleSys->ballsThrown++;
             ov12_022368C8(data->ballRotation, 0);
+#ifdef SDK_PORT
+            // BW2's throw plays the shakes and the outcome at once; Platinum's ball runs on hidden, for the states
+            // after it
+            if (BwAdapter_CanStartCatch()) {
+                BOOL blocked = (BattleSystem_GetBattleType(data->battleSys) & BATTLE_TYPE_TRAINER) != 0;
+                int shakes = 0;
+
+                if (!blocked) {
+                    BattleController_EmitOpenCaptureBall(data->battleSys, battler, data->ball);
+                    data->tmpData[CATCH_MON_TOTAL_SHAKES] = BattleScript_CalcCatchShakes(data->battleSys, data->battleCtx);
+                    shakes = data->tmpData[CATCH_MON_TOTAL_SHAKES] < BALL_3_SHAKES_SUCCESS ? data->tmpData[CATCH_MON_TOTAL_SHAKES] : 3;
+                }
+                BwAdapter_StartCatch(data->battleSys, battler, data->ball, shakes,
+                    data->tmpData[CATCH_MON_TOTAL_SHAKES] == BALL_3_SHAKES_SUCCESS, blocked);
+                BallRotation_Hide(data->ballRotation);
+                data->tmpData[CATCH_MON_REMAINING_SHAKES] = blocked;
+                data->seqNum = SEQ_CATCH_MON_WAIT_BW_BALL;
+            }
+#endif
         } else {
             BattlerData *battlerData = BattleSystem_GetBattlerData(data->battleSys, 0);
 
@@ -10514,9 +10552,17 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
         if (Text_IsPrinterActive(data->tmpData[CATCH_MON_MSG_INDEX]) == FALSE) {
             data->seqNum = SEQ_CATCH_MON_SET_CAUGHT_SPECIES;
             ov12_022368C8(data->ballRotation, 7);
+#ifdef SDK_PORT
+            BwAdapter_FinishCatch();
+#endif
         }
         break;
     case SEQ_CATCH_MON_SET_CAUGHT_SPECIES:
+#ifdef SDK_PORT
+        if (BwAdapter_IsBusy()) {
+            break;
+        }
+#endif
         if (ov12_022368D0(data->ballRotation, 7) == FALSE) {
             if (--data->tmpData[CATCH_MON_DELAY] == 0) {
                 BattleSystem_SetCaughtBattlerIndex(data->battleSys, battler);
@@ -10563,6 +10609,10 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
         if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
             PokedexEntryScreenParams dexEntryScreenParams;
 
+#ifdef SDK_PORT
+            // The battle ends after the catch: the Pokédex entry and the nickname prompt are Platinum's to draw
+            BwAdapter_SetSuspended(TRUE);
+#endif
             ov12_0223783C(data->ballRotation);
             PokemonSpriteManager_DeleteAll(monSpriteMan);
             BattleSystem_HideBattleScreen(data->battleSys);
@@ -10619,6 +10669,9 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
 
             mon = BattleSystem_GetPartyPokemon(data->battleSys, battler, data->battleCtx->selectedPartySlot[battler]);
 
+#ifdef SDK_PORT
+            BwAdapter_SetSuspended(TRUE);
+#endif
             ov12_0223783C(data->ballRotation);
             PokemonSpriteManager_DeleteAll(monSpriteMan);
             BattlerData_SetTrainerVisibility(BattleSystem_GetBattlerData(data->battleSys, 0), FALSE);
@@ -10861,6 +10914,20 @@ static void BattleScript_CatchMonTask(SysTask *task, void *inData)
             }
         }
         break;
+#ifdef SDK_PORT
+    case SEQ_CATCH_MON_WAIT_BW_BALL:
+        if (!BwAdapter_IsBusy()) {
+            if (data->tmpData[CATCH_MON_REMAINING_SHAKES]) {
+                data->seqNum = SEQ_CATCH_MON_PRINT_TRAINER_BLOCKED_BALL;
+            } else if (data->tmpData[CATCH_MON_TOTAL_SHAKES] == BALL_3_SHAKES_SUCCESS) {
+                Sound_PlayPannedEffect(SEQ_SE_DP_GETTING_sseq, BATTLE_SOUND_PAN_RIGHT);
+                data->seqNum = SEQ_CATCH_MON_PRINT_POKEMON_WAS_CAUGHT;
+            } else {
+                data->seqNum = SEQ_CATCH_MON_POKEMON_BREAK_FREE;
+            }
+        }
+        break;
+#endif
     case SEQ_CATCH_MON_DONE:
         if (PaletteData_GetSelectedBuffersMask(paletteData) == 0) {
             if (BattleSystem_GetBattleType(data->battleSys) & (BATTLE_TYPE_PAL_PARK | BATTLE_TYPE_CATCH_TUTORIAL)) {

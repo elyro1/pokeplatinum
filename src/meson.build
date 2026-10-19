@@ -1064,3 +1064,7 @@ if build_target == 'linux' or build_target == 'win64'
     pokeplatinum_c += [files('port/map_patches.cpp'), map_patches_header]
     public_includes = [public_includes, include_directories('.')]
 endif
+
+if build_target == 'linux' or build_target == 'win64'
+    subdir('bwbattle')
+endif

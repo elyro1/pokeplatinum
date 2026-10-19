@@ -1,5 +1,9 @@
 #include "battle/battle_display.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include <nitro.h>
 #include <string.h>
 
@@ -144,6 +148,9 @@ static void Task_FadeOut(SysTask *task, void *data);
 static void Task_ToggleVanish(SysTask *task, void *data);
 static void Task_PlayLevelUpAnimation(SysTask *task, void *data);
 static void Task_WaitForBattleMessagePrint(SysTask *task, void *data);
+#ifdef SDK_PORT
+static void Task_WaitForAbilityMessage(SysTask *task, void *data);
+#endif
 static void Task_WaitForAlertMessagePrint(SysTask *task, void *data);
 static void SysTask_SetupUI(SysTask *task, void *data);
 static void Task_ForgetMove(SysTask *task, void *data);
@@ -151,6 +158,7 @@ static void Task_SetMosaic(SysTask *task, void *data);
 static void Task_ShowPartyGauge(SysTask *task, void *data);
 static void Task_HidePartyGauge(SysTask *task, void *data);
 static void Task_SpriteToOAM(SysTask *task, void *data);
+static BattleMonOBJData *BattleDisplay_NewSendOutMonOBJs(BattleSystem *battleSys);
 static void Task_OAMToSprite(SysTask *task, void *data);
 static PokemonSprite *BattleDisplay_NewPokemonSprite(BattleSystem *battleSys, PokemonSpriteManager *monSpriteMan, PokemonSpriteTemplate *spriteTemplate, int x, int y, int z, int yOffset, int height, int xOffset, int shadowSize, int battler, SpriteAnimFrame *animFrames, PokemonSpriteCallback *callback);
 static void LoadRecallMessage(BattleSystem *battleSys, BattlerData *battlerData, RecallMsgMessage *message, BattleMessage *battleMsg);
@@ -253,6 +261,10 @@ void BattleDisplay_InitTaskSetEncounter(BattleSystem *battleSys, BattlerData *ba
     isShiny = !!message->isShiny;
 
     BuildPokemonSpriteTemplate(&spriteTemplate, message->species, message->gender, monEncounterData->face, isShiny, message->formNum, message->personality);
+#ifdef SDK_PORT
+    BwAdapter_SetBattlerMon(battleSys, battlerData->battler, message->species, message->formNum, message->personality, message->gender, isShiny, -1);
+    BwAdapter_OnSetEncounter(battleSys, battlerData->battler);
+#endif
 
     yOffset = LoadPokemonSpriteYOffset(message->species, message->gender, monEncounterData->face, message->formNum, message->personality);
 
@@ -360,6 +372,10 @@ void BattleDisplay_InitTaskShowEncounter(BattleSystem *battleSys, BattlerData *b
     isShiny = !!message->isShiny;
 
     BuildPokemonSpriteTemplate(&monShowData->spriteTemplate, message->species, message->gender, monShowData->face, isShiny, message->formNum, message->personality);
+#ifdef SDK_PORT
+    BwAdapter_SetBattlerMon(battleSys, battlerData->battler, message->species, message->formNum, message->personality, message->gender, isShiny, message->selectedPartySlot);
+    BwAdapter_OnShowMon(battleSys, battlerData->battler, TRUE);
+#endif
 
     monShowData->yOffset = LoadPokemonSpriteYOffset(message->species, message->gender, monShowData->face, message->formNum, message->personality);
 
@@ -405,6 +421,13 @@ void BattleDisplay_InitTaskShowPokemon(BattleSystem *battleSys, BattlerData *bat
     isShiny = !!message->isShiny;
 
     BuildPokemonSpriteTemplate(&monShowData->spriteTemplate, message->species, message->gender, monShowData->face, isShiny, message->formNum, message->personality);
+#ifdef SDK_PORT
+    BwAdapter_SetBattlerMon(battleSys, battlerData->battler, message->species, message->formNum, message->personality, message->gender, isShiny, message->selectedPartySlot);
+    // A Pokémon breaking free of a ball (the catch's quick send-out) is BW2's catch effect's
+    if (!message->isQuickSendOut) {
+        BwAdapter_OnShowMon(battleSys, battlerData->battler, FALSE);
+    }
+#endif
 
     monShowData->yOffset = LoadPokemonSpriteYOffset(message->species, message->gender, monShowData->face, message->formNum, message->personality);
 
@@ -478,6 +501,9 @@ void BattleDisplay_InitTaskReturnPokemon(BattleSystem *battleSys, BattlerData *b
         monReturnData->moveAnim.personalities[i] = message->battleMonPersonalities[i];
     }
 
+#ifdef SDK_PORT
+    BwAdapter_OnReturnMon(battleSys, battlerData->battler);
+#endif
     SysTask_StartBattleAnimation(Task_ReturnPokemon, monReturnData, 0);
 }
 
@@ -535,6 +561,9 @@ void BattleDisplay_InitTaskSetTrainerEncounter(BattleSystem *battleSys, BattlerD
     }
 
     message->trainerType = BattleDisplay_GetLinkTrainerClass(battleSys, battlerData->battler, message->trainerType);
+#ifdef SDK_PORT
+    BwAdapter_OnTrainerEncounter(battleSys, battlerData->battler, message->trainerType);
+#endif
 
     trainerEncounterData->managedSprite = battlerData->managedSprite = BattleDisplay_NewManagedSpriteTrainer(battleSys,
         side,
@@ -590,6 +619,9 @@ void BattleDisplay_InitTaskThrowTrainerBall(BattleSystem *battleSys, BattlerData
         trainerThrowBallData->backSpriteIdx = SpriteSystem_TrainerClassBackSpriteIndex(BattleDisplay_GetLinkTrainerClass(battleSys, battlerData->battler, trainer->header.trainerType));
     }
 
+#ifdef SDK_PORT
+    BwAdapter_OnThrowTrainerBall(battleSys, battlerData->battler, message->ballTypeIn);
+#endif
     SysTask_StartBattleAnimation(Task_ThrowTrainerBall, trainerThrowBallData, 0);
 }
 
@@ -619,6 +651,9 @@ void BattleDisplay_InitTaskSlideTrainerOut(BattleSystem *battleSys, BattlerData 
         slideTrainerOutData->face = FACE_BACK;
     }
 
+#ifdef SDK_PORT
+    BwAdapter_OnTrainerSlideOut(battleSys, battlerData->battler);
+#endif
     SysTask_StartBattleUI(Task_SlideTrainerOut, slideTrainerOutData, 0);
 }
 
@@ -656,6 +691,9 @@ void BattleDisplay_InitTaskSlideTrainerIn(BattleSystem *battleSys, BattlerData *
     slideTrainerInData->command = message->command;
     slideTrainerInData->battler = battlerData->battler;
 
+#ifdef SDK_PORT
+    BwAdapter_OnTrainerSlideIn(battleSys, battlerData->battler, message->trainerType);
+#endif
     SysTask_StartBattleUI(Task_SlideTrainerIn, slideTrainerInData, 0);
 }
 
@@ -1129,6 +1167,24 @@ void BattleDisplay_PrintMessage(BattleSystem *battleSys, BattlerData *battlerDat
     waitTask->battleSys = battleSys;
     waitTask->command = battlerData->data[0];
     waitTask->battler = battlerData->battler;
+#ifdef SDK_PORT
+    BattleMessage bwMessage = *battleMsg;
+    enum BwAbilityMessage abilityMessage = BwAdapter_PrepareAbilityMessage(battleSys, &bwMessage);
+
+    if (abilityMessage != BW_ABILITY_MESSAGE_NONE) {
+        if (abilityMessage == BW_ABILITY_MESSAGE_POPUP_ONLY) {
+            Window *window = BattleSystem_GetWindow(battleSys, 0);
+
+            Window_FillTilemap(window, 0xff);
+            Window_CopyToVRAM(window);
+            waitTask->msgIdx = 0xff;
+        } else {
+            waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, &bwMessage, BattleSystem_GetTextSpeed(battleSys));
+        }
+        SysTask_StartBattleUI(Task_WaitForAbilityMessage, waitTask, 0);
+        return;
+    }
+#endif
     waitTask->msgIdx = BattleMessage_Print(battleSys, msgLoader, battleMsg, BattleSystem_GetTextSpeed(battleSys));
 
     SysTask_StartBattleUI(Task_WaitForBattleMessagePrint, waitTask, 0);
@@ -1620,6 +1676,10 @@ void BattleDisplay_InitTaskShowBattleStartPartyGauge(BattleSystem *battleSys, Ba
 {
     PartyGaugeTask *task = Heap_Alloc(HEAP_ID_BATTLE, sizeof(PartyGaugeTask));
 
+#ifdef SDK_PORT
+    BwAdapter_OnShowPartyGauge(battleSys, battlerData->battler, partyGauge->status);
+#endif
+
     task->state = 0;
     task->battleSys = battleSys;
     task->command = partyGauge->command;
@@ -1638,6 +1698,10 @@ void BattleDisplay_InitTaskHideBattleStartPartyGauge(BattleSystem *battleSys, Ba
 {
     PartyGaugeTask *task = Heap_Alloc(HEAP_ID_BATTLE, sizeof(PartyGaugeTask));
 
+#ifdef SDK_PORT
+    BwAdapter_OnHidePartyGauge(battleSys, battlerData->battler);
+#endif
+
     task->state = 0;
     task->battleSys = battleSys;
     task->command = partyGauge->command;
@@ -1650,6 +1714,15 @@ void BattleDisplay_InitTaskHideBattleStartPartyGauge(BattleSystem *battleSys, Ba
 
 void BattleDisplay_InitTaskShowPartyGauge(BattleSystem *battleSys, BattlerData *battlerData, PartyGaugeData *partyGauge)
 {
+#ifdef SDK_PORT
+    // BW2's replacement send-out is too short for the party-count animation. Skip both presentations of this
+    // mid-battle gauge so neither its sprites nor its sound play; the battle-start commands still show it.
+    if (BwAdapter_IsActive()) {
+        BattleController_EmitClearCommand(battleSys, battlerData->battler, partyGauge->command);
+        return;
+    }
+#endif
+
     PartyGaugeTask *task = Heap_Alloc(HEAP_ID_BATTLE, sizeof(PartyGaugeTask));
 
     task->state = 0;
@@ -1668,6 +1741,13 @@ void BattleDisplay_InitTaskShowPartyGauge(BattleSystem *battleSys, BattlerData *
 
 void BattleDisplay_InitTaskHidePartyGauge(BattleSystem *battleSys, BattlerData *battlerData, PartyGaugeData *partyGauge)
 {
+#ifdef SDK_PORT
+    if (BwAdapter_IsActive()) {
+        BattleController_EmitClearCommand(battleSys, battlerData->battler, partyGauge->command);
+        return;
+    }
+#endif
+
     PartyGaugeTask *task = Heap_Alloc(HEAP_ID_BATTLE, sizeof(PartyGaugeTask));
 
     task->state = 0;
@@ -1701,6 +1781,15 @@ void BattleDisplay_PrintLinkWaitMessage(BattleSystem *battleSys, BattlerData *ba
 void BattleDisplay_RestoreSprite(BattleSystem *battleSys, BattlerData *battlerData, MoveAnimation *animation)
 {
     BattlerSpriteContext battlerSpriteCtx;
+
+#ifdef SDK_PORT
+    {
+        int battler = battlerData->battler;
+
+        BwAdapter_SetBattlerMon(battleSys, battler, animation->species[battler], animation->formNums[battler], animation->personalities[battler], animation->genders[battler], animation->isShiny[battler], -1);
+        BwAdapter_OnRestoreSprite(battleSys, battler);
+    }
+#endif
 
     BattleDisplay_PopulateBattlerContext(battleSys, animation, &battlerSpriteCtx, battlerData->battler);
     ov12_022382BC(&battlerSpriteCtx, HEAP_ID_BATTLE);
@@ -1815,6 +1904,15 @@ void BattleDisplay_PrintForfeitMessage(BattleSystem *battleSys, BattlerData *bat
 void BattleDisplay_RefreshSprite(BattleSystem *battleSys, BattlerData *battlerData, MoveAnimation *animation)
 {
     BattlerSpriteContext battlerSpriteCtx;
+
+#ifdef SDK_PORT
+    {
+        int battler = battlerData->battler;
+
+        BwAdapter_SetBattlerMon(battleSys, battler, animation->species[battler], animation->formNums[battler], animation->personalities[battler], animation->genders[battler], animation->isShiny[battler], -1);
+        BwAdapter_OnRefreshSprite(battleSys, battler);
+    }
+#endif
 
     BattleDisplay_PopulateBattlerContext(battleSys, animation, &battlerSpriteCtx, battlerData->battler);
     ov12_02238390(&battlerSpriteCtx, HEAP_ID_BATTLE);
@@ -2142,6 +2240,28 @@ static void Task_SetGiratinaEncounter(SysTask *task, void *data)
     BattleTiming_SetDomain(previous);
 }
 
+static void BattleDisplay_PlaySendOutCry(MonShowData *monShowData)
+{
+#ifdef SDK_PORT
+    // BW2's visible send-out plays the cry at its own animation cue.
+    if (BwAdapter_IsDrawing()) {
+        return;
+    }
+#endif
+    u8 cryDelay;
+
+    PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
+    Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
+        monShowData->cryMod,
+        monShowData->species,
+        monShowData->formNum,
+        monShowData->face == FACE_FRONT ? BATTLE_SOUND_PAN_RIGHT : BATTLE_SOUND_PAN_LEFT,
+        SOUND_VOLUME_MAX,
+        0,
+        HEAP_ID_BATTLE,
+        cryDelay);
+}
+
 static void Task_ShowEncounter(SysTask *task, void *data)
 {
     MonShowData *monShowData = data;
@@ -2154,13 +2274,13 @@ static void Task_ShowEncounter(SysTask *task, void *data)
         if (BattleSystem_GetBattleType(monShowData->battleSys) & BATTLE_TYPE_2vs2) {
             if ((BattleSystem_GetBattleStatusMask(monShowData->battleSys) & BATTLE_STATUS_RECORDED) == FALSE
                 && monShowData->battlerType == BATTLER_TYPE_PLAYER_SIDE_SLOT_1) {
-                monShowData->btlMonObjData = BattleMonOBJData_NewAll(monShowData->battleSys, HEAP_ID_BATTLE);
+                monShowData->btlMonObjData = BattleDisplay_NewSendOutMonOBJs(monShowData->battleSys);
             }
         } else if ((BattleSystem_GetBattleStatusMask(monShowData->battleSys) & BATTLE_STATUS_RECORDED) == FALSE) {
             if (BattleSystem_IsInitialized(monShowData->battleSys) == TRUE && monShowData->battlerType == BATTLER_TYPE_PLAYER_SIDE_SLOT_1) {
-                monShowData->btlMonObjData = BattleMonOBJData_NewAll(monShowData->battleSys, HEAP_ID_BATTLE);
+                monShowData->btlMonObjData = BattleDisplay_NewSendOutMonOBJs(monShowData->battleSys);
             } else if (monShowData->battlerType == BATTLER_TYPE_SOLO_PLAYER) {
-                monShowData->btlMonObjData = BattleMonOBJData_NewAll(monShowData->battleSys, HEAP_ID_BATTLE);
+                monShowData->btlMonObjData = BattleDisplay_NewSendOutMonOBJs(monShowData->battleSys);
             }
         }
 
@@ -2224,11 +2344,18 @@ static void Task_ShowEncounter(SysTask *task, void *data)
 
             ov12_022363B4(monShowData->ballCapsuleSealEffect);
 
+#ifdef SDK_PORT
+            // BW2's send-out plays its own sound of the ball opening (BwAdapter_OnShowMon)
+            if (!BwAdapter_IsDrawing()) {
+#endif
             if (monShowData->face == FACE_FRONT) {
                 Sound_PlayPannedEffect(SEQ_SE_DP_SLOT01_sseq_1, BATTLE_SOUND_PAN_RIGHT);
             } else {
                 Sound_PlayPannedEffect(SEQ_SE_DP_SLOT01_sseq_1, BATTLE_SOUND_PAN_LEFT);
             }
+#ifdef SDK_PORT
+            }
+#endif
 
             if (monShowData->btlMonObjData) {
                 BattleMonOBJData_Free(monShowData->btlMonObjData);
@@ -2248,33 +2375,11 @@ static void Task_ShowEncounter(SysTask *task, void *data)
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
                 PokemonSprite_SetAttribute(monShowData->battlerData->monSprite, MON_SPRITE_SHADOW_IS_AFFINE, FALSE);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_RIGHT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             } else {
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_LEFT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             }
 
             PokemonSprite_LoadAnim(monShowData->battlerData->narc,
@@ -2295,33 +2400,11 @@ static void Task_ShowEncounter(SysTask *task, void *data)
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
                 PokemonSprite_SetAttribute(monShowData->battlerData->monSprite, MON_SPRITE_SHADOW_IS_AFFINE, FALSE);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_RIGHT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             } else {
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_LEFT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             }
 
             PokemonSprite_LoadAnim(monShowData->battlerData->narc,
@@ -2443,7 +2526,7 @@ static void Task_ShowPokemon(SysTask *task, void *data)
         PokemonSprite_SetAttribute(monShowData->battlerData->monSprite, MON_SPRITE_SHADOW_SHOULD_FOLLOW_Y, FALSE);
         PokemonSprite_SetAttribute(monShowData->battlerData->monSprite, MON_SPRITE_HIDE, TRUE);
         monShowData->btlMonObjData = NULL;
-        monShowData->btlMonObjData = BattleMonOBJData_NewAll(monShowData->battleSys, HEAP_ID_BATTLE);
+        monShowData->btlMonObjData = BattleDisplay_NewSendOutMonOBJs(monShowData->battleSys);
         monShowData->state++;
         break;
     case 1:
@@ -2476,11 +2559,18 @@ static void Task_ShowPokemon(SysTask *task, void *data)
 
             ov12_022363B4(monShowData->ballCapsuleSealEffect);
 
+#ifdef SDK_PORT
+            // BW2's send-out plays its own sound of the ball opening (BwAdapter_OnShowMon)
+            if (!BwAdapter_IsDrawing()) {
+#endif
             if (monShowData->face == FACE_FRONT) {
                 Sound_PlayPannedEffect(SEQ_SE_DP_SLOT01_sseq_1, BATTLE_SOUND_PAN_RIGHT);
             } else {
                 Sound_PlayPannedEffect(SEQ_SE_DP_SLOT01_sseq_1, BATTLE_SOUND_PAN_LEFT);
             }
+#ifdef SDK_PORT
+            }
+#endif
 
             monShowData->state++;
         }
@@ -2495,33 +2585,11 @@ static void Task_ShowPokemon(SysTask *task, void *data)
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
                 PokemonSprite_SetAttribute(monShowData->battlerData->monSprite, MON_SPRITE_SHADOW_IS_AFFINE, FALSE);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_RIGHT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             } else {
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_LEFT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             }
 
             PokemonSprite_LoadAnim(monShowData->battlerData->narc,
@@ -2541,33 +2609,11 @@ static void Task_ShowPokemon(SysTask *task, void *data)
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
                 PokemonSprite_SetAttribute(monShowData->battlerData->monSprite, MON_SPRITE_SHADOW_IS_AFFINE, FALSE);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_RIGHT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             } else {
                 PokemonSprite_InitAnim(monShowData->battlerData->monSprite, 1);
 
-                u8 cryDelay;
-
-                PokemonSprite_LoadCryDelay(monShowData->battlerData->narc, &cryDelay, monShowData->species, monShowData->battlerType);
-                Species_PlayDelayedCry(BattleSystem_GetChatotCry(monShowData->battleSys, monShowData->battler),
-                    monShowData->cryMod,
-                    monShowData->species,
-                    monShowData->formNum,
-                    BATTLE_SOUND_PAN_LEFT,
-                    SOUND_VOLUME_MAX,
-                    0,
-                    HEAP_ID_BATTLE,
-                    cryDelay);
+                BattleDisplay_PlaySendOutCry(monShowData);
             }
 
             PokemonSprite_LoadAnim(monShowData->battlerData->narc,
@@ -5117,6 +5163,14 @@ static void Task_SetMoveAnimation(SysTask *task, void *data)
     case 5:
     case 7:
     case 9:
+#ifdef SDK_PORT
+        if (BwAdapter_IsMoveAnimationPending()) {
+            if (!BwAdapter_UpdateMoveAnimation()) {
+                setMoveAnimationData->state++;
+            }
+            break;
+        }
+#endif
         BattleAnimSystem_ExecuteScript(setMoveAnimationData->battleAnimSys);
 
         if (BattleAnimSystem_IsMoveActive(setMoveAnimationData->battleAnimSys) == FALSE) {
@@ -5275,6 +5329,9 @@ static void Task_PlayFaintingSequence(SysTask *task, void *data)
             pan = BATTLE_SOUND_PAN_LEFT;
         }
 
+#ifdef SDK_PORT
+        BwAdapter_OnFaint(faintingSequenceData->battleSys, faintingSequenceData->battler);
+#endif
         Species_PlayDelayedCry(BattleSystem_GetChatotCry(faintingSequenceData->battleSys, faintingSequenceData->battler),
             POKECRY_FAINT,
             faintingSequenceData->species,
@@ -5292,11 +5349,18 @@ static void Task_PlayFaintingSequence(SysTask *task, void *data)
         }
         break;
     case 6:
+#ifdef SDK_PORT
+        // BW2's faint plays its own sound (BwAdapter_OnFaint)
+        if (!BwAdapter_IsDrawing()) {
+#endif
         if (faintingSequenceData->face == FACE_FRONT) {
             Sound_PlayPannedEffect(SEQ_SE_DP_POKE_DEAD3_sseq, BATTLE_SOUND_PAN_RIGHT);
         } else {
             Sound_PlayPannedEffect(SEQ_SE_DP_POKE_DEAD3_sseq, BATTLE_SOUND_PAN_LEFT);
         }
+#ifdef SDK_PORT
+        }
+#endif
 
         if (PokemonSprite_GetAttribute(faintingSequenceData->monSprite, MON_SPRITE_SHADOW_HEIGHT) > 0) {
             faintingSequenceData->state = 7;
@@ -5463,6 +5527,28 @@ static void Task_PlayLevelUpAnimation(SysTask *task, void *data)
         break;
     }
 }
+
+#ifdef SDK_PORT
+static void Task_WaitForAbilityMessage(SysTask *task, void *data)
+{
+    BattleMessageWaitTask *waitTask = data;
+
+    if (BattleSystem_GetWaitDial(waitTask->battleSys)) {
+        DestroyWaitDial(BattleSystem_GetWaitDial(waitTask->battleSys));
+        BattleSystem_SetWaitDial(waitTask->battleSys, NULL);
+    }
+    if (waitTask->msgIdx != 0xff && Text_IsPrinterActive(waitTask->msgIdx)) {
+        return;
+    }
+    BwAdapter_ReleaseAbilityPopups();
+    if (BwAdapter_IsAbilityPopupBusy()) {
+        return;
+    }
+    BattleController_EmitClearCommand(waitTask->battleSys, waitTask->battler, waitTask->command);
+    Heap_Free(data);
+    SysTask_Done(task);
+}
+#endif
 
 static void Task_WaitForBattleMessagePrint(SysTask *task, void *data)
 {
@@ -5870,6 +5956,18 @@ static void Task_HidePartyGauge(SysTask *task, void *data)
         SysTask_Done(task);
         break;
     }
+}
+
+// The other Pokémon as OBJs while a ball opens, which keeps them above the ball's seal effect. BW2's view draws its own
+// Pokémon, which these would show Platinum's sprites over
+static BattleMonOBJData *BattleDisplay_NewSendOutMonOBJs(BattleSystem *battleSys)
+{
+#ifdef SDK_PORT
+    if (BwAdapter_IsDrawing()) {
+        return NULL;
+    }
+#endif
+    return BattleMonOBJData_NewAll(battleSys, HEAP_ID_BATTLE);
 }
 
 static void Task_SpriteToOAM(SysTask *task, void *data)
@@ -6592,6 +6690,12 @@ static void BattleDisplay_PlayMoveAnimation(BattleSystem *battleSys, BattlerData
 {
     BattleAnimBattlerContext battlerContext;
     int move;
+
+#ifdef SDK_PORT
+    if (BwAdapter_StartMoveAnimation(battleSys, animation)) {
+        return;
+    }
+#endif
 
     if (animation->animMode == 0) {
         battlerContext.moveArcID = NARC_INDEX_WAZAEFFECT__WE;

@@ -56,6 +56,8 @@ typedef struct ParticleSystem {
     u8 cameraProjection;
 #ifdef SDK_PORT
     BattleTimingDomain timingDomain;
+    // Updated but not drawn: the BW2 battle view stands in for it (Sprite.portHidden for particles)
+    BOOL portHidden;
 #endif
 } ParticleSystem;
 

@@ -565,6 +565,21 @@ void Encounter_NewVsSpeciesAtLevel(FieldTask *task, u16 species, u8 level, int *
     StartEncounter(task, dto, EncEffects_CutInEffect(dto), EncEffects_BGM(dto), resultMaskPtr);
 }
 
+#ifdef SDK_PORT
+// Debug (port/debug_field.c): a wild battle against that Pokemon as the Safari Zone's or Pal Park's, with balls of
+// those to throw
+void Encounter_NewDebugVsSpeciesAtLevel(FieldTask *task, u16 species, u8 level, BOOL palPark)
+{
+    FieldSystem *fieldSystem = FieldTask_GetFieldSystem(task);
+    FieldBattleDTO *dto = palPark ? FieldBattleDTO_NewPalPark(HEAP_ID_FIELD2, 6) : FieldBattleDTO_NewSafari(HEAP_ID_FIELD2, 30);
+
+    RadarChain_Clear(fieldSystem->chain);
+    FieldBattleDTO_Init(dto, fieldSystem);
+    CreateWildMon_Scripted(fieldSystem, species, level, dto);
+    StartEncounter(task, dto, EncEffects_CutInEffect(dto), EncEffects_BGM(dto), NULL);
+}
+#endif
+
 void Encounter_NewFatefulVsSpeciesAtLevel(FieldTask *taskMan, u16 species, u8 level, int *resultMaskPtr, BOOL isLegendary)
 {
     FieldBattleDTO *dto;

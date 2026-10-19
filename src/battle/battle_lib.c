@@ -1,5 +1,9 @@
 #include "battle/battle_lib.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include <nitro.h>
 #include <string.h>
 
@@ -3801,6 +3805,9 @@ int BattleSystem_TriggerEffectOnSwitch(BattleSystem *battleSys, BattleContext *b
                     && Battler_Ability(battleCtx, battler) == ABILITY_INTIMIDATE) {
                     battleCtx->battleMons[battler].intimidateAnnounced = TRUE;
                     battleCtx->msgBattlerTemp = battler;
+#ifdef SDK_PORT
+                    BwAdapter_OnAbilityActivated(battleSys, battler, ABILITY_INTIMIDATE);
+#endif
                     subscript = subscript_intimidate;
                     result = TRUE;
                     break;

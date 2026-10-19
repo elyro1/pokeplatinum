@@ -473,6 +473,11 @@ int ParticleSystem_DrawAll(void)
     int count = 0;
     for (int i = 0; i < MAX_PARTICLE_SYSTEMS; i++) {
         if (sParticleSystems[i] != NULL) {
+#ifdef SDK_PORT
+            if (((ParticleSystem *)sParticleSystems[i])->portHidden) {
+                continue;
+            }
+#endif
             ParticleSystem_Draw(sParticleSystems[i]);
             count++;
         }

@@ -1489,6 +1489,29 @@ static s32 HealthBox_DrawGauge(HealthBox *healthbox, enum HealthBoxGaugeType gau
         }
     }
 
+#ifdef SDK_PORT
+    {
+        s32 held = gaugeType == HEALTHBOX_GAUGE_HP ? healthbox->curHP : healthbox->curExp;
+        s32 change = gaugeType == HEALTHBOX_GAUGE_HP ? healthbox->damage : healthbox->expReward;
+        s32 max = gaugeType == HEALTHBOX_GAUGE_HP ? healthbox->maxHP : healthbox->maxExp;
+        s32 shown = result;
+
+        // Once there, the caller takes the change into the value held
+        if (result == -1) {
+            shown = held - change;
+            shown = shown < 0 ? 0 : (shown > max ? max : shown);
+            held = shown;
+        }
+        if (gaugeType == HEALTHBOX_GAUGE_HP) {
+            healthbox->portShownHP = shown;
+            healthbox->portShownHPHeld = held;
+        } else {
+            healthbox->portShownExp = shown;
+            healthbox->portShownExpHeld = held;
+        }
+    }
+#endif
+
     return result;
 }
 

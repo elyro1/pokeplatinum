@@ -58,6 +58,9 @@ static int IniHandler(void* user, const char* section, const char* name,
         context->hasUiSetting = TRUE;
         config->battleUiSpeedFix = StringToBool(value);
     }
+    if (MATCH("General", "BW2BattleVisuals")) {
+        config->bw2BattleVisuals = StringToBool(value);
+    }
     if(MATCH("General", "EnableAsserts")) {
         config->enableAsserts = StringToBool(value);
     }
@@ -105,6 +108,7 @@ void SIM_Config_prj_LoadDefaults(SIM_Config_prj_type * aConfig)
   aConfig->enable60fps = TRUE;
   aConfig->battlePacing = BATTLE_PACING_SMOOTH;
   aConfig->battleUiSpeedFix = FALSE;
+  aConfig->bw2BattleVisuals = FALSE;
   aConfig->enableAsserts = FALSE;
   aConfig->breakDebuggerOnGfAssert = FALSE;
 
@@ -141,6 +145,7 @@ void SIM_Config_prj_SaveConfigFile(SIM_Config_prj_type * aConfig)
     fprintf(configFile, "60Fps=%s\n", BoolToString(aConfig->enable60fps));
     fprintf(configFile, "BattlePacing=%s\n", sBattlePacingNames[aConfig->battlePacing]);
     fprintf(configFile, "BattleUiSpeedFix=%s\n", BoolToString(aConfig->battleUiSpeedFix));
+    fprintf(configFile, "BW2BattleVisuals=%s\n", BoolToString(aConfig->bw2BattleVisuals));
     fprintf(configFile, "EnableAsserts=%s\n", BoolToString(aConfig->enableAsserts));
     fprintf(configFile, "BreakDebuggerOnAssert=%s\n", BoolToString(aConfig->breakDebuggerOnGfAssert));
     fprintf(configFile, "\n");

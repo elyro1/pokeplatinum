@@ -31,6 +31,10 @@ BOOL ov12_02237810(BallRotation *param0);
 void ov12_02237828(BallRotation *param0, int param1);
 BOOL ov12_0223782C(BallRotation *param0, int param1);
 void ov12_0223783C(BallRotation *param0);
+#ifdef SDK_PORT
+// Stops drawing the ball, which runs on unseen (BW2's battle view plays its own throw, src/bwbattle/adapter)
+void BallRotation_Hide(BallRotation *ballRotation);
+#endif
 void ov12_0223786C(BallRotation *param0, int param1);
 int ov12_02237890(BallRotation *param0);
 void ov12_02237E0C(BallRotation *param0, int param1);

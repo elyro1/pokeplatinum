@@ -224,6 +224,9 @@ static void ExecuteAndCleanupIfDone(ApplicationManager **appManPtr)
 
 static BOOL HandleInputsEventsAndProcesses(FieldSystem *fieldSystem)
 {
+#ifdef SDK_PORT
+    DEBUG_FieldFrame(fieldSystem);
+#endif
     HandleFieldInput(fieldSystem);
     BOOL taskFinished = FieldTask_Run(fieldSystem);
 #ifdef SDK_PORT

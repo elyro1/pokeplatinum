@@ -1,5 +1,9 @@
 #include "battle/battle_main.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bw_adapter.h"
+#endif
+
 #include <dwc.h>
 #include <nitro.h>
 #include <nitro/sinit.h>
@@ -390,6 +394,11 @@ void BattleSystem_ExitSubMenu(BattleSystem *battleSys)
 
 void BattleSystem_HideBattleScreen(BattleSystem *battleSys)
 {
+#ifdef SDK_PORT
+    // A menu's screen (the bag, the party) covers the battle: BW2's view stops until the battle's screen comes back
+    // (BattleSystem_SetupBattleScreen), and leaves the menu Platinum's palettes and its 4:3 screen
+    BwAdapter_SetSuspended(TRUE);
+#endif
     Window_Remove(&battleSys->windows[0]);
     GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG0, FALSE);
     GXLayers_EngineAToggleLayers(GX_PLANEMASK_BG1, FALSE);
@@ -402,6 +411,9 @@ void BattleSystem_HideBattleScreen(BattleSystem *battleSys)
 void BattleSystem_SetupBattleScreen(BattleSystem *battleSys, BOOL restoreTerrain)
 {
     battleSys->pendingBlendReset = 1;
+#ifdef SDK_PORT
+    BwAdapter_SetSuspended(!restoreTerrain);
+#endif
 
     GraphicsModes graphicsMode = {
         GX_DISPMODE_GRAPHICS,
@@ -601,7 +613,21 @@ static void BattleMain_InitGraphics(ApplicationManager *appMan)
 
     battleSys->spriteSys = SpriteSystem_Alloc(HEAP_ID_BATTLE);
 
+#ifdef SDK_PORT
+    // With BW2's view, its 2D actors (gauges, effect sprites) take the main engine's OAM entries from 64 on, and the
+    // affine parameters in them (src/bwbattle/host/bw_view_host.c)
+    if (BwAdapter_IsEnabled()) {
+        RenderOamTemplate oamTemplate = sOamTemplate;
+
+        oamTemplate.mainOamCount = 64;
+        oamTemplate.mainAffineOamCount = 16;
+        SpriteSystem_Init(battleSys->spriteSys, &oamTemplate, &sTransferTemplate, 16 + 16);
+    } else {
+        SpriteSystem_Init(battleSys->spriteSys, &sOamTemplate, &sTransferTemplate, 16 + 16);
+    }
+#else
     SpriteSystem_Init(battleSys->spriteSys, &sOamTemplate, &sTransferTemplate, 16 + 16);
+#endif
     ReserveVramForWirelessIconChars(NNS_G2D_VRAM_TYPE_2DMAIN, GX_OBJVRAMMODE_CHAR_1D_64K);
     ReserveSlotsForWirelessIconPalette(NNS_G2D_VRAM_TYPE_2DMAIN);
 
@@ -631,6 +657,10 @@ static void BattleMain_InitGraphics(ApplicationManager *appMan)
     battleSys->battleAnimSys = BattleAnimSystem_New(HEAP_ID_BATTLE);
 
     BattleMain_InitTerrains(battleSys);
+
+#ifdef SDK_PORT
+    BwAdapter_BattleCreate(battleSys);
+#endif
 
     EnableTouchPad();
     InitializeTouchPad(4);
@@ -812,6 +842,9 @@ static void BattleMain_CopyBattleSysToDTOAndFree(ApplicationManager *appMan)
     SysTask_Done(battleSys->taskUpdateRedHPSound);
     DisableTouchPad();
 
+#ifdef SDK_PORT
+    BwAdapter_BattleDelete(battleSys);
+#endif
     FreeG3DPipelineBuffers(battleSys->pipelineBuffers);
 
     LCRNG_SetSeed(battleSys->seedLCRNG);
@@ -1527,11 +1560,23 @@ static void BattleMain_VBlankCallback(void *inBattleSys)
         GXLayers_SetBanks(&banks);
     }
 
+#ifdef SDK_PORT
+    // With BW2's view, Platinum's battle sprites aren't drawn, and their texture and palette at the start of texture
+    // VRAM would overwrite BW2's; while the view waits (the caught Pokémon on the nickname prompt, after which the
+    // battle ends) they are Platinum's again
+    if (!BwAdapter_IsDrawing()) {
+        PokemonSpriteManager_UpdateCharAndPltt(battleSys->monSpriteMan);
+    }
+#else
     PokemonSpriteManager_UpdateCharAndPltt(battleSys->monSpriteMan);
+#endif
     VramTransfer_Process();
     SpriteSystem_TransferOam();
     PaletteData_CommitFadedBuffers(battleSys->paletteData);
     Bg_RunScheduledUpdates(battleSys->bgConfig);
+#ifdef SDK_PORT
+    BwAdapter_VBlank(battleSys);
+#endif
 
     OS_SetIrqCheckFlag(OS_IE_V_BLANK);
 }
@@ -1554,6 +1599,21 @@ static void SysTask_DrawSprites(SysTask *task, void *inBattleSys)
     CommManager_Dummy_02038A1C(HEAP_ID_BATTLE, battleSys->bgConfig);
 
     if (battleSys->renderMode == 0 || battleSys->renderMode == 3) {
+#ifdef SDK_PORT
+        // BW2's view draws the 3D scene in place of Platinum's battle sprites; the 2D sprites (menus, healthboxes) stay
+        // Platinum's. BW2's battle swaps the 3D buffers in the same modes
+        if (BwAdapter_Draw(battleSys)) {
+            // Platinum's move and ball animations still run on its particles until BW2's effects replace them
+            if (battleSys->renderMode == 0) {
+                ParticleHelper_DrawParticleSystems();
+            }
+            PokemonSpriteManager_UpdateWithoutDrawing(battleSys->monSpriteMan);
+            SpriteSystem_DrawSprites(battleSys->spriteMan);
+            SpriteSystem_UpdateTransfer();
+            G3_RequestSwapBuffers(GX_SORTMODE_MANUAL, GX_BUFFERMODE_Z);
+            return;
+        }
+#endif
         if (battleSys->renderMode == 0) {
             ParticleHelper_DrawParticleSystems();
         }
@@ -1617,7 +1677,12 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
     if (BattleSystem_GetRedHPSoundFlag(battleSys)) {
         int delay = BattleSystem_GetRedHPSoundEffectDelay(battleSys);
 
-        if (Sound_IsEffectPlaying(SEQ_SE_DP_HINSI_sseq) == FALSE) {
+        if (Sound_IsEffectPlaying(SEQ_SE_DP_HINSI_sseq) == FALSE
+#ifdef SDK_PORT
+            // The pause between beeps is Platinum's 30 Hz frames, though this UI task runs on each of the 60 FPS loop's
+            && BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)
+#endif
+        ) {
             if (--delay == 0) {
                 Sound_PlayEffect(SEQ_SE_DP_HINSI_sseq);
                 BattleSystem_SetRedHPSoundEffectDelay(battleSys, redHPSoundDelay);
