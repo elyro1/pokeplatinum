@@ -34,6 +34,8 @@ typedef struct {
     VecFx32 ground; // Under the feet: the contact shadow's center, on the terrain.
     float elevation, strength;
     float slopeX, slopeZ; // Ground slope on steps.
+    // The contact shadow as drawn, on its own lowered plane; zero strength: none.
+    float contactCenter[3], contactRadiusX, contactRadiusZ, contactStrength;
 } CastShadow;
 
 typedef struct {
@@ -293,7 +295,9 @@ void FieldVisualEffects_SetScene(FieldSystem *field, BOOL allowed, enum FieldAtm
     // Lights mirrored in water need the night glow and the water effect.
     BOOL reflections = config->waterEffects && config->nightGlows && sEffects.night.emissionActivation > 0;
     BOOL perspective = field->camera->projection == CAMERA_PROJECTION_PERSPECTIVE;
-    if (outdoors && (config->weatherEffects || reflections) && perspective) {
+    // Cast shadows meet the contact shadow at the feet by world position.
+    BOOL shadows = config->castShadows && config->softContactShadows;
+    if (outdoors && (config->weatherEffects || reflections || shadows) && perspective) {
         float matrix[9], offset[3], camera[3];
         FieldVisuals_WorldFromClip(&field->npcSceneViewMatrix, &field->npcSceneProjectionMatrix, matrix, offset, camera);
         SIM_SetFieldWorld(matrix, offset, camera, sEffects.time);
@@ -368,8 +372,9 @@ BOOL FieldVisualEffects_DrawContactShadow(FieldSystem *field, MapObject *object,
     // Characters cast shadows and catch nearby night light from the same
     // footing; see DrawCastShadows and BeginCharacter.
     Billboard *billboard = ov5_021EB1A0(object);
+    CastShadow *cast = NULL;
     if (billboard && sEffects.castCount < CAST_LIMIT) {
-        CastShadow *cast = &sEffects.casts[sEffects.castCount++];
+        cast = &sEffects.casts[sEffects.castCount++];
         cast->billboard = billboard;
         // On the terrain itself, not the contact shadow's lowered anchor.
         cast->ground = center;
@@ -378,6 +383,7 @@ BOOL FieldVisualEffects_DrawContactShadow(FieldSystem *field, MapObject *object,
         cast->slopeZ = slopeZ;
         cast->elevation = elevation;
         cast->strength = 1 / (1 + elevation * 0.08f);
+        cast->contactStrength = 0;
     }
     if (!config->softContactShadows) {
         return FALSE;
@@ -395,6 +401,15 @@ BOOL FieldVisualEffects_DrawContactShadow(FieldSystem *field, MapObject *object,
     if (sloped) {
         center.y = slopeGround.y + FX32_ONE / 2;
     }
+    if (cast) {
+        cast->contactCenter[0] = center.x / (float)FX32_ONE;
+        cast->contactCenter[1] = center.y / (float)FX32_ONE;
+        cast->contactCenter[2] = center.z / (float)FX32_ONE;
+        cast->contactRadiusX = radiusX * size;
+        cast->contactRadiusZ = radiusZ * size;
+        // The patch's polygon alpha is 30 of 31.
+        cast->contactStrength = strength * 30 / 31;
+    }
     TiltedGroundPatch(&center, radiusX * size, radiusZ * size, slopeX, slopeZ, 1, strength, GX_RGB(3, 4, 5), (x + z) & 1 ? 33 : 48);
     SetEffect(0, 0);
     return TRUE;
@@ -404,7 +419,8 @@ BOOL FieldVisualEffects_DrawContactShadow(FieldSystem *field, MapObject *object,
 // The billboard command would turn it back towards the camera, so it is
 // skipped; the material keeps the current frame's texture, without culling.
 // All cast shadows share one polygon ID, so where they overlap they do not
-// darken twice; the contact shadow's ID differs, so both darken the feet.
+// darken twice. The contact shadow's ID differs; over it the shader shows
+// the darker of the two (see SIM_SetFieldContactShadow).
 static void SkipCommand(NNSG3dRS *state)
 {
     NNS_G3dRSSetFlag(state, NNS_G3D_RSFLAG_SKIP);
@@ -439,6 +455,7 @@ static void DrawCast(Billboard *billboard, const CastShadow *cast, float offsetX
     NNSG3dSbcCallBackFunc init = model->cbInitFunc;
     model->cbInitFunc = CastCallbacks;
     SetEffect(23, opacity);
+    SIM_SetFieldContactShadow(cast->contactCenter, cast->contactRadiusX, cast->contactRadiusZ, cast->slopeX, cast->slopeZ, cast->contactStrength);
     // Without the depth bias field effects get, so trees and ledges next to
     // the character still hide the flat shadow.
     MtxFx44 biased = *NNS_G3dGlbGetProjectionMtx();
@@ -451,6 +468,7 @@ static void DrawCast(Billboard *billboard, const CastShadow *cast, float offsetX
     NNS_G3dGeFlushBuffer();
     NNS_G3dGlbSetProjectionMtx(&biased);
     NNS_G3dGlbFlush();
+    SIM_SetFieldContactShadow(cast->contactCenter, 0, 0, 0, 0, 0);
     model->cbInitFunc = init;
 }
 static const CastShadow *FindCharacter(Billboard *billboard)

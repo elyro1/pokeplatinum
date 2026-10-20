@@ -420,6 +420,22 @@ static void sub_02063A78(MapObject *mapObj, u8 currTileBehavior, u8 prevTileBeha
     }
 }
 
+#ifdef SDK_PORT
+// The tiles sub_02063A78 and sub_02063B20 hide shadows on.
+BOOL MapObject_TileHidesShadow(MapObject *mapObj, u32 tileBehavior)
+{
+    return TileBehavior_IsTallGrass(tileBehavior)
+        || TileBehavior_IsVeryTallGrass(tileBehavior)
+        || MapObject_IsOnWater(mapObj, tileBehavior)
+        || TileBehavior_IsPuddle(tileBehavior)
+        || TileBehavior_IsShallowWater(tileBehavior)
+        || MapObject_IsOnSnow(mapObj, tileBehavior)
+        || TileBehavior_IsMud(tileBehavior)
+        || TileBehavior_IsMudWithGrass(tileBehavior)
+        || TileBehavior_IsReflective(tileBehavior);
+}
+#endif
+
 static void sub_02063B20(MapObject *mapObj, u8 currTileBehavior, u8 prevTileBehavior, const ObjectEventGfxRenderDetailsEntry *renderDetails)
 {
     const MapObjectManager *mapObjMan = MapObject_MapObjectManager(mapObj);

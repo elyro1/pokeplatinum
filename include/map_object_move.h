@@ -22,6 +22,10 @@ int MapObject_IsOnShallowSnow(MapObject *mapObj, u32 tileBehavior);
 int MapObject_IsOnElevatedBridge(MapObject *mapObj, u32 tileBehavior);
 int MapObject_IsOnBikeBridgeNorthSouth(MapObject *mapObj, u32 tileBehavior);
 int MapObject_IsOnBikeBridgeEastWest(MapObject *mapObj, u32 tileBehavior);
+#ifdef SDK_PORT
+// Whether the game hides a character's shadow on this tile (tall grass, water, snow, mud...).
+BOOL MapObject_TileHidesShadow(MapObject *mapObj, u32 tileBehavior);
+#endif
 int MapObject_GetDxFromDir(int dir);
 int MapObject_GetDzFromDir(int dir);
 void MapObject_StepDir(MapObject *mapObj, int dir);

@@ -9,6 +9,7 @@
 #include "overlay005/field_effect_manager.h"
 
 #include "map_object.h"
+#include "map_object_move.h"
 #include "map_tile_behavior.h"
 #include "overworld_anim_manager.h"
 #include "rtc.h"
@@ -263,8 +264,12 @@ static void ov5_021F1604(OverworldAnimManager *param0, void *param1)
         v0->unk_0C = 1;
 #ifdef SDK_PORT
         // Keep enhanced shadows in tall grass, where the original blob hides.
+        // Stepping out of it, the game keeps the shadow hidden until the
+        // step ends; keep them then too, unless the new tile hides shadows.
+        u32 curr = MapObject_GetCurrTileBehavior(v1), prev = MapObject_GetPrevTileBehavior(v1);
         if (!MapObject_CheckStatusFlag(v1, MAP_OBJ_STATUS_HIDE)
-            && TileBehavior_IsTallGrass(MapObject_GetCurrTileBehavior(v1))) {
+            && (TileBehavior_IsTallGrass(curr)
+                || (TileBehavior_IsTallGrass(prev) && !MapObject_TileHidesShadow(v1, curr)))) {
             v0->unk_0C = 2;
         }
 #endif
