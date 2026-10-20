@@ -182,6 +182,8 @@ static UnkStruct_ov5_02202120 *Unk_ov5_02202120 = NULL;
 void EncounterEffect_Start(enum EncEffectCutIn effect, FieldSystem *fieldSystem, BOOL *done)
 {
 #ifdef SDK_PORT
+    // The Galactic boss radial wipe is a screen mask drawn into BG3.
+    SIM_SetFieldTransitionMask(effect == ENCEFF_CUTIN_GALACTIC_BOSS ? 3 : -1);
     fieldSystem->encounterEffectBorders = effect >= ENCEFF_CUTIN_LEADER_ROARK && effect <= ENCEFF_CUTIN_LEADER_VOLKNER;
     if (fieldSystem->encounterEffectBorders) {
         SIM_SetFieldWidescreen(FALSE);
@@ -203,6 +205,7 @@ void EncounterEffect_Start(enum EncEffectCutIn effect, FieldSystem *fieldSystem,
 void EncounterEffect_Finish(EncounterEffect *encEffect, SysTask *effectTask)
 {
 #ifdef SDK_PORT
+    SIM_SetFieldTransitionMask(-1);
     encEffect->fieldSystem->encounterEffectBorders = FALSE;
 #endif
     NARC_dtor(encEffect->narc);
