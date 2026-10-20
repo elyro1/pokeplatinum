@@ -50,6 +50,13 @@ enum SummaryPage {
     SUMMARY_PAGE_NONE = 0xFF
 };
 
+enum SummaryStatsView {
+    SUMMARY_STATS_VIEW_STATS = 0,
+    SUMMARY_STATS_VIEW_EVS,
+    SUMMARY_STATS_VIEW_IVS,
+    SUMMARY_STATS_VIEW_MAX,
+};
+
 enum SummaryDataType {
     SUMMARY_DATA_MON = 0,
     SUMMARY_DATA_PARTY_MON,
@@ -374,6 +381,8 @@ typedef struct PokemonSummaryMonData {
     u16 speed;
     u8 ability;
     u8 nature;
+    u8 evs[STAT_MAX];
+    u8 ivs[STAT_MAX];
 
     u16 moves[LEARNED_MOVES_MAX];
     u8 curPP[LEARNED_MOVES_MAX];
@@ -455,6 +464,7 @@ typedef struct PokemonSummaryScreen {
     u8 ribbonRow;
     u8 ribbonMax;
     u8 ribbonID;
+    u8 statsView;
 } PokemonSummaryScreen;
 
 BOOL PokemonSummaryScreen_ShowContestData(SaveData *saveData);

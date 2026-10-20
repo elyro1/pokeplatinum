@@ -1,0 +1,24 @@
+# original-sha256: 48368e8990246258f719216d597bb211e7f6a5359088bc9b4a8989e0779de485
+--- res/text/pokemon_summary_screen.json
++++ retail/pokemon_summary_screen.json
+@@ -898,20 +897,0 @@
+-    },
+-    {
+-      "id": "PokemonSummary_Text_PageTitleEVs",
+-      "en_US": "POKéMON EVs"
+-    },
+-    {
+-      "id": "PokemonSummary_Text_PageTitleIVs",
+-      "en_US": "POKéMON IVs"
+-    },
+-    {
+-      "id": "PokemonSummary_Text_ShowEVs",
+-      "en_US": "EVs"
+-    },
+-    {
+-      "id": "PokemonSummary_Text_ShowIVs",
+-      "en_US": "IVs"
+-    },
+-    {
+-      "id": "PokemonSummary_Text_ShowStats",
+-      "en_US": "Stats"

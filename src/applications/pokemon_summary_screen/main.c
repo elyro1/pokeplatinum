@@ -224,6 +224,7 @@ static int PokemonSummaryScreen_Init(ApplicationManager *appMan, int *state)
 
     memset(summaryScreen, 0, sizeof(PokemonSummaryScreen));
 
+    summaryScreen->statsView = SUMMARY_STATS_VIEW_STATS;
     summaryScreen->data = ApplicationManager_Args(appMan);
     summaryScreen->bgConfig = BgConfig_New(HEAP_ID_POKEMON_SUMMARY_SCREEN);
     summaryScreen->monSprite.monAnimMan = PokemonAnimManager_New(HEAP_ID_POKEMON_SUMMARY_SCREEN, 1, TRUE);
@@ -616,7 +617,12 @@ static int HandleInput_Main(PokemonSummaryScreen *summaryScreen)
             return TryFeedPoffin(summaryScreen);
         }
 
-        if (summaryScreen->page == SUMMARY_PAGE_BATTLE_MOVES) {
+        if (summaryScreen->page == SUMMARY_PAGE_SKILLS) {
+            summaryScreen->statsView = (summaryScreen->statsView + 1) % SUMMARY_STATS_VIEW_MAX;
+            Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
+            PokemonSummaryScreen_DrawExtraWindows(summaryScreen);
+            return SUMMARY_STATE_HANDLE_INPUT;
+        } else if (summaryScreen->page == SUMMARY_PAGE_BATTLE_MOVES) {
             Sound_PlayEffect(SEQ_SE_DP_SYU01_sseq);
             summaryScreen->pageState = PAGE_STATE_INITIAL;
             return SUMMARY_STATE_SETUP_BATTLE_MOVE_INFO;
@@ -1106,6 +1112,19 @@ static void SetMonDataFromMon(PokemonSummaryScreen *summaryScreen, Pokemon *mon,
     monData->speed = Pokemon_GetValue(mon, MON_DATA_SPEED, NULL);
     monData->ability = Pokemon_GetValue(mon, MON_DATA_ABILITY, NULL);
     monData->nature = Pokemon_GetNature(mon);
+
+    monData->evs[STAT_HP] = Pokemon_GetValue(mon, MON_DATA_HP_EV, NULL);
+    monData->ivs[STAT_HP] = Pokemon_GetValue(mon, MON_DATA_HP_IV, NULL);
+    monData->evs[STAT_ATTACK] = Pokemon_GetValue(mon, MON_DATA_ATK_EV, NULL);
+    monData->ivs[STAT_ATTACK] = Pokemon_GetValue(mon, MON_DATA_ATK_IV, NULL);
+    monData->evs[STAT_DEFENSE] = Pokemon_GetValue(mon, MON_DATA_DEF_EV, NULL);
+    monData->ivs[STAT_DEFENSE] = Pokemon_GetValue(mon, MON_DATA_DEF_IV, NULL);
+    monData->evs[STAT_SPEED] = Pokemon_GetValue(mon, MON_DATA_SPEED_EV, NULL);
+    monData->ivs[STAT_SPEED] = Pokemon_GetValue(mon, MON_DATA_SPEED_IV, NULL);
+    monData->evs[STAT_SPECIAL_ATTACK] = Pokemon_GetValue(mon, MON_DATA_SPATK_EV, NULL);
+    monData->ivs[STAT_SPECIAL_ATTACK] = Pokemon_GetValue(mon, MON_DATA_SPATK_IV, NULL);
+    monData->evs[STAT_SPECIAL_DEFENSE] = Pokemon_GetValue(mon, MON_DATA_SPDEF_EV, NULL);
+    monData->ivs[STAT_SPECIAL_DEFENSE] = Pokemon_GetValue(mon, MON_DATA_SPDEF_IV, NULL);
 
     u16 i;
     u8 maxPP;
