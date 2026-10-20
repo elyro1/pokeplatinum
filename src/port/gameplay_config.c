@@ -12,6 +12,14 @@ void GameplayConfig_LoadDefaults(GameplayConfig *config)
     // FALSE restores the Heart Scale requirement and payment; other move tutors are unaffected.
     config->freeMoveRelearning = TRUE;
 
+    // Let all three shard move tutors teach compatible moves without requiring or consuming any shards.
+    // FALSE restores their original shard prices; displayed costs and tutor greetings follow this setting.
+    config->freeMoveTutors = TRUE;
+
+    // Make the Route 212 tutor offer all three shard tutors' move lists, including the post-game Survival Area moves.
+    // FALSE restores each tutor's original list; compatibility checks and the separate freeMoveTutors setting still apply.
+    config->mainStoryMoveTutors = TRUE;
+
     // Stop counting Great Marsh steps and disable the 500-step exit, while retaining the entry fee and Safari Ball limit.
     // FALSE resumes step counting from the saved counter and restores the 500-step exit.
     config->unlimitedGreatMarshSteps = TRUE;

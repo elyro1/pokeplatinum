@@ -16,7 +16,15 @@ SurvivalAreaNorthHouse_Hiker:
     PlaySE SE_CONFIRM_sseq_3
     LockAll
     FacePlayer
+    CheckFreeMoveTutors VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, SurvivalAreaNorthHouse_FreeGreeting
     Message SurvivalAreaNorthHouse_Text_WantToTeachMove
+    GoTo SurvivalAreaNorthHouse_AskTeachMove
+
+SurvivalAreaNorthHouse_FreeGreeting:
+    Message SurvivalAreaNorthHouse_Text_FreeGreeting
+
+SurvivalAreaNorthHouse_AskTeachMove:
     ShowYesNoMenu VAR_RESULT
     GoToIfEq VAR_RESULT, MENU_YES, SurvivalAreaNorthHouse_TryTeachMove
     GoToIfEq VAR_RESULT, MENU_NO, SurvivalAreaNorthHouse_SeeYouThen

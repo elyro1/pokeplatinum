@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
+
 #include "constants/forms.h"
 #include "constants/heap.h"
 #include "constants/species.h"
@@ -118,6 +122,22 @@ BOOL ScrCmd_ResetMoveSlot(ScriptContext *ctx)
     return FALSE;
 }
 
+static BOOL MoveTutorsAreFree(void)
+{
+#ifdef SDK_PORT
+    return GameplayConfig_Get()->freeMoveTutors;
+#else
+    return FALSE;
+#endif
+}
+
+BOOL ScrCmd_CheckFreeMoveTutors(ScriptContext *ctx)
+{
+    u16 *freeTutors = ScriptContext_GetVarPointer(ctx);
+    *freeTutors = MoveTutorsAreFree();
+    return FALSE;
+}
+
 BOOL ScrCmd_CheckCanAffordMove(ScriptContext *ctx)
 {
     int teachableMoveIndex;
@@ -145,6 +165,10 @@ BOOL ScrCmd_CheckCanAffordMove(ScriptContext *ctx)
     }
 
     *canTeach = TRUE;
+
+    if (MoveTutorsAreFree()) {
+        return FALSE;
+    }
 
     if (redCost && Bag_CanRemoveItem(bag, ITEM_RED_SHARD, redCost, HEAP_ID_FIELD3) == FALSE) {
         *canTeach = FALSE;
@@ -185,6 +209,11 @@ BOOL ScrCmd_PayShardCost(ScriptContext *ctx)
 
     if (teachableMovesIndex == NELEMS(sTeachableMoves)) {
         GF_ASSERT(FALSE);
+        return FALSE;
+    }
+
+    if (MoveTutorsAreFree()) {
+        return FALSE;
     }
 
     Bag_TryRemoveItem(bag, ITEM_RED_SHARD, redCost, HEAP_ID_FIELD3);
@@ -263,6 +292,21 @@ static u8 Pokemon_ReadMovesetMaskByte(Pokemon *mon, u8 offset)
     return sSpeciesLearnsetsByTutor[moveset - 1].maskData[offset];
 }
 
+static BOOL MoveIsAvailableAt(u16 moveIndex, enum TutorLocation location)
+{
+    if (moveIndex >= NELEMS(sTeachableMoves)) {
+        return FALSE;
+    }
+
+#ifdef SDK_PORT
+    if (location == TUTOR_LOCATION_ROUTE_212 && GameplayConfig_Get()->mainStoryMoveTutors) {
+        return TRUE;
+    }
+#endif
+
+    return location == sTeachableMoves[moveIndex].location;
+}
+
 static BOOL Pokemon_HasLearnableMovesAt(Pokemon *mon, enum TutorLocation location)
 {
     int movesetMaskByteOffset, movesetMaskBitOffset, knownMovesIndex;
@@ -282,7 +326,7 @@ static BOOL Pokemon_HasLearnableMovesAt(Pokemon *mon, enum TutorLocation locatio
         for (movesetMaskBitOffset = 0; movesetMaskBitOffset < 8; movesetMaskBitOffset++) {
             canLearn = ((movesetMask >> movesetMaskBitOffset) & 0x1);
 
-            if ((canLearn == TRUE) && (location == sTeachableMoves[movesetMaskByteOffset * 8 + movesetMaskBitOffset].location)) {
+            if ((canLearn == TRUE) && MoveIsAvailableAt(movesetMaskByteOffset * 8 + movesetMaskBitOffset, location)) {
                 for (knownMovesIndex = 0; knownMovesIndex < LEARNED_MOVES_MAX; knownMovesIndex++) {
                     if (knownMoves[knownMovesIndex] == sTeachableMoves[movesetMaskByteOffset * 8 + movesetMaskBitOffset].moveID) {
                         break;
@@ -341,7 +385,7 @@ BOOL ScrCmd_ShowMoveTutorMoveSelectionMenu(ScriptContext *scriptContext)
             for (int j = 0; j < 8; j++) {
                 canLearn = ((movesetMaskByte >> j) & 0x1);
 
-                if (canLearn == TRUE && location == sTeachableMoves[i * 8 + j].location) {
+                if (canLearn == TRUE && MoveIsAvailableAt(i * 8 + j, location)) {
                     for (knownMoveIndex = 0; knownMoveIndex < LEARNED_MOVES_MAX; knownMoveIndex++) {
                         if (knownMoves[knownMoveIndex] == sTeachableMoves[i * 8 + j].moveID) {
                             break;
@@ -357,7 +401,7 @@ BOOL ScrCmd_ShowMoveTutorMoveSelectionMenu(ScriptContext *scriptContext)
         }
     } else {
         for (int teachableMove = 0; teachableMove < NELEMS(sTeachableMoves); teachableMove++) {
-            if (location == sTeachableMoves[teachableMove].location) {
+            if (MoveIsAvailableAt(teachableMove, location)) {
                 learnableMoves[learnableMovesCount] = GetMoveID(teachableMove);
                 learnableMovesCount++;
             }
@@ -593,7 +637,12 @@ BOOL ScrCmd_ShowShardCost(ScriptContext *ctx)
     u16 *selectedOptionPtr = ScriptContext_GetVarPointer(ctx);
 
     selectedMove = GetMoveIndex(selectedMove);
-    *v2 = FieldMenuManager_NewMoveTutorCostWindow(fieldSystem, v3, v4, selectedOptionPtr, *strTemplate, sTeachableMoves[selectedMove].redCost, sTeachableMoves[selectedMove].blueCost, sTeachableMoves[selectedMove].yellowCost, sTeachableMoves[selectedMove].greenCost);
+    BOOL freeTutors = MoveTutorsAreFree();
+    *v2 = FieldMenuManager_NewMoveTutorCostWindow(fieldSystem, v3, v4, selectedOptionPtr, *strTemplate,
+        freeTutors ? 0 : sTeachableMoves[selectedMove].redCost,
+        freeTutors ? 0 : sTeachableMoves[selectedMove].blueCost,
+        freeTutors ? 0 : sTeachableMoves[selectedMove].yellowCost,
+        freeTutors ? 0 : sTeachableMoves[selectedMove].greenCost);
 
     return FALSE;
 }

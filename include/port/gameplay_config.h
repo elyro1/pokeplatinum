@@ -10,6 +10,8 @@ extern "C" {
 typedef struct {
     BOOL forgettableHMs;
     BOOL freeMoveRelearning;
+    BOOL freeMoveTutors;
+    BOOL mainStoryMoveTutors;
     BOOL unlimitedGreatMarshSteps;
     BOOL zeroEggCycles; // Eggs start ready to hatch; also applies to existing eggs at the next hatch check.
     BOOL instantHoneyTrees;

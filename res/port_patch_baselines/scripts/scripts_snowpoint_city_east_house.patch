@@ -1,0 +1,13 @@
+# original-sha256: bdde4b1adcb58667f1221a375956312e324d2a2175a94931428612e04a226d9f
+--- scripts_snowpoint_city_east_house.s
++++ scripts_snowpoint_city_east_house.s
+@@ -54,2 +53,0 @@
+-    CheckFreeMoveTutors VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, SnowpointCityEastHouse_FreeGreeting
+@@ -57,6 +54,0 @@
+-    GoTo SnowpointCityEastHouse_AskTeachMove
+-
+-SnowpointCityEastHouse_FreeGreeting:
+-    Message SnowpointCityEastHouse_Text_FreeGreeting
+-
+-SnowpointCityEastHouse_AskTeachMove:

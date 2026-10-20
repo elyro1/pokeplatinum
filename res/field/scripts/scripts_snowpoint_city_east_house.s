@@ -51,7 +51,15 @@ SnowpointCityEastHouse_Hiker:
     PlaySE SE_CONFIRM_sseq_3
     LockAll
     FacePlayer
+    CheckFreeMoveTutors VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, SnowpointCityEastHouse_FreeGreeting
     Message SnowpointCityEastHouse_Text_WantMeToTeachMove
+    GoTo SnowpointCityEastHouse_AskTeachMove
+
+SnowpointCityEastHouse_FreeGreeting:
+    Message SnowpointCityEastHouse_Text_FreeGreeting
+
+SnowpointCityEastHouse_AskTeachMove:
     ShowYesNoMenu VAR_RESULT
     GoToIfEq VAR_RESULT, MENU_YES, SnowpointCityEastHouse_TryTeachMove
     GoToIfEq VAR_RESULT, MENU_NO, SnowpointCityEastHouse_BeSeeingYou

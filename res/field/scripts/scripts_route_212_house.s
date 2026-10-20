@@ -30,7 +30,15 @@ Route212House_Hiker:
     PlaySE SE_CONFIRM_sseq_3
     LockAll
     FacePlayer
+    CheckFreeMoveTutors VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, Route212House_FreeGreeting
     Message Route212House_Text_WantToTeachMove
+    GoTo Route212House_AskTeachMove
+
+Route212House_FreeGreeting:
+    Message Route212House_Text_FreeGreeting
+
+Route212House_AskTeachMove:
     ShowYesNoMenu VAR_RESULT
     GoToIfEq VAR_RESULT, MENU_YES, Route212House_TryTeachMove
     GoToIfEq VAR_RESULT, MENU_NO, Route212House_SeeYouThen

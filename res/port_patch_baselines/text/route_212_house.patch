@@ -1,0 +1,12 @@
+# original-sha256: 4a55aa8cd49ea9f17982377dd2285d4d08e90ff2ed37a21f1e1eb305d0972225
+--- route_212_house.json
++++ route_212_house.json
+@@ -131,8 +130,0 @@
+-    },
+-    {
+-      "id": "Route212House_Text_FreeGreeting",
+-      "en_US": [
+-        "I can teach your Pokémon some moves.\n",
+-        "My lessons are free!\r",
+-        "Would you like me to teach a move?"
+-      ]

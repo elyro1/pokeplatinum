@@ -1,0 +1,12 @@
+# original-sha256: e27132ee30979f4b1e275bd32d7d24b2f87200a29f817e5a460c0e4ea1980cf7
+--- snowpoint_city_east_house.json
++++ snowpoint_city_east_house.json
+@@ -157,8 +156,0 @@
+-    },
+-    {
+-      "id": "SnowpointCityEastHouse_Text_FreeGreeting",
+-      "en_US": [
+-        "I can teach your Pokémon some moves.\n",
+-        "My lessons are free!\r",
+-        "Would you like me to teach a move?"
+-      ]

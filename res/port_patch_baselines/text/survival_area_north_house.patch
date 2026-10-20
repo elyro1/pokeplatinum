@@ -1,0 +1,12 @@
+# original-sha256: 5aca721c11c141c141257efce1426e4bcf79e49d00e3d55f68f447ea409ad319
+--- survival_area_north_house.json
++++ survival_area_north_house.json
+@@ -126,8 +125,0 @@
+-    },
+-    {
+-      "id": "SurvivalAreaNorthHouse_Text_FreeGreeting",
+-      "en_US": [
+-        "I can teach your Pokémon some moves.\n",
+-        "My lessons are free!\r",
+-        "Would you like me to teach a move?"
+-      ]

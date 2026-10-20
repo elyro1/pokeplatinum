@@ -1,0 +1,13 @@
+# original-sha256: 475a75456e82293e9d41bf3428262477f9c49de51d158e94639916873c69f484
+--- scripts_survival_area_north_house.s
++++ scripts_survival_area_north_house.s
+@@ -19,2 +18,0 @@
+-    CheckFreeMoveTutors VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, SurvivalAreaNorthHouse_FreeGreeting
+@@ -22,6 +19,0 @@
+-    GoTo SurvivalAreaNorthHouse_AskTeachMove
+-
+-SurvivalAreaNorthHouse_FreeGreeting:
+-    Message SurvivalAreaNorthHouse_Text_FreeGreeting
+-
+-SurvivalAreaNorthHouse_AskTeachMove:

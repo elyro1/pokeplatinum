@@ -123,6 +123,14 @@
         "Yellow Shards are for status problems.\r",
         "Red Shards are what I like!"
       ]
+    },
+    {
+      "id": "SurvivalAreaNorthHouse_Text_FreeGreeting",
+      "en_US": [
+        "I can teach your Pokémon some moves.\n",
+        "My lessons are free!\r",
+        "Would you like me to teach a move?"
+      ]
     }
   ]
 }

@@ -1,0 +1,13 @@
+# original-sha256: 9c56a7ab1b63c0e8ed20f3e8f9ce1d67122b7510dbe449708e4286a500978487
+--- scripts_route_212_house.s
++++ scripts_route_212_house.s
+@@ -33,2 +32,0 @@
+-    CheckFreeMoveTutors VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, Route212House_FreeGreeting
+@@ -36,6 +33,0 @@
+-    GoTo Route212House_AskTeachMove
+-
+-Route212House_FreeGreeting:
+-    Message Route212House_Text_FreeGreeting
+-
+-Route212House_AskTeachMove:

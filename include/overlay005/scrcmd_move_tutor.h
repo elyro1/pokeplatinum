@@ -7,6 +7,7 @@ BOOL ScrCmd_CheckHasSeenSpecies(ScriptContext *ctx);
 BOOL ScrCmd_CheckHasLearnableTutorMoves(ScriptContext *ctx);
 BOOL ScrCmd_ResetMoveSlot(ScriptContext *ctx);
 BOOL ScrCmd_CheckCanAffordMove(ScriptContext *ctx);
+BOOL ScrCmd_CheckFreeMoveTutors(ScriptContext *ctx);
 BOOL ScrCmd_PayShardCost(ScriptContext *ctx);
 BOOL ScrCmd_ShowMoveTutorMoveSelectionMenu(ScriptContext *ctx);
 BOOL ScrCmd_ShowShardCost(ScriptContext *ctx);

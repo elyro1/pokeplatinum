@@ -5297,6 +5297,11 @@
     .short \destVarID
     .endm
 
+    .macro CheckFreeMoveTutors destVarID
+    .short SCRCMD_CHECKFREEMOVETUTORS
+    .short \destVarID
+    .endm
+
     .macro CheckUnlimitedGreatMarshSteps destVarID
     .short SCRCMD_CHECKUNLIMITEDGREATMARSHSTEPS
     .short \destVarID
