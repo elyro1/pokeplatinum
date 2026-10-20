@@ -4580,6 +4580,14 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
     case 20:
     case 26:
     case 28:
+#ifdef SDK_PORT
+        if (BwAdapter_IsMoveAnimationPending()) {
+            if (!BwAdapter_UpdateMoveAnimation()) {
+                bagMenuData->state++;
+            }
+            break;
+        }
+#endif
         BattleAnimSystem_ExecuteScript(BattleSystem_GetBattleAnimSystem(bagMenuData->battleSys));
 
         if (BattleAnimSystem_IsMoveActive(BattleSystem_GetBattleAnimSystem(bagMenuData->battleSys)) == FALSE) {
