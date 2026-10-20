@@ -5,8 +5,10 @@
 
 #include "party.h"
 #include "pokemon.h"
+#include "save_player.h"
 #include "savedata.h"
 #include "species.h"
+#include "trainer_info.h"
 #include "message_util.h"
 
 #include "charcode_convert.h"
@@ -25,6 +27,9 @@ const char * GUI_CreateMon_GetSpeciesName(int speciesNo) {
 }
 
 int GUI_CreateMon_GenPokemon(int speciesNo, int level) {
+        SaveData * mySaveData = SaveData_Ptr();
+        TrainerInfo * trainerInfo = SaveData_GetTrainerInfo(mySaveData);
+        u8 trainerGender = TrainerInfo_Gender(trainerInfo);
         Pokemon myPoke;
 
         Pokemon_InitWith(&myPoke, 
@@ -33,10 +38,11 @@ int GUI_CreateMon_GenPokemon(int speciesNo, int level) {
                          INIT_IVS_RANDOM, 
                          FALSE, 
                          0, 
-                         OTID_NOT_SHINY, 
-                         0);
+                         OTID_SET,
+                         TrainerInfo_ID(trainerInfo));
+        Pokemon_SetValue(&myPoke, MON_DATA_OT_NAME, TrainerInfo_Name(trainerInfo));
+        Pokemon_SetValue(&myPoke, MON_DATA_OT_GENDER, &trainerGender);
 
-        SaveData * mySaveData = SaveData_Ptr();
         Party * myParty = SaveData_GetParty(mySaveData);
         if(myParty->currentCount >= 6) {
             return FALSE;
