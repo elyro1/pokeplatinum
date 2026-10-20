@@ -66,6 +66,10 @@ void GameplayConfig_LoadDefaults(GameplayConfig *config)
     // Divide the normal steps per hatch check by this value, rounding down to at least one step; 5 reduces 255 steps to 51.
     // 0 or 1 keeps normal timing, ability bonuses still apply, and zeroEggCycles eggs hatch at the next check instead of completing normal cycles.
     config->eggHatchSpeedMultiplier = 5;
+
+    // Multiply the final catch rate after ball, HP, status, and Safari modifiers; 255 or higher guarantees capture.
+    // 0 or 1 keeps original rates; Master Balls, guaranteed catches, and trainer capture restrictions still apply.
+    config->catchRateMultiplier = 2;
 }
 
 void GameplayConfig_Init(void)
