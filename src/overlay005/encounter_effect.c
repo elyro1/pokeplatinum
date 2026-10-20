@@ -761,6 +761,10 @@ void ov5_021DE4CC(NARC *param0, UnkStruct_ov5_021DE47C *param1, UnkStruct_ov5_02
     param2->unk_00[2] = SpriteResourceCollection_AddFrom(param1->unk_190[2], param0, param6, 0, param8, 2, HEAP_ID_FIELD1);
     param2->unk_00[3] = SpriteResourceCollection_AddFrom(param1->unk_190[3], param0, param7, 0, param8, 3, HEAP_ID_FIELD1);
 
+#ifdef SDK_PORT
+    // Keep the VRAM range size after the CPU character data is released.
+    param2->charDataSize = SpriteResource_GetTileData(param2->unk_00[0])->szByte;
+#endif
     SpriteTransfer_RequestCharAtEnd(param2->unk_00[0]);
     SpriteResource_ReleaseData(param2->unk_00[0]);
     SpriteTransfer_RequestPlttFreeSpace(param2->unk_00[1]);

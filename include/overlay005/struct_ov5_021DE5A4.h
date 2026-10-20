@@ -7,6 +7,9 @@
 typedef struct {
     SpriteResource *unk_00[4];
     SpriteResourcesHeader unk_10;
+#ifdef SDK_PORT
+    u32 charDataSize;
+#endif
 } UnkStruct_ov5_021DE5A4;
 
 #endif // POKEPLATINUM_STRUCT_OV5_021DE5A4_H

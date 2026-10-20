@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include <simulator/sim.h>
+#endif
+
 #include "constants/heap.h"
 #include "generated/trainer_classes.h"
 #include "generated/trainers.h"
@@ -31,6 +35,7 @@
 #include "screen_fade.h"
 #include "screen_scroll_manager.h"
 #include "sprite.h"
+#include "sprite_transfer.h"
 #include "string_gf.h"
 #include "string_template.h"
 #include "sys_task.h"
@@ -3234,6 +3239,15 @@ static u32 FieldSystem_GetTrainerGender(FieldSystem *fieldSystem)
     return TrainerInfo_Gender(SaveData_GetTrainerInfo(fieldSystem->saveData));
 }
 
+#ifdef SDK_PORT
+static void EncounterEffect_ExtendBanner(const UnkStruct_ov5_021DE5A4 *banner, BOOL enabled)
+{
+    const NNSG2dImageProxy *proxy = SpriteTransfer_GetImageProxy(banner->unk_00[0]);
+    SIM_SetFieldSpriteEdgeRange(NNS_G2dGetImageLocation(proxy, NNS_G2D_VRAM_TYPE_2DMAIN),
+        banner->charDataSize, enabled);
+}
+#endif
+
 static BOOL EncounterEffect_EliteFourChampion(EncounterEffect *encEffect, enum HeapID heapID, const EliterFourChampionEncounterParam *param)
 {
     UnkStruct_ov5_021E5890 *v0 = encEffect->param;
@@ -3272,6 +3286,10 @@ static BOOL EncounterEffect_EliteFourChampion(EncounterEffect *encEffect, enum H
 
         ov5_021DE4CC(
             encEffect->narc, &v0->unk_5C, &v0->unk_1FC[3], 51, 1, 52, 53, 54, 600000 + 3);
+
+#ifdef SDK_PORT
+        EncounterEffect_ExtendBanner(&v0->unk_1FC[2], TRUE);
+#endif
 
         encEffect->state++;
         break;
@@ -3578,6 +3596,10 @@ static BOOL EncounterEffect_EliteFourChampion(EncounterEffect *encEffect, enum H
         if (encEffect->done != NULL) {
             *(encEffect->done) = 1;
         }
+
+#ifdef SDK_PORT
+        EncounterEffect_ExtendBanner(&v0->unk_1FC[2], FALSE);
+#endif
 
         ov5_021E519C(&v0->unk_2F4);
 
