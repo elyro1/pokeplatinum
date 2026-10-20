@@ -2636,6 +2636,27 @@ static const s8 sFriendshipChangeTable[FRIENDSHIP_EVENT_MAX][3] = {
     [FRIENDSHIP_EVENT_CONTEST_WIN] = { 3, 2, 1 }
 };
 
+int Pokemon_ScaleFriendshipGain(int change)
+{
+#ifdef SDK_PORT
+    u8 multiplier = GameplayConfig_Get()->friendshipGainMultiplier;
+
+    if (change > 0 && multiplier > 1) {
+        // No friendship gain needs to exceed the cap. Bound before multiplying to avoid overflow.
+        if (change > MAX_FRIENDSHIP_VALUE) {
+            change = MAX_FRIENDSHIP_VALUE;
+        }
+
+        change *= multiplier;
+
+        if (change > MAX_FRIENDSHIP_VALUE) {
+            change = MAX_FRIENDSHIP_VALUE;
+        }
+    }
+#endif
+    return change;
+}
+
 void Pokemon_UpdateFriendship(Pokemon *mon, u8 friendshipEvent, u16 mapID)
 {
     if (friendshipEvent == FRIENDSHIP_EVENT_WALK_CYCLE) {
@@ -2679,7 +2700,7 @@ void Pokemon_UpdateFriendship(Pokemon *mon, u8 friendshipEvent, u16 mapID)
         }
     }
 
-    monFriendship += friendshipChange;
+    monFriendship += Pokemon_ScaleFriendshipGain(friendshipChange);
 
     if (monFriendship < 0) {
         monFriendship = 0;

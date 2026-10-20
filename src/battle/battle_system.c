@@ -748,6 +748,15 @@ BOOL BattleSystem_UseBagItem(BattleSystem *battleSys, int battler, int partySlot
             }
         }
 
+#ifdef SDK_PORT
+        friendship = Pokemon_ScaleFriendshipGain(friendship);
+        if (friendship > 0) {
+            int remainingFriendship = MAX_FRIENDSHIP_VALUE - Pokemon_GetValue(mon, MON_DATA_FRIENDSHIP, NULL);
+            if (friendship > remainingFriendship) {
+                friendship = remainingFriendship;
+            }
+        }
+#endif
         Pokemon_IncreaseValue(mon, MON_DATA_FRIENDSHIP, friendship);
         if (selectedSlot == partySlot || targetSlot == partySlot) {
             Battler_AddVal(battleCtx, battler, BATTLEMON_FRIENDSHIP, friendship);

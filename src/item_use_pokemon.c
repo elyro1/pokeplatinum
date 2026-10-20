@@ -586,6 +586,7 @@ static u8 UpdatePokemonFriendship(Pokemon *mon, s32 current, s32 change, u16 loc
         }
     }
 
+    change = Pokemon_ScaleFriendshipGain(change);
     change += current;
 
     if (change > MAX_FRIENDSHIP_VALUE) {

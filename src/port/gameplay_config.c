@@ -59,6 +59,10 @@ void GameplayConfig_LoadDefaults(GameplayConfig *config)
     // 0 also keeps original odds; extra rolls preserve existing Pokemon, nature, gender, ability, Wurmple's evolution branch, and shiny locks.
     config->shinyRolls = 1;
 
+    // Multiply positive friendship gains after existing bonuses; friendship losses are unchanged.
+    // 0 or 1 keeps original gains. Friendship still caps at 255; initial friendship and egg cycles are unaffected.
+    config->friendshipGainMultiplier = 2;
+
     // Divide the normal steps per hatch check by this value, rounding down to at least one step; 5 reduces 255 steps to 51.
     // 0 or 1 keeps normal timing, ability bonuses still apply, and zeroEggCycles eggs hatch at the next check instead of completing normal cycles.
     config->eggHatchSpeedMultiplier = 5;

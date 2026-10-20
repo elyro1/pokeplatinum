@@ -299,7 +299,7 @@ BOOL ScrCmd_IncreasePartyMonFriendship(ScriptContext *ctx)
         }
     }
 
-    friendship += value;
+    friendship += Pokemon_ScaleFriendshipGain(value);
 
     if (friendship > MAX_FRIENDSHIP_VALUE) {
         friendship = MAX_FRIENDSHIP_VALUE;

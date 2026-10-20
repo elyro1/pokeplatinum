@@ -507,10 +507,13 @@ void PoffinCase_UpdateMonContestStats(Poffin *poffin, Pokemon *mon)
         Pokemon_SetValue(mon, MON_DATA_COOL + i, &monContestStats[i]);
     }
 
-    u8 friendship = Pokemon_GetValue(mon, MON_DATA_FRIENDSHIP, NULL);
+    u16 friendship = Pokemon_GetValue(mon, MON_DATA_FRIENDSHIP, NULL);
 
     if (friendship < MAX_FRIENDSHIP_VALUE) {
-        ++friendship;
+        friendship += Pokemon_ScaleFriendshipGain(1);
+        if (friendship > MAX_FRIENDSHIP_VALUE) {
+            friendship = MAX_FRIENDSHIP_VALUE;
+        }
         Pokemon_SetValue(mon, MON_DATA_FRIENDSHIP, &friendship);
     }
 }

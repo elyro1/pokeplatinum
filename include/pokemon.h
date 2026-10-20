@@ -351,6 +351,8 @@ u8 Pokemon_GetNatureOf(u32 monPersonality);
  */
 s8 Pokemon_GetStatAffinityOf(u8 monNature, u8 statType);
 
+// Scale a friendship delta using gameplay settings; losses and zero changes remain unchanged.
+int Pokemon_ScaleFriendshipGain(int change);
 void Pokemon_UpdateFriendship(Pokemon *mon, u8 friendshipEvent, u16 mapID);
 
 /**

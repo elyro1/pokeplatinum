@@ -22,6 +22,7 @@ typedef struct {
     BOOL disableOverworldPoisonDamage;
     u8 tradeEvolutionLevel; // Plain trade evolutions: 1-100; 0 disables level-up evolution.
     u16 shinyRolls; // Total rolls for new eligible Pokemon; 0 and 1 preserve original odds.
+    u8 friendshipGainMultiplier; // Positive friendship gains only; 0 and 1 preserve original gains.
     u8 eggHatchSpeedMultiplier; // 1 = original speed; 0 also falls back to original speed.
 } GameplayConfig;
 
