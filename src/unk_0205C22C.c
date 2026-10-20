@@ -17,7 +17,7 @@
 #include "struct_defs/struct_0205C95C.h"
 
 #include "field/field_system.h"
-#include "overlay005/ov5_021F134C.h"
+#include "overlay005/map_object_shadow.h"
 #include "overlay005/ov5_021F600C.h"
 
 #include "comm_manager.h"

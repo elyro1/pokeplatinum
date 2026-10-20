@@ -12,7 +12,7 @@
 #include "field/field_system.h"
 #include "overlay005/object_event_gfx_data.h"
 #include "overlay005/ov5_021ECC20.h"
-#include "overlay005/ov5_021F134C.h"
+#include "overlay005/map_object_shadow.h"
 #include "overlay005/ov5_021F17B8.h"
 #include "overlay005/ov5_021F1CC8.h"
 #include "overlay005/ov5_021F2A7C.h"

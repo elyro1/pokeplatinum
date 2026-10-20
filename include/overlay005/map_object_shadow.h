@@ -1,5 +1,5 @@
-#ifndef POKEPLATINUM_OV5_021F134C_H
-#define POKEPLATINUM_OV5_021F134C_H
+#ifndef POKEPLATINUM_MAP_OBJECT_SHADOW_H
+#define POKEPLATINUM_MAP_OBJECT_SHADOW_H
 
 #include "struct_decls/map_object.h"
 
@@ -13,4 +13,4 @@ void MapObjectShadow_Start(MapObject *mapObj);
 // Uses the selected model without applying the time-of-day scale.
 OverworldAnimManager *MapObjectShadow_StartFixed(MapObject *mapObj, int modelIndex);
 
-#endif // POKEPLATINUM_OV5_021F134C_H
+#endif // POKEPLATINUM_MAP_OBJECT_SHADOW_H

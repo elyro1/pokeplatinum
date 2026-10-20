@@ -8,7 +8,7 @@
 #include "overlay005/berry_patch_effects.h"
 #include "overlay005/dist_world_surf_mount_renderer.h"
 #include "overlay005/ov5_021F10E8.h"
-#include "overlay005/ov5_021F134C.h"
+#include "overlay005/map_object_shadow.h"
 #include "overlay005/ov5_021F17B8.h"
 #include "overlay005/ov5_021F1CC8.h"
 #include "overlay005/ov5_021F23D0.h"

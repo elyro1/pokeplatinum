@@ -1,4 +1,4 @@
-#include "overlay005/ov5_021F134C.h"
+#include "overlay005/map_object_shadow.h"
 
 #include <nitro.h>
 
