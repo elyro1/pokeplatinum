@@ -10,11 +10,38 @@ import json
 import struct
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 NAMES = ["player_male", "player_female", "rival", "trainer_cheryl",
          "trainer_riley", "trainer_marley", "trainer_buck", "trainer_mira"]
+
+# Shoulder in the standing body's cropped pixels, then the cut joint in each loose arm (in cell order).
+# Anchor the joint itself, rather than borrowing Nate/Rosa's offsets for differently proportioned artwork.
+ARM_JOINTS = {
+    "player_male": ((29, 45), [(12, 7), (30, 38), (32, 36)]),
+    "player_female": ((36, 45), [(12, 7), (27, 9), (11, 38), (27, 31)]),
+    "rival": ((28, 44), [(11, 7), (25, 36), (31, 33)]),
+    "trainer_cheryl": ((30, 43), [(11, 7), (23, 32), (30, 32)]),
+    "trainer_riley": ((33, 42), [(13, 8), (25, 34), (27, 34)]),
+    "trainer_marley": ((36, 47), [(12, 7), (24, 37), (32, 35)]),
+    "trainer_buck": ((29, 44), [(11, 7), (24, 35), (32, 34)]),
+    "trainer_mira": ((37, 48), [(10, 6), (26, 35), (28, 35)]),
+}
+
+# These are pivots inside the resting sleeves, not the top edge of the shoulder.
+# Account for the pixels above each joint so the sleeve starts at the shoulder cap,
+# rather than projecting up beside the neck. Raised arms keep their own attachment.
+REST_SHOULDERS = {
+    "player_male": (30, 48),
+    "player_female": (36, 48),
+    "rival": (29, 46),
+    "trainer_cheryl": (31, 45),
+    "trainer_riley": (33, 46),
+    "trainer_marley": (35, 50),
+    "trainer_buck": (30, 47),
+    "trainer_mira": (36, 53),
+}
 
 
 def parts_from_sheet(path, female):
@@ -141,12 +168,13 @@ def import_sheet(source, target, name):
         # Nate's cells: body, straight arm, bent arm, raised arm, wind-up, follow-through.
         order = [0, 5, 3, 4, 1, 2]
         anchors = [(-26, 0), (-25, 13), (-32, 41), (-43, 34), (-25, 0), (-28, 0)]
-        if name == "player_male":
-            # This Lucas sheet's shoulder sits above Nate's. Attach the two bent-arm poses to the shoulder,
-            # rather than leaving their upper sleeves at the middle of his backpack.
-            anchors[2] = (-32, 53)
-            anchors[3] = (-43, 48)
     parts = [components[i][2] for i in order]
+    if name == "trainer_mira":
+        # Her standing pose still paints the resting right arm. Keep the sleeve, torso, skirt and leg,
+        # clearing the dangling limb so it cannot remain beneath the separately animated right arm.
+        ImageDraw.Draw(parts[0]).polygon(
+            [(29, 56), (29, 69), (31, 74), (34, 81), (36, 86), (39, 93), (39, 104),
+             (48, 109), (48, 56)], fill=(0, 0, 0, 0))
     if female:
         # This sheet retains Rosa's pale upper-sleeve piece. Match it to Dawn's coat using the supplied red arm,
         # rather than treating it as a scarf (the animation rotates it around the shoulder).
@@ -162,6 +190,26 @@ def import_sheet(source, target, name):
     # Keep the three poses at BW's original hip baseline, allowing different character heights.
     for i, baseline in ((0, -56), (5 if female else 4, -63), (6 if female else 5, -58)):
         anchors[i] = (anchors[i][0], parts[i].height + baseline)
+    shoulder, joints = ARM_JOINTS[name]
+    if not parts[0].getpixel(shoulder)[3]:
+        raise ValueError(f"{name}: shoulder attachment is outside the body artwork")
+    # BW2's standing body node is (0, -56), or (-2, -56) for Rosa. Its cropped bottom is the hip baseline.
+    shoulder = (anchors[0][0] + shoulder[0] - (2 if female else 0), shoulder[1] - parts[0].height)
+    attachments = [(0, 0)] * len(parts)
+    for i, (joint_x, joint_y) in enumerate(joints, start=1):
+        if not parts[i].getpixel((joint_x, joint_y))[3]:
+            raise ValueError(f"{name}: cell {i} joint is outside the arm artwork")
+        anchors[i] = (-joint_x, joint_y)
+        attachments[i] = shoulder
+    rest_shoulder = REST_SHOULDERS[name]
+    if not parts[0].getpixel(rest_shoulder)[3]:
+        raise ValueError(f"{name}: resting shoulder is outside the body artwork")
+    attachments[1] = (anchors[0][0] + rest_shoulder[0] - (2 if female else 0),
+                      rest_shoulder[1] - parts[0].height)
+    if female:
+        # The forearm pivots at the elbow of the separate upper sleeve. Reflect its local endpoint in X,
+        # just as MCSS reflects the sleeve, and keep the elbow buried within both pieces.
+        attachments[3] = (shoulder[0] + joints[1][0] - 5, shoulder[1] + 10 - joints[1][1])
     positions = pack(parts)
     atlas = Image.new("RGBA", (256, 128))
     cells = []
@@ -169,14 +217,17 @@ def import_sheet(source, target, name):
         s, t = positions[i]
         atlas.paste(part, (s, t))
         x, y = anchors[i]
-        cells.append(dict(x=x, y=y, width=part.width, height=part.height, s=s, t=t))
-    cells.append(dict(x=256, y=-256, width=0, height=0, s=0, t=0))
+        attach_x, attach_y = attachments[i]
+        cells.append(dict(x=x, y=y, width=part.width, height=part.height, s=s, t=t,
+                          attachX=attach_x, attachY=attach_y))
+    cells.append(dict(x=256, y=-256, width=0, height=0, s=0, t=0, attachX=0, attachY=0))
     indexed = make_indexed(atlas)
     indexed.save(target / (name + "_back.png"), optimize=True)
-    # BWTB v2 record: trainer ID, cell count, quads, RGB555 palette and 256x128 palette indices.
+    # BWTB v3 record: trainer ID, cell count, quads with joint attachments, RGB555 palette and palette indices.
     data = bytearray(struct.pack("<HH", NAMES.index(name) + 1, len(cells)))
     for cell in cells:
-        data.extend(struct.pack("<hhHHHH", *(cell[key] for key in ("x", "y", "width", "height", "s", "t"))))
+        data.extend(struct.pack("<hhHHHHhh", *(cell[key] for key in
+                                              ("x", "y", "width", "height", "s", "t", "attachX", "attachY"))))
     palette = indexed.getpalette()
     colors = [(palette[i] >> 3) | ((palette[i + 1] >> 3) << 5) | ((palette[i + 2] >> 3) << 10)
               for i in range(0, 768, 3)]
@@ -193,7 +244,7 @@ def main():
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     entries, records = zip(*(import_sheet(args.source, args.output, name) for name in NAMES))
-    bundle = struct.pack("<4sHH", b"BWTB", 2, len(records)) + b"".join(records)
+    bundle = struct.pack("<4sHH", b"BWTB", 3, len(records)) + b"".join(records)
     (args.output / "back_sprites.bin").write_bytes(bundle)
     (args.output / "back_sprites.json").write_text(json.dumps(entries, indent=2) + "\n")
 

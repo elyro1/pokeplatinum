@@ -10,6 +10,8 @@
 typedef struct {
     s16 x, y;
     u16 width, height, s, t;
+    // Loose-arm pivot in sprite pixels, relative to the same hip baseline as the body.
+    s16 attachX, attachY;
 } BwTrainerBackCell;
 
 typedef struct {

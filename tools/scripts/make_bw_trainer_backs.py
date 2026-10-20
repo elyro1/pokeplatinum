@@ -2,9 +2,9 @@
 """Embed binary trainer textures, palettes and MCSS quad coordinates in the desktop build.
 
 Usage: make_bw_trainer_backs.py <back_sprites.bin> <output.inc>
-BWTB v2 contains a <4sHH header (magic, version, trainer count), then records in
-BwTrainerBack order: <HH trainer ID and cell count, <hhHHHH cells (x, y, width,
-height, s, t), 256 little-endian RGB555 colors and 256x128 byte indices.
+BWTB v3 contains a <4sHH header (magic, version, trainer count), then records in
+BwTrainerBack order: <HH trainer ID and cell count, <hhHHHHhh cells (x, y, width,
+height, s, t, attachX, attachY), 256 little-endian RGB555 colors and 256x128 byte indices.
 """
 
 import struct
@@ -20,7 +20,7 @@ def main():
     if len(data) < 8:
         raise ValueError(f"{asset}: truncated trainer bundle")
     magic, version, trainer_count = struct.unpack_from("<4sHH", data)
-    if magic != b"BWTB" or version != 2:
+    if magic != b"BWTB" or version != 3:
         raise ValueError(f"{asset}: unsupported trainer bundle format")
     if trainer_count != len(names):
         raise ValueError(f"{asset}: unexpected trainer count")
@@ -35,19 +35,19 @@ def main():
             raise ValueError(f"{asset}: trainer order must match BwTrainerBack")
         if count != (8 if name == "player_female" else 7):
             raise ValueError(f"{asset}: unexpected cell count for the BW animation")
-        palette_offset = offset + 4 + count * 12
+        palette_offset = offset + 4 + count * 16
         record_end = palette_offset + 512 + 256 * 128
         if record_end > len(data):
             raise ValueError(f"{asset}: truncated trainer record")
-        cells = struct.iter_unpack("<hhHHHH", data[offset + 4:palette_offset])
+        cells = struct.iter_unpack("<hhHHHHhh", data[offset + 4:palette_offset])
         colors = struct.unpack_from("<256H", data, palette_offset)
         pixels = data[palette_offset + 512:record_end]
         offset = record_end
         lines.extend([f"    {{ // {name}", f"        {count},", "        {"])
-        for x, y, w, h, s, t in cells:
+        for x, y, w, h, s, t, attach_x, attach_y in cells:
             if s + w > 256 or t + h > 128:
                 raise ValueError("Cell is outside its texture")
-            lines.append(f"            {{ {x}, {y}, {w}, {h}, {s}, {t} }},")
+            lines.append(f"            {{ {x}, {y}, {w}, {h}, {s}, {t}, {attach_x}, {attach_y} }},")
         lines.extend(["        },", "        { " + ", ".join(f"0x{c:04x}" for c in colors) + " },", "        {"])
         for i in range(0, len(pixels), 32):
             lines.append("            " + ",".join(f"0x{c:02x}" for c in pixels[i:i + 32]) + ",")

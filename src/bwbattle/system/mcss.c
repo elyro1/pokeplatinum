@@ -361,6 +361,20 @@ static inline void MCSS_GetAnimSrt(const NNSG2dAnimController *animCtrl, NNSG2dA
     }
 }
 
+#ifdef BWBATTLE
+static int MCSS_TrainerBackNode(BwTrainerBack trainer, int nodeCount, int step, fx32 *z) {
+    if (trainer == BW_TRAINER_BACK_DAWN) {
+        // Rosa's separate sleeve and forearm remain behind Dawn's long hair.
+        *z = (step + 1 - nodeCount) * 0x100;
+        return step;
+    }
+    // Nate's rig lists the arm before the body. Draw the body first and put the right arm in front;
+    // burying the whole limb behind the body masks its upper sleeve at the shoulder connection.
+    *z = step * 0x100;
+    return nodeCount - 1 - step;
+}
+#endif
+
 void MCSSSys_Draw(MCSSSystem *system) {
     MCSS *mcss;
     NNSG2dImageProxy *imageProxy;
@@ -512,11 +526,9 @@ void MCSSSys_Draw(MCSSSystem *system) {
             int node;
 
 #ifdef BWBATTLE
-            if (mcss->trainerBack == BW_TRAINER_BACK_DAWN || mcss->trainerBack == BW_TRAINER_BACK_LUCAS) {
-                // The arm joins underneath Dawn's hair and Lucas's shoulder/backpack strap. Keep that joint
-                // behind the body, including during fades, instead of drawing the cut sleeve end over it.
-                node = j;
-                z = (j + 1 - mcss->mcAnim.pMultiCellDataBank->pMultiCellDataArray[mcSrt.index].numNodes) * 0x100;
+            if (mcss->trainerBack != BW_TRAINER_BACK_NONE) {
+                node = MCSS_TrainerBackNode(mcss->trainerBack,
+                    mcss->mcAnim.pMultiCellDataBank->pMultiCellDataArray[mcSrt.index].numNodes, j, &z);
             } else
 #endif
             if (mcss->alpha != MCSS_ALPHA_MAX || mcss->reverse) {
@@ -568,6 +580,21 @@ static void MCSS_DrawQuad(MCSSSystem *system, MCSS *mcss, fx32 x, fx32 y, fx32 w
     fx32 nodeY;
     int polygonId;
     u8 shadowAlpha;
+    u16 cellRotation = cellSrt->rotZ;
+#ifdef BWBATTLE
+    const BwTrainerBackCell *trainerArm = NULL;
+    BOOL mirrorTrainerArm = FALSE;
+    if (mcss->trainerBack != BW_TRAINER_BACK_NONE && mcss->image == NULL
+        && cellSrt->index >= 1 && cellSrt->index <= (mcss->trainerBack == BW_TRAINER_BACK_DAWN ? 4 : 3)) {
+        trainerArm = &BwTrainerBack_Get(mcss->trainerBack)->cells[cellSrt->index];
+        mirrorTrainerArm = cellSrt->index != 1;
+        if (cellSrt->index == 1) {
+            // The resting artwork already bends its elbow toward the back. Keep its handedness and
+            // open it toward the right hip; reflecting this cell makes the elbow point forward.
+            cellRotation -= 0x1000;
+        }
+    }
+#endif
 
     shadowAlpha = mcss->shadowAlpha == MCSS_SHADOW_ALPHA_HALF ? mcss->alpha / 2 : mcss->shadowAlpha;
     if (mcss->alpha == MCSS_ALPHA_MAX || mcss->unk140_31) {
@@ -599,6 +626,12 @@ static void MCSS_DrawQuad(MCSSSystem *system, MCSS *mcss, fx32 x, fx32 y, fx32 w
         -(cellSrt->py + mcss->mcAnim.pMultiCellDataBank->pMultiCellDataArray[mcSrt->index].pHierDataArray[node].posY)
         << 8;
 #ifdef BWBATTLE
+    if (trainerArm != NULL) {
+        // The imported quad is relative to its cut joint. Put that pivot at the artwork's right shoulder
+        // (or Dawn's elbow), so rotation cannot pull it away from the body as BW2's old node offsets did.
+        nodeX = trainerArm->attachX * 256;
+        nodeY = -trainerArm->attachY * 256;
+    }
     // bwbattle: an image (MCSS_SetImage) is no node of the multi-cell
     if (mcss->image != NULL) {
         nodeX = 0;
@@ -606,7 +639,13 @@ static void MCSS_DrawQuad(MCSSSystem *system, MCSS *mcss, fx32 x, fx32 y, fx32 w
     }
 #endif
     G3_Translate(nodeX, nodeY, *z);
-    G3_RotZ(-FX_SinIdx(cellSrt->rotZ), FX_CosIdx(cellSrt->rotZ));
+#ifdef BWBATTLE
+    if (mirrorTrainerArm) {
+        // The raised cells need reflection about their attached joint; the resting cell does not.
+        G3_Scale(-FX32_ONE, FX32_ONE, FX32_ONE);
+    }
+#endif
+    G3_RotZ(-FX_SinIdx(cellRotation), FX_CosIdx(cellRotation));
     if (flip == 0) {
         G3_Scale(cellSrt->sx, cellSrt->sy, FX32_ONE);
         G3_Translate(x, y, 0);
@@ -637,7 +676,12 @@ static void MCSS_DrawQuad(MCSSSystem *system, MCSS *mcss, fx32 x, fx32 y, fx32 w
         G3_TexPlttBase(shadowPltt->vramLocation.baseAddrOfVram[NNS_G2D_VRAM_TYPE_3DMAIN], shadowPltt->fmt);
         G3_PolygonAttr(GX_LIGHTMASK_NONE, GX_POLYGONMODE_MODULATE, GX_CULL_NONE, 1, shadowAlpha, 0);
         G3_Translate(nodeX, nodeY, 0);
-        G3_RotZ(-FX_SinIdx(cellSrt->rotZ), FX_CosIdx(cellSrt->rotZ));
+#ifdef BWBATTLE
+        if (mirrorTrainerArm) {
+            G3_Scale(-FX32_ONE, FX32_ONE, FX32_ONE);
+        }
+#endif
+        G3_RotZ(-FX_SinIdx(cellRotation), FX_CosIdx(cellRotation));
         G3_Scale(cellSrt->sx, cellSrt->sy, FX32_ONE);
         G3_Translate(x, y, 0);
         G3_Scale(width, height, FX32_ONE);
