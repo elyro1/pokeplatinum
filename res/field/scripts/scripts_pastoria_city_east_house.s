@@ -10,6 +10,8 @@ PastoriaCityEastHouse_MoveManiac:
     PlaySE SE_CONFIRM_sseq_3
     LockAll
     FacePlayer
+    CheckFreeMoveRelearning VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, PastoriaCityEastHouse_FreeGreeting
     BufferItemNameWithArticle 4, ITEM_HEART_SCALE
     GoToIfUnset FLAG_TALKED_TO_PASTORIA_CITY_EAST_HOUSE_MOVE_MANIAC, PastoriaCityEastHouse_CheckHeartScale
     CheckItem ITEM_HEART_SCALE, 1, VAR_RESULT
@@ -24,6 +26,8 @@ PastoriaCityEastHouse_CheckHeartScale:
     GoTo PastoriaCityEastHouse_TryTeachMove
 
 PastoriaCityEastHouse_ComeBackWithHeartScale:
+    CheckFreeMoveRelearning VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, PastoriaCityEastHouse_FreeGoodbye
     Message PastoriaCityEastHouse_Text_ComeBackWithHeartScale
     WaitButton
     CloseMessage
@@ -32,6 +36,8 @@ PastoriaCityEastHouse_ComeBackWithHeartScale:
 
 PastoriaCityEastHouse_TryTeachMove:
     Message PastoriaCityEastHouse_Text_ThatsAHeartScale
+
+PastoriaCityEastHouse_SelectPokemon:
     Message PastoriaCityEastHouse_Text_TutorWhichPokemon
     CloseMessage
     FadeScreenOut
@@ -56,9 +62,31 @@ PastoriaCityEastHouse_TryTeachMove:
     FadeScreenIn
     WaitFadeScreen
     GoToIfEq VAR_RESULT, 0xFF, PastoriaCityEastHouse_ComeBackWithHeartScale
+    CheckFreeMoveRelearning VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, PastoriaCityEastHouse_FreeSuccess
     RemoveItem ITEM_HEART_SCALE, 1, VAR_RESULT
     BufferPlayerName 3
     Message PastoriaCityEastHouse_Text_HandedOverHeartScale
+    WaitButton
+    CloseMessage
+    ReleaseAll
+    End
+
+PastoriaCityEastHouse_FreeGreeting:
+    GoToIfSet FLAG_TALKED_TO_PASTORIA_CITY_EAST_HOUSE_MOVE_MANIAC, PastoriaCityEastHouse_SelectPokemon
+    SetFlag FLAG_TALKED_TO_PASTORIA_CITY_EAST_HOUSE_MOVE_MANIAC
+    Message PastoriaCityEastHouse_Text_FreeIntroduction
+    GoTo PastoriaCityEastHouse_SelectPokemon
+
+PastoriaCityEastHouse_FreeSuccess:
+    Message PastoriaCityEastHouse_Text_FreeSuccess
+    WaitButton
+    CloseMessage
+    ReleaseAll
+    End
+
+PastoriaCityEastHouse_FreeGoodbye:
+    Message PastoriaCityEastHouse_Text_FreeGoodbye
     WaitButton
     CloseMessage
     ReleaseAll

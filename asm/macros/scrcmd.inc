@@ -5292,6 +5292,16 @@
     .short \destVarID
     .endm
 
+    .macro CheckFreeMoveRelearning destVarID
+    .short SCRCMD_CHECKFREEMOVERELEARNING
+    .short \destVarID
+    .endm
+
+    .macro CheckUnlimitedGreatMarshSteps destVarID
+    .short SCRCMD_CHECKUNLIMITEDGREATMARSHSTEPS
+    .short \destVarID
+    .endm
+
     .macro UseRepel item, destVarID
     .short SCRCMD_USEREPEL
     .short \item

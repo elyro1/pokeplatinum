@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
+
 #include "constants/daycare.h"
 #include "constants/items.h"
 #include "constants/species.h"
@@ -665,11 +669,22 @@ static u16 Egg_DetermineEggSpeciesAndParentSlots(Daycare *daycare, u8 parentSlot
     return eggSpecies;
 }
 
+static u8 Egg_GetInitialHatchCycles(u16 species)
+{
+#ifdef SDK_PORT
+    if (GameplayConfig_Get()->zeroEggCycles) {
+        return 0;
+    }
+#endif
+
+    return SpeciesData_GetSpeciesValue(species, SPECIES_DATA_HATCH_CYCLES);
+}
+
 void Egg_CreateEgg(Pokemon *egg, u16 species, u8 param2, TrainerInfo *trainerInfo, int param4, int metLocation)
 {
     u8 metLvl, isEgg;
     u16 ball;
-    u8 hatchCycles = SpeciesData_GetSpeciesValue(species, SPECIES_DATA_HATCH_CYCLES);
+    u8 hatchCycles = Egg_GetInitialHatchCycles(species);
     String *eggName;
 
     Pokemon_InitWith(egg, species, 1, INIT_IVS_RANDOM, FALSE, 0, OTID_NOT_SET, 0);
@@ -712,7 +727,7 @@ static void Egg_SetInitialData(Pokemon *mon, u16 species, Daycare *daycare, u32 
     u16 ball;
     u32 personality;
     String *string;
-    u8 hatchCycles = SpeciesData_GetSpeciesValue(species, SPECIES_DATA_HATCH_CYCLES);
+    u8 hatchCycles = Egg_GetInitialHatchCycles(species);
 
     personality = Daycare_GetOffspringPersonality(daycare);
 
@@ -948,7 +963,20 @@ BOOL Daycare_Update(Daycare *daycare, Party *party, FieldSystem *fieldSystem)
     steps = Daycare_GetStepCounter(daycare);
     Daycare_SetStepCounter(daycare, ++steps);
 
-    if (steps == Daycare_GetEggCycleLength(fieldSystem)) {
+    int eggCycleLength = Daycare_GetEggCycleLength(fieldSystem);
+#ifdef SDK_PORT
+    // Shorten hatch cycles without changing breeding rolls or stored egg data.
+    u8 multiplier = GameplayConfig_Get()->eggHatchSpeedMultiplier;
+    if (multiplier > 1) {
+        eggCycleLength /= multiplier;
+        if (eggCycleLength < 1) {
+            eggCycleLength = 1;
+        }
+    }
+#endif
+
+    // Existing saves or live setting changes may leave the counter past the new threshold.
+    if (steps >= eggCycleLength) {
         Daycare_SetStepCounter(daycare, 0);
         toSubtract = Party_GetEggCyclesToSubtract(party);
 
@@ -961,6 +989,13 @@ BOOL Daycare_Update(Daycare *daycare, Party *party, FieldSystem *fieldSystem)
                 }
 
                 eggCycles = Pokemon_GetValue(mon, MON_DATA_FRIENDSHIP, NULL);
+
+#ifdef SDK_PORT
+                if (GameplayConfig_Get()->zeroEggCycles && eggCycles != 0) {
+                    eggCycles = 0;
+                    Pokemon_SetValue(mon, MON_DATA_FRIENDSHIP, (u8 *)&eggCycles);
+                }
+#endif
 
                 if (eggCycles != 0) {
                     if (eggCycles >= toSubtract) {

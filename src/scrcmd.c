@@ -226,6 +226,7 @@
 
 #ifdef SDK_PORT
 #include "port/scripted_npc_scene.h"
+#include "port/gameplay_config.h"
 #endif
 
 typedef struct {
@@ -235,6 +236,8 @@ typedef struct {
     FieldSystem *fieldSystem;
 } UnkStruct_02040F28;
 
+static BOOL ScrCmd_CheckFreeMoveRelearning(ScriptContext *ctx);
+static BOOL ScrCmd_CheckUnlimitedGreatMarshSteps(ScriptContext *ctx);
 static BOOL ScrCmd_Noop(ScriptContext *ctx);
 static BOOL ScrCmd_Dummy(ScriptContext *ctx);
 static BOOL ScrCmd_End(ScriptContext *ctx);
@@ -776,6 +779,26 @@ const ScrCmdFunc gFieldScriptCommands[] = {
 };
 
 const u32 gNumFieldScriptCommands = NELEMS(gFieldScriptCommands);
+
+static BOOL ScrCmd_CheckFreeMoveRelearning(ScriptContext *ctx)
+{
+    u16 *dest = ScriptContext_GetVarPointer(ctx);
+    *dest = FALSE;
+#ifdef SDK_PORT
+    *dest = GameplayConfig_Get()->freeMoveRelearning;
+#endif
+    return FALSE;
+}
+
+static BOOL ScrCmd_CheckUnlimitedGreatMarshSteps(ScriptContext *ctx)
+{
+    u16 *dest = ScriptContext_GetVarPointer(ctx);
+    *dest = FALSE;
+#ifdef SDK_PORT
+    *dest = GameplayConfig_Get()->unlimitedGreatMarshSteps;
+#endif
+    return FALSE;
+}
 
 static BOOL ScrCmd_Noop(ScriptContext *ctx)
 {

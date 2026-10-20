@@ -106,6 +106,27 @@
         "The newspaper there gives me Heart\n",
         "Scales for running errands."
       ]
+    },
+    {
+      "id": "PastoriaCityEastHouse_Text_FreeIntroduction",
+      "en_US": [
+        "Everyone calls me the Pokémon\n",
+        "Move Maniac. I prefer Move Tutor.\r",
+        "I can help Pokémon remember moves\n",
+        "they learned while leveling up.\r",
+        "My lessons are free!\r"
+      ]
+    },
+    {
+      "id": "PastoriaCityEastHouse_Text_FreeSuccess",
+      "en_US": "Come back anytime for another lesson!"
+    },
+    {
+      "id": "PastoriaCityEastHouse_Text_FreeGoodbye",
+      "en_US": [
+        "If your Pokémon needs to remember a\n",
+        "move, come back anytime!"
+      ]
     }
   ]
 }

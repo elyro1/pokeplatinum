@@ -1,0 +1,13 @@
+# original-sha256: 5cd9a0797b3c3991f721c80840a5650cfd660861ebc369e8c3d17279c3eb7940
+--- scripts_pastoria_city_observatory_gate_1f.s
++++ scripts_pastoria_city_observatory_gate_1f.s
+@@ -220,2 +219,0 @@
+-    CheckUnlimitedGreatMarshSteps VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, PastoriaCityObservatoryGate1F_ExplainUnlimitedSafariGame
+@@ -223,6 +220,0 @@
+-    GoTo PastoriaCityObservatoryGate1F_FinishExplanation
+-
+-PastoriaCityObservatoryGate1F_ExplainUnlimitedSafariGame:
+-    Message PastoriaCityObservatoryGate1F_Text_ExplainUnlimitedSafariGame
+-
+-PastoriaCityObservatoryGate1F_FinishExplanation:

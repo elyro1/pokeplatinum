@@ -217,7 +217,15 @@ PastoriaCityObservatoryGate1F_CashierF:
     End
 
 PastoriaCityObservatoryGate1F_ExplainSafariGame:
+    CheckUnlimitedGreatMarshSteps VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, PastoriaCityObservatoryGate1F_ExplainUnlimitedSafariGame
     Message PastoriaCityObservatoryGate1F_Text_ExplainSafariGame
+    GoTo PastoriaCityObservatoryGate1F_FinishExplanation
+
+PastoriaCityObservatoryGate1F_ExplainUnlimitedSafariGame:
+    Message PastoriaCityObservatoryGate1F_Text_ExplainUnlimitedSafariGame
+
+PastoriaCityObservatoryGate1F_FinishExplanation:
     WaitButton
     CloseMessage
     ReleaseAll

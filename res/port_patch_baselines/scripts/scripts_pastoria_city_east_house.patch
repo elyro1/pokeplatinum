@@ -1,0 +1,36 @@
+# original-sha256: 0ce0158dc83dde6a7d4ff9a015a11e8671b2e6b5e72878ce1b6f06b6d9cfb2b4
+--- scripts_pastoria_city_east_house.s
++++ scripts_pastoria_city_east_house.s
+@@ -13,2 +12,0 @@
+-    CheckFreeMoveRelearning VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, PastoriaCityEastHouse_FreeGreeting
+@@ -29,2 +26,0 @@
+-    CheckFreeMoveRelearning VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, PastoriaCityEastHouse_FreeGoodbye
+@@ -39,2 +34,0 @@
+-
+-PastoriaCityEastHouse_SelectPokemon:
+@@ -65,2 +58,0 @@
+-    CheckFreeMoveRelearning VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, PastoriaCityEastHouse_FreeSuccess
+@@ -70,20 +61,0 @@
+-    WaitButton
+-    CloseMessage
+-    ReleaseAll
+-    End
+-
+-PastoriaCityEastHouse_FreeGreeting:
+-    GoToIfSet FLAG_TALKED_TO_PASTORIA_CITY_EAST_HOUSE_MOVE_MANIAC, PastoriaCityEastHouse_SelectPokemon
+-    SetFlag FLAG_TALKED_TO_PASTORIA_CITY_EAST_HOUSE_MOVE_MANIAC
+-    Message PastoriaCityEastHouse_Text_FreeIntroduction
+-    GoTo PastoriaCityEastHouse_SelectPokemon
+-
+-PastoriaCityEastHouse_FreeSuccess:
+-    Message PastoriaCityEastHouse_Text_FreeSuccess
+-    WaitButton
+-    CloseMessage
+-    ReleaseAll
+-    End
+-
+-PastoriaCityEastHouse_FreeGoodbye:
+-    Message PastoriaCityEastHouse_Text_FreeGoodbye

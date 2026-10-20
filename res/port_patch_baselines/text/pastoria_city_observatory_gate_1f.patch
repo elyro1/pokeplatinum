@@ -1,0 +1,18 @@
+# original-sha256: 0f8df2ced28200752e16f7a88a31c06acc8540ea6b66e153f7bb7acf36317c62
+--- pastoria_city_observatory_gate_1f.json
++++ pastoria_city_observatory_gate_1f.json
+@@ -168,14 +167,0 @@
+-    },
+-    {
+-      "id": "PastoriaCityObservatoryGate1F_Text_ExplainUnlimitedSafariGame",
+-      "en_US": [
+-        "When you enter the Great Marsh, you\n",
+-        "start with 30 Safari Balls.\r",
+-        "That’s the only kind of Ball you’re\n",
+-        "allowed to use in the Safari Game.\r",
+-        "There is no step limit. The game ends\n",
+-        "when you run out of Safari Balls.\r",
+-        "You can also retire whenever you like.\r",
+-        "Please do enjoy the untamed nature\n",
+-        "of the Great Marsh!"
+-      ]

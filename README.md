@@ -15,6 +15,9 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 - **Quit from the in-game menu:** a confirmation prompt lets you cancel before closing the game.
 - **QoL Repels:** when a Repel wears off, you can use another without reopening the Bag. If that type has run out, an available alternative is offered.
 - **Forgettable HMs:** HM moves can be replaced when learning moves, including after leveling up in battle.
+- **Free move relearning:** the Move Maniac in Pastoria City no longer requires Heart Scales.
+- **Unlimited Great Marsh steps:** explore until you retire or run out of Safari Balls; the entry fee and Ball limit still apply.
+- **Faster egg hatching:** eggs have zero remaining hatch cycles by default and hatch at the next hatch check. Hatch checks take one fifth as many steps.
 - **Stability and visual fixes:**
 
 ## Visual upgrades
@@ -67,6 +70,10 @@ Press **Tab** to access:
 Settings are stored locally in `sim_config.ini` and `sim_config_prj.ini`. If performance is poor, lower the internal resolution scale in the PC settings.
 
 Gameplay options currently use internal defaults in `src/port/gameplay_config.c`, separate from graphics and developer settings. Forgettable HMs are enabled by default on PC. There is no gameplay config file or menu control yet.
+
+Free move relearning and unlimited Great Marsh steps are also enabled by default. Each has an independent boolean in `GameplayConfig`. `eggHatchSpeedMultiplier` defaults to 5; set it to 1 for original hatching speed (0 also uses original speed). These options apply to existing saves without changing their format.
+
+`zeroEggCycles` defaults to `TRUE`: newly created eggs start with zero hatch cycles, and existing eggs are set to zero at their next hatch check. Set it to `FALSE` to retain normal egg cycles and use only the hatch-speed multiplier; Flame Body/Magma Armor bonuses still apply in that mode. For new eggs at original hatching speed, disable `zeroEggCycles` and set the multiplier to 1.
 
 ## Saves
 

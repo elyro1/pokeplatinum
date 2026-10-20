@@ -858,6 +858,9 @@ ScriptCommand(SCRCMD_WALKOBJECTTOEDGE,                                    ScrCmd
 
 ScriptCommand(SCRCMD_APPLYMOVEMENTWIDESCREEN,                             ScrCmd_ApplyMovementWidescreen)
 
+ScriptCommand(SCRCMD_CHECKFREEMOVERELEARNING,                              ScrCmd_CheckFreeMoveRelearning)
+ScriptCommand(SCRCMD_CHECKUNLIMITEDGREATMARSHSTEPS,                         ScrCmd_CheckUnlimitedGreatMarshSteps)
+
 // clang-format on
 
 #endif // POKEPLATINUM_DATA_SCRIPTS_SCRCMD_H

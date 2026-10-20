@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
+
 #include "constants/field/dynamic_map_features.h"
 #include "constants/field_poison.h"
 #include "constants/player_avatar.h"
@@ -934,6 +938,12 @@ static BOOL Field_UpdateSafari(FieldSystem *fieldSystem)
         ScriptManager_Set(fieldSystem, SCRIPT_ID(SAFARI_GAME, 2), NULL);
         return TRUE;
     }
+
+#ifdef SDK_PORT
+    if (GameplayConfig_Get()->unlimitedGreatMarshSteps) {
+        return FALSE;
+    }
+#endif
 
     u16 *steps = FieldOverworldState_GetSafariStepCount(SaveData_GetFieldOverworldState(fieldSystem->saveData));
     (*steps)++;
