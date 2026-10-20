@@ -357,6 +357,12 @@ void BtlvEffect_Exit(void) {
 }
 
 #ifdef BWBATTLE
+static BOOL sTickIdle = TRUE;
+
+BOOL BtlvEffect_ShouldTickIdle(void) {
+    return sTickIdle;
+}
+
 // bwbattle: a frame of the view without its 3D drawing (BtlvEffect_Main's first part, and the particles' update of
 // its last), for a frame of the port that has to run more than one of BW2's
 static void BtlvEffect_UpdateFrame(void) {
@@ -371,12 +377,14 @@ static void BtlvEffect_UpdateFrame(void) {
     BtlvClact_Draw(sBtlvEffect->clact);
 }
 
-void BtlvEffect_Step(void) {
+void BtlvEffect_Step(BOOL tickIdle) {
     if (sBtlvEffect != NULL) {
+        sTickIdle = tickIdle;
         BtlvEffect_UpdateFrame();
         if (func_0204fffc() != 0) {
             func_02050044();
         }
+        sTickIdle = TRUE;
     }
 }
 #endif

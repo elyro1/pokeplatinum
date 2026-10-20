@@ -1843,8 +1843,7 @@ void BwAdapter_SetSuspended(BOOL suspended)
 
 // BW2's battle runs at 60 frames a second, and Platinum's at 30: the port's 60 FPS loop runs Platinum's battle on
 // every other frame (battle_timing.c) and a frame of BW2's on each. Without it, the loop runs at 30 Hz and each of its
-// frames runs two of BW2's; with the quick battle pacing, Platinum's battle runs at twice its speed, and so does the
-// view
+// frames runs two of BW2's. Quick pacing doubles effect updates, while ambient motion keeps its normal clock.
 static unsigned int BwAdapter_ViewFrames(void)
 {
     const SIM_Config_prj_type *config = SIM_Config_prj_GetConfig();
@@ -1872,7 +1871,7 @@ BOOL BwAdapter_Draw(BattleSystem *battleSys)
     BwAdapter_ShowPlatinumBackground(FALSE);
     // The arena widescreen, as the field is (its 2D layers stay on the 256 dots in the middle)
     BwBattleView_SetViewWidth(SIM_SetFieldWidescreen(TRUE));
-    BwBattleView_Main(BwAdapter_ViewFrames());
+    BwBattleView_Main(BwAdapter_ViewFrames(), SIM_Config_prj_GetConfig()->enable60fps ? 1 : 2);
     return TRUE;
 }
 

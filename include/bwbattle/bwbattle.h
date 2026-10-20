@@ -92,7 +92,8 @@ bool BwBattleView_ShowAbilityPopup(unsigned int viewPos, const unsigned short *n
 bool BwBattleView_IsAbilityPopupBusy(void);
 void BwBattleView_SetAbilityPopupHeld(unsigned int viewPos, bool held);
 // Runs frames of BW2's battle view, of which the last is drawn: BW2's battle runs at 60 frames a second
-void BwBattleView_Main(unsigned int frames);
+// Battle effects and ambient motion have separate clocks (both are 60 Hz in Smooth).
+void BwBattleView_Main(unsigned int frames, unsigned int idleFrames);
 // The 3D view's width in dots: 256, or wider when the port draws the arena widescreen (libntr's
 // SIM_SetFieldWidescreen); the 2D actors stay on the 256 in the middle
 void BwBattleView_SetViewWidth(unsigned int width);

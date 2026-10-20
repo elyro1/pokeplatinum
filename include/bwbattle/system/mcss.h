@@ -53,6 +53,9 @@ MCSSSystem *MCSSSys_Create(u32 capacity, HeapID heapId);
 void MCSSSys_Free(MCSSSystem *system);
 // Steps the animation of every sprite that is not paused
 void MCSSSys_Update(MCSSSystem *system);
+#ifdef BWBATTLE
+void MCSS_SetSkipAnimationTick(MCSS *mcss, BOOL skip);
+#endif
 void MCSSSys_Draw(MCSSSystem *system);
 MCSS *MCSSSys_Add(MCSSSystem *system, fx32 x, fx32 y, fx32 z, const MCSSLoadInfo *info);
 void MCSSSys_Remove(MCSSSystem *system, MCSS *mcss);

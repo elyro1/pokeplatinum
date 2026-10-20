@@ -279,6 +279,11 @@ void BtlvMcss_Main(BtlvMcss *work) {
         if (BtlvMcss_Exists(work, pos)) {
             int i = BtlvMcss_GetIndex(work, pos);
 
+#ifdef BWBATTLE
+            // Scripted sprite animations keep Quick pacing; the normal living sprite keeps Smooth timing.
+            MCSS_SetSkipAnimationTick(work->entries[i].mcss,
+                                      !BtlvEffect_ShouldTickIdle() && !work->entries[i].animSet);
+#endif
             if (work->entries[i].animEnded) {
                 work->entries[i].animEnded = FALSE;
                 MCSS_RestartAnimation(work->entries[i].mcss);
@@ -290,7 +295,11 @@ void BtlvMcss_Main(BtlvMcss *work) {
         for (pos = BTLV_MCSS_POS_FIRST; pos < BTLV_MCSS_POS_TRAINER; pos++) {
             BOOL step;
 
-            if (BtlvMcss_Exists(work, pos) && GFL_RandomMTRange(100) == 0 &&
+            if (BtlvMcss_Exists(work, pos)
+#ifdef BWBATTLE
+                && BtlvEffect_ShouldTickIdle()
+#endif
+                && GFL_RandomMTRange(100) == 0 &&
                 !(BtlvEffect_PosBit(pos) & work->blinkTasks) && !BtlvMcss_IsAnimStopped(work, pos)) {
                 BtlvMcss_Blink(work, pos, 2, 4, 1);
             }
@@ -1950,6 +1959,11 @@ static void BtlvMcss_IdleTask(TCB *tcb, void *data) {
         GFL_TCBRemove(tcb);
         return;
     }
+#ifdef BWBATTLE
+    if (!BtlvEffect_ShouldTickIdle()) {
+        return;
+    }
+#endif
     switch (idle->seq) {
     case 0:
         func_0201adc4(work->entries[index].mcss)->animCtrl.bActive = FALSE;

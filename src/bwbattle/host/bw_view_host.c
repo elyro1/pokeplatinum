@@ -119,14 +119,19 @@ bool BwBattleView_IsActive(void) {
 // Updates the view and draws its 3D scene; Platinum's draw task calls it in place of drawing its battle sprites.
 // BW2's main loop swapped the 3D buffers that BtlvEffect_Main requests (GFL_G3DSysCheckSwapBuffers); here Platinum's
 // draw task requests the swap, so BW2's request is dropped
-void BwBattleView_Main(unsigned int frames) {
+void BwBattleView_Main(unsigned int frames, unsigned int idleFrames) {
     if (sViewActive) {
         // Platinum's frame has set the 3D engine's camera and projection since BW2's last, and BW2's effects project
         // positions with them (BtlvEffvm_ProjectToScreen) on the frames it doesn't draw too
         GFL_G3DSysReapplyState();
         // BW2's frames before the one drawn, each with the V-blank tasks a frame of BW2's runs
         for (unsigned int i = 1; i < frames; i++) {
-            BtlvEffect_Step();
+            BOOL tickIdle = i < idleFrames;
+
+            // The idle camera uses the effect VM and its tasks, so its entire script must keep the ambient clock.
+            if (tickIdle || !sIdleCamera) {
+                BtlvEffect_Step(tickIdle);
+            }
             BwBattle_VBlank();
         }
         BtlvEffect_Main();

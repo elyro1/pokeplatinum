@@ -163,6 +163,7 @@ struct MCSS {
     BOOL imagePending;
     BOOL imagePalettePending;
     fx32 imageScale;
+    BOOL skipAnimationTick;
     BwTrainerBack trainerBack;
     u32 extraTexSlots;
     u32 trainerTexSlot;
@@ -283,12 +284,22 @@ void MCSSSys_Free(MCSSSystem *system) {
     GFL_HeapFree(system);
 }
 
+#ifdef BWBATTLE
+void MCSS_SetSkipAnimationTick(MCSS *mcss, BOOL skip) {
+    mcss->skipAnimationTick = skip;
+}
+#endif
+
 void MCSSSys_Update(MCSSSystem *system) {
     int i;
 
     for (i = 0; i < system->count; i++) {
         if (system->mcss[i] != NULL) {
-            if (system->mcss[i]->pause == 0) {
+            if (system->mcss[i]->pause == 0
+#ifdef BWBATTLE
+                && !system->mcss[i]->skipAnimationTick
+#endif
+            ) {
                 NNS_G2dTickMCAnimation(&system->mcss[i]->mcAnim, system->mcss[i]->animSpeed);
             }
             if (system->mcss[i]->fading) {
