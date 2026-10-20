@@ -5292,6 +5292,11 @@
     .short \destVarID
     .endm
 
+    .macro CheckInstantSpiritomb destVarID
+    .short SCRCMD_CHECKINSTANTSPIRITOMB
+    .short \destVarID
+    .endm
+
     .macro CheckFreeMoveRelearning destVarID
     .short SCRCMD_CHECKFREEMOVERELEARNING
     .short \destVarID

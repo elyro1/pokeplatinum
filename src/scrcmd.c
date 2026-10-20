@@ -236,6 +236,7 @@ typedef struct {
     FieldSystem *fieldSystem;
 } UnkStruct_02040F28;
 
+static BOOL ScrCmd_CheckInstantSpiritomb(ScriptContext *ctx);
 static BOOL ScrCmd_CheckFreeMoveRelearning(ScriptContext *ctx);
 static BOOL ScrCmd_CheckUnlimitedGreatMarshSteps(ScriptContext *ctx);
 static BOOL ScrCmd_Noop(ScriptContext *ctx);
@@ -779,6 +780,16 @@ const ScrCmdFunc gFieldScriptCommands[] = {
 };
 
 const u32 gNumFieldScriptCommands = NELEMS(gFieldScriptCommands);
+
+static BOOL ScrCmd_CheckInstantSpiritomb(ScriptContext *ctx)
+{
+    u16 *dest = ScriptContext_GetVarPointer(ctx);
+    *dest = FALSE;
+#ifdef SDK_PORT
+    *dest = GameplayConfig_Get()->instantSpiritomb;
+#endif
+    return FALSE;
+}
 
 static BOOL ScrCmd_CheckFreeMoveRelearning(ScriptContext *ctx)
 {

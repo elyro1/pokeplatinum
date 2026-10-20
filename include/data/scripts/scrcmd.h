@@ -861,6 +861,7 @@ ScriptCommand(SCRCMD_APPLYMOVEMENTWIDESCREEN,                             ScrCmd
 ScriptCommand(SCRCMD_CHECKFREEMOVERELEARNING,                              ScrCmd_CheckFreeMoveRelearning)
 ScriptCommand(SCRCMD_CHECKUNLIMITEDGREATMARSHSTEPS,                         ScrCmd_CheckUnlimitedGreatMarshSteps)
 ScriptCommand(SCRCMD_CHECKFREEMOVETUTORS,                                  ScrCmd_CheckFreeMoveTutors)
+ScriptCommand(SCRCMD_CHECKINSTANTSPIRITOMB,                                ScrCmd_CheckInstantSpiritomb)
 
 // clang-format on
 

@@ -901,6 +901,12 @@ static void Field_CalculateFriendship(FieldSystem *fieldSystem)
 
 static BOOL Field_UpdatePoison(FieldSystem *fieldSystem)
 {
+#ifdef SDK_PORT
+    if (GameplayConfig_Get()->disableOverworldPoisonDamage) {
+        return FALSE;
+    }
+#endif
+
     Party *party = SaveData_GetParty(fieldSystem->saveData);
     u16 *poisonSteps = FieldOverworldState_GetPoisonStepCount(SaveData_GetFieldOverworldState(fieldSystem->saveData));
 

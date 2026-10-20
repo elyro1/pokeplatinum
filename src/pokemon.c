@@ -3600,6 +3600,25 @@ u16 Pokemon_GetEvolutionTargetSpecies(Party *party, Pokemon *mon, u8 evoClass, u
 
         for (i = 0; i < MAX_EVOLUTIONS; i++) {
             switch (speciesEvolutions[i].method) {
+#ifdef SDK_PORT
+            case EVO_TRADE:
+                if (GameplayConfig_Get()->tradeEvolutionLevel != 0
+                    && GameplayConfig_Get()->tradeEvolutionLevel <= monLevel) {
+                    targetSpecies = speciesEvolutions[i].targetSpecies;
+                    *evoTypeResult = EVO_LEVEL;
+                }
+                break;
+
+            case EVO_TRADE_WITH_HELD_ITEM:
+                if (GameplayConfig_Get()->levelUpHeldItemEvolutions
+                    && speciesEvolutions[i].param == monHeldItem) {
+                    targetSpecies = speciesEvolutions[i].targetSpecies;
+                    // Preserve the evolution type so the held item is consumed on success.
+                    *evoTypeResult = EVO_TRADE_WITH_HELD_ITEM;
+                }
+                break;
+#endif
+
             case EVO_LEVEL_HAPPINESS:
                 if (EVOLVE_FRIENDSHIP_THRESHOLD <= monFriendship) {
                     targetSpecies = speciesEvolutions[i].targetSpecies;
@@ -3685,6 +3704,11 @@ u16 Pokemon_GetEvolutionTargetSpecies(Party *party, Pokemon *mon, u8 evoClass, u
                 break;
 
             case EVO_LEVEL_BEAUTY:
+#ifdef SDK_PORT
+                if (monSpecies == SPECIES_FEEBAS && GameplayConfig_Get()->feebasWaterStoneEvolution) {
+                    break;
+                }
+#endif
                 if (speciesEvolutions[i].param <= monBeauty) {
                     targetSpecies = speciesEvolutions[i].targetSpecies;
                     *evoTypeResult = EVO_LEVEL_BEAUTY;
@@ -3692,14 +3716,24 @@ u16 Pokemon_GetEvolutionTargetSpecies(Party *party, Pokemon *mon, u8 evoClass, u
                 break;
 
             case EVO_LEVEL_WITH_HELD_ITEM_DAY:
-                if (IsNight() == FALSE && speciesEvolutions[i].param == monHeldItem) {
+                if ((IsNight() == FALSE
+#ifdef SDK_PORT
+                        || GameplayConfig_Get()->levelUpHeldItemEvolutions
+#endif
+                        )
+                    && speciesEvolutions[i].param == monHeldItem) {
                     targetSpecies = speciesEvolutions[i].targetSpecies;
                     *evoTypeResult = EVO_LEVEL_WITH_HELD_ITEM_DAY;
                 }
                 break;
 
             case EVO_LEVEL_WITH_HELD_ITEM_NIGHT:
-                if (IsNight() == TRUE && speciesEvolutions[i].param == monHeldItem) {
+                if ((IsNight() == TRUE
+#ifdef SDK_PORT
+                        || GameplayConfig_Get()->levelUpHeldItemEvolutions
+#endif
+                        )
+                    && speciesEvolutions[i].param == monHeldItem) {
                     targetSpecies = speciesEvolutions[i].targetSpecies;
                     *evoTypeResult = EVO_LEVEL_WITH_HELD_ITEM_NIGHT;
                 }
@@ -3788,6 +3822,15 @@ u16 Pokemon_GetEvolutionTargetSpecies(Party *party, Pokemon *mon, u8 evoClass, u
     case EVO_CLASS_UNUSED_02:
     case EVO_CLASS_BY_ITEM:
         for (i = 0; i < MAX_EVOLUTIONS; i++) {
+#ifdef SDK_PORT
+            if (monSpecies == SPECIES_FEEBAS && GameplayConfig_Get()->feebasWaterStoneEvolution
+                && speciesEvolutions[i].method == EVO_LEVEL_BEAUTY && evoParam == ITEM_WATER_STONE) {
+                targetSpecies = speciesEvolutions[i].targetSpecies;
+                *evoTypeResult = EVO_NONE;
+                break;
+            }
+#endif
+
             if (speciesEvolutions[i].method == EVO_USE_ITEM && speciesEvolutions[i].param == evoParam) {
                 targetSpecies = speciesEvolutions[i].targetSpecies;
                 *evoTypeResult = EVO_NONE;

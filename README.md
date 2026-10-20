@@ -21,6 +21,9 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 - **Faster egg hatching:** eggs have zero remaining hatch cycles by default and hatch at the next hatch check. Hatch checks take one fifth as many steps.
 - **Instant Honey Trees:** slather Honey, then interact again immediately for the encounter. Original encounter tables, failure chances, and Honey costs remain.
 - **Reusable TMs:** teaching a move no longer consumes its TM. Selling or discarding a TM still removes it; obtain another to use it again.
+- **Easier evolutions:** plain trade evolutions also evolve from level 40; held-item evolutions trigger on the next level-up with their required item at any time of day. Feebas evolves with a Water Stone.
+- **Instant Spiritomb:** inserting an Odd Keystone starts the encounter without Underground conversations.
+- **No overworld poison damage:** poisoned party Pokémon retain their HP while walking or running.
 - **Stability and visual fixes:**
 
 ## Visual upgrades
@@ -83,6 +86,10 @@ Free move relearning and unlimited Great Marsh steps are also enabled by default
 `instantHoneyTrees` and `infiniteTMs` default to `TRUE`; set either to `FALSE` to restore the original behavior. Honey Tree encounters still expire after 24 hours, and enabling instant encounters also makes already-slathered trees ready immediately.
 
 `shinyRolls` defaults to 1, keeping the original shiny odds of 1/8192. Higher values add rolls only when generating new wild/scripted encounters, eggs, roaming Pokémon, and eligible gifts. For ordinary generation, 2 rolls are approximately 1/4096, and 16 rolls approximately 1/512; the probability is `1 - (8191/8192)^rolls`. Existing Pokémon keep their shiny status, and fixed-personality gifts and shiny locks are preserved. Extra rolls retain nature, gender, ability, and Wurmple's evolution branch; existing breeding and Poké Radar bonuses remain. A value of 0 also keeps original odds.
+
+`tradeEvolutionLevel` defaults to 40: plain trade evolutions trigger on level-up at or above this level. Set it to any level from 1–100, or 0 to disable this alternative. `levelUpHeldItemEvolutions` defaults to `TRUE`: trade evolutions requiring an item, plus day/night held-item evolutions, trigger on the next level-up holding the required item, regardless of time. The item is consumed only after successful evolution. Normal trade evolution remains available with either setting.
+
+`feebasWaterStoneEvolution` defaults to `TRUE`, replacing Feebas's Beauty requirement with using a Water Stone. `instantSpiritomb` defaults to `TRUE`, starting the level-25 encounter as soon as an Odd Keystone is inserted (or on interaction if one is already inserted), with the usual battle outcome and tower reset behavior. It bypasses the 32 Underground conversations without changing the saved counter. `disableOverworldPoisonDamage` defaults to `TRUE`, skipping walking/running poison damage, screen effects, and poison-survival events while leaving poison status and battle damage intact. Set each boolean to `FALSE` to restore its original behavior.
 
 ## Saves
 

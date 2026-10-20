@@ -56,11 +56,15 @@ Route209_UseOddKeystone:
     WaitButton
     RemoveItem ITEM_ODD_KEYSTONE, 1, VAR_RESULT
     SetVar VAR_HALLOWED_TOWER_STATE, 1
+    CheckInstantSpiritomb VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, Route209_EncounterSpiritomb
     CloseMessage
     ReleaseAll
     End
 
 Route209_CheckSpiritombCounter:
+    CheckInstantSpiritomb VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, Route209_EncounterSpiritomb
     GetSpiritombCounter VAR_RESULT
     GoToIfGe VAR_RESULT, 32, Route209_EncounterSpiritomb
     GoToIfGe VAR_RESULT, 29, Route209_SomeSortOfPresence

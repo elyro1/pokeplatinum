@@ -16,6 +16,11 @@ typedef struct {
     BOOL zeroEggCycles; // Eggs start ready to hatch; also applies to existing eggs at the next hatch check.
     BOOL instantHoneyTrees;
     BOOL infiniteTMs;
+    BOOL levelUpHeldItemEvolutions;
+    BOOL instantSpiritomb;
+    BOOL feebasWaterStoneEvolution;
+    BOOL disableOverworldPoisonDamage;
+    u8 tradeEvolutionLevel; // Plain trade evolutions: 1-100; 0 disables level-up evolution.
     u16 shinyRolls; // Total rolls for new eligible Pokemon; 0 and 1 preserve original odds.
     u8 eggHatchSpeedMultiplier; // 1 = original speed; 0 also falls back to original speed.
 } GameplayConfig;

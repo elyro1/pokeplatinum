@@ -36,6 +36,25 @@ void GameplayConfig_LoadDefaults(GameplayConfig *config)
     // FALSE consumes TMs after teaching, while HMs remain reusable in either mode.
     config->infiniteTMs = TRUE;
 
+    // Plain trade evolutions also trigger on level-up at or above this level; 0 restores trade-only evolution.
+    // Held-item trades use levelUpHeldItemEvolutions instead. Values above 100 cannot trigger.
+    config->tradeEvolutionLevel = 40;
+
+    // Evolve on the next level-up holding the required item, including trade items, with no day/night restriction.
+    // The item is consumed on successful evolution. FALSE restores trade and time-of-day requirements.
+    config->levelUpHeldItemEvolutions = TRUE;
+
+    // Encounter Spiritomb immediately after inserting an Odd Keystone, skipping Underground conversations.
+    // Already-inserted Keystones also work; each successful encounter still uses one Keystone.
+    config->instantSpiritomb = TRUE;
+
+    // Replace Feebas's Beauty level-up requirement with using a Water Stone.
+    // FALSE restores the original Beauty evolution and disables the Water Stone alternative.
+    config->feebasWaterStoneEvolution = TRUE;
+
+    // Skip field poison damage and its visual/survival effects; poison status and battle damage remain.
+    config->disableOverworldPoisonDamage = TRUE;
+
     // Set the total shiny rolls for newly generated eligible Pokemon: 1 keeps original odds, and each extra roll has a 1/8192 chance.
     // 0 also keeps original odds; extra rolls preserve existing Pokemon, nature, gender, ability, Wurmple's evolution branch, and shiny locks.
     config->shinyRolls = 1;
