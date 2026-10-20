@@ -381,9 +381,9 @@ static void sub_0205C6E0(UnkStruct_0205C680 *param0, MapObject *param1, int para
 
     if (param0->unk_02 != 0) {
         if (param0->unk_02 == 1) {
-            param0->unk_14 = ov5_021F16D4(param1, 1);
+            param0->unk_14 = MapObjectShadow_StartFixed(param1, 1);
         } else if (param0->unk_02 >= 2) {
-            param0->unk_14 = ov5_021F16D4(param1, 2);
+            param0->unk_14 = MapObjectShadow_StartFixed(param1, 2);
         }
 
         param0->unk_02 = 0;
@@ -470,9 +470,9 @@ void sub_0205C820(MapObjectManager *mapObjMan, UnkStruct_0205C22C *param1)
 
                 if (v1->unk_02 != 0) {
                     if (v1->unk_02 == 1) {
-                        v1->unk_14 = ov5_021F16D4(mapObj, 1);
+                        v1->unk_14 = MapObjectShadow_StartFixed(mapObj, 1);
                     } else if (v1->unk_02 >= 2) {
-                        v1->unk_14 = ov5_021F16D4(mapObj, 2);
+                        v1->unk_14 = MapObjectShadow_StartFixed(mapObj, 2);
                     }
 
                     v1->unk_02 = 0;

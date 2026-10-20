@@ -408,13 +408,13 @@ static void sub_02063A78(MapObject *mapObj, u8 currTileBehavior, u8 prevTileBeha
         // The PC's soft and cast shadows show in tall grass, so a character
         // placed there needs its shadow animation; it hides the game's blob.
         if (TileBehavior_IsTallGrass(currTileBehavior) && !MapObject_CheckStatus(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW)) {
-            ov5_021F1570(mapObj);
+            MapObjectShadow_Start(mapObj);
             MapObject_SetStatusFlagOn(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW);
         }
 #endif
     } else {
         if (!MapObject_CheckStatus(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW)) {
-            ov5_021F1570(mapObj);
+            MapObjectShadow_Start(mapObj);
             MapObject_SetStatusFlagOn(mapObj, MAP_OBJ_STATUS_SHOW_SHADOW);
         }
     }

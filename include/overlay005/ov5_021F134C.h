@@ -7,9 +7,10 @@
 
 #include "overworld_anim_manager.h"
 
-void *ov5_021F134C(FieldEffectManager *param0);
-void ov5_021F1370(void *param0);
-void ov5_021F1570(MapObject *param0);
-OverworldAnimManager *ov5_021F16D4(MapObject *param0, int param1);
+void *MapObjectShadowRenderer_New(FieldEffectManager *effectManager);
+void MapObjectShadowRenderer_Free(void *data);
+void MapObjectShadow_Start(MapObject *mapObj);
+// Uses the selected model without applying the time-of-day scale.
+OverworldAnimManager *MapObjectShadow_StartFixed(MapObject *mapObj, int modelIndex);
 
 #endif // POKEPLATINUM_OV5_021F134C_H

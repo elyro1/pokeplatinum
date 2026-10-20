@@ -1,7 +1,8 @@
 #include "overlay005/ov5_021F134C.h"
 
 #include <nitro.h>
-#include <string.h>
+
+#include "constants/field/field_effect_renderer.h"
 
 #include "struct_decls/map_object.h"
 
@@ -20,385 +21,55 @@
 #include "port/field_visual_effects.h"
 #endif
 
-typedef struct {
-    int unk_00;
-    int unk_04;
-    int unk_08;
-    int unk_0C;
-    fx32 unk_10;
-    VecFx32 unk_14;
-    FieldEffectManager *unk_20;
-    SysTask *unk_24;
-    Simple3DModel unk_28[3];
-    Simple3DRenderObj unk_64[3];
-} UnkStruct_ov5_021F1388;
-
-typedef struct {
-    FieldEffectManager *unk_00;
-    UnkStruct_ov5_021F1388 *unk_04;
-    MapObject *unk_08;
-} UnkStruct_ov5_021F1570;
-
-typedef struct {
-    int unk_00;
-    int unk_04;
-    int unk_08;
-    int unk_0C;
-    int unk_10;
-    UnkStruct_ov5_021F1570 unk_14;
-} UnkStruct_ov5_021F15B4;
-
-static void ov5_021F1388(UnkStruct_ov5_021F1388 *param0);
-static void ov5_021F13AC(UnkStruct_ov5_021F1388 *param0);
-static void ov5_021F13B8(UnkStruct_ov5_021F1388 *param0, VecFx32 *param1);
-static int ov5_021F13C8(int param0);
-static void ov5_021F13D4(UnkStruct_ov5_021F1388 *param0, int param1);
-static void ov5_021F1400(fx32 *param0, fx32 param1, fx32 param2);
-static void ov5_021F1424(SysTask *param0, void *param1);
-static void ov5_021F14FC(UnkStruct_ov5_021F1388 *param0);
-static void ov5_021F153C(UnkStruct_ov5_021F1388 *param0);
-static void ov5_021F1554(UnkStruct_ov5_021F1388 *param0, int param1);
-
-static const OverworldAnimManagerFuncs Unk_ov5_022002AC;
-static const OverworldAnimManagerFuncs Unk_ov5_02200298;
-const VecFx32 Unk_ov5_022002E4[];
-const fx32 Unk_ov5_02200284[];
-static const int Unk_ov5_02200278[3];
-
-void *ov5_021F134C(FieldEffectManager *param0)
-{
-    UnkStruct_ov5_021F1388 *v0 = FieldEffectManager_HeapAllocInit(param0, (sizeof(UnkStruct_ov5_021F1388)), 0, 0);
-    v0->unk_20 = param0;
-
-    ov5_021F14FC(v0);
-    ov5_021F1388(v0);
-
-    return v0;
-}
-
-void ov5_021F1370(void *param0)
-{
-    UnkStruct_ov5_021F1388 *v0 = param0;
-
-    ov5_021F13AC(v0);
-    ov5_021F153C(v0);
-    FieldEffectManager_HeapFree(v0);
-}
-
-static void ov5_021F1388(UnkStruct_ov5_021F1388 *param0)
-{
-    FieldSystem *fieldSystem = FieldEffectManager_GetFieldSystem(param0->unk_20);
-    int v1 = MapObjectMan_GetTaskBasePriority(fieldSystem->mapObjMan) - 1;
-    SysTask *v2 = SysTask_Start(ov5_021F1424, param0, v1);
-
-    param0->unk_24 = v2;
-}
-
-static void ov5_021F13AC(UnkStruct_ov5_021F1388 *param0)
-{
-    SysTask_Done(param0->unk_24);
-}
-
-static void ov5_021F13B8(UnkStruct_ov5_021F1388 *param0, VecFx32 *param1)
-{
-    *param1 = param0->unk_14;
-}
-
-static int ov5_021F13C8(int param0)
-{
-    return param0 / FX32_ONE;
-}
-
-static void ov5_021F13D4(UnkStruct_ov5_021F1388 *param0, int param1)
-{
-    param0->unk_10 = Unk_ov5_02200284[param0->unk_04];
-    param0->unk_14 = Unk_ov5_022002E4[param0->unk_04];
-}
-
-static void ov5_021F1400(fx32 *param0, fx32 param1, fx32 param2)
-{
-    if ((*param0) < param1) {
-        (*param0) += param2;
-
-        if ((*param0) > param1) {
-            (*param0) = param1;
-        }
-    } else if ((*param0) > param1) {
-        (*param0) -= param2;
-
-        if ((*param0) < param1) {
-            (*param0) = param1;
-        }
-    }
-}
-
-static void ov5_021F1424(SysTask *param0, void *param1)
-{
-    int v0;
-    UnkStruct_ov5_021F1388 *v1 = param1;
-
-    v0 = GetTimeOfDay();
-
-    switch (v1->unk_00) {
-    case 0:
-        v1->unk_04 = v0;
-        ov5_021F13D4(v1, v1->unk_04);
-        ov5_021F1554(v1, ov5_021F13C8(v1->unk_10));
-        v1->unk_00++;
-        break;
-    case 1:
-        if (v1->unk_04 == v0) {
-            break;
-        }
-
-        v1->unk_00++;
-    case 2: {
-        fx32 v2 = Unk_ov5_02200284[v0];
-        VecFx32 v3 = Unk_ov5_022002E4[v0];
-
-        ov5_021F1400(&v1->unk_14.x, v3.x, 0x10);
-        ov5_021F1400(&v1->unk_14.y, v3.y, 0x10);
-        ov5_021F1400(&v1->unk_14.z, v3.z, 0x10);
-        ov5_021F1400(&v1->unk_10, v2, 0x200);
-        ov5_021F1554(v1, ov5_021F13C8(v1->unk_10));
-
-        if ((v3.x == v1->unk_14.x) && (v3.y == v1->unk_14.y) && (v3.z == v1->unk_14.z) && (v2 == v1->unk_10)) {
-            v1->unk_04 = v0;
-            v1->unk_00 = 1;
-        }
-    } break;
-    }
-}
-
-static void ov5_021F14FC(UnkStruct_ov5_021F1388 *param0)
-{
-    int v0;
-
-    for (v0 = 0; v0 < 3; v0++) {
-        FieldEffectManager_LoadModel(param0->unk_20, &param0->unk_28[v0], 0, Unk_ov5_02200278[v0], 0);
-        Simple3D_CreateRenderObject(&param0->unk_64[v0], &param0->unk_28[v0]);
-    }
-}
-
-static void ov5_021F153C(UnkStruct_ov5_021F1388 *param0)
-{
-    int v0;
-
-    for (v0 = 0; v0 < 3; v0++) {
-        Simple3D_FreeModel(&param0->unk_28[v0]);
-    }
-}
-
-static void ov5_021F1554(UnkStruct_ov5_021F1388 *param0, int param1)
-{
-    NNS_G3dMdlUseMdlAlpha(param0->unk_28[0].g3DModel);
-    NNS_G3dMdlSetMdlAlphaAll(param0->unk_28[0].g3DModel, param1);
-}
-
-void ov5_021F1570(MapObject *param0)
-{
-    int v0, v1;
-    UnkStruct_ov5_021F1570 v2;
-    FieldEffectManager *v3;
-    VecFx32 v4;
-
-    v3 = MapObject_GetFieldEffectManager(param0);
-
-    v2.unk_00 = v3;
-    v2.unk_04 = FieldEffectManager_GetRendererContext(v3, 0);
-    v2.unk_08 = param0;
-
-    MapObject_GetPosPtr(param0, &v4);
-
-    v0 = 0;
-    v1 = MapObject_CalculateTaskPriority(param0, 2);
-
-    FieldEffectManager_InitAnimManager(v3, &Unk_ov5_022002AC, &v4, v0, &v2, v1);
-}
-
-static int ov5_021F15B4(OverworldAnimManager *param0, void *param1)
-{
-    UnkStruct_ov5_021F15B4 *v0;
-    const UnkStruct_ov5_021F1570 *v1;
-
-    v0 = param1;
-    v1 = OverworldAnimManager_GetUserData(param0);
-
-    v0->unk_14 = *v1;
-    v0->unk_10 = OverworldAnimManager_GetUserInt(param0);
-    v0->unk_00 = MapObject_GetGraphicsID(v0->unk_14.unk_08);
-    v0->unk_04 = MapObject_GetLocalID(v0->unk_14.unk_08);
-
-    if (sub_02062E94(v0->unk_14.unk_08) == 1) {
-        v0->unk_08 = sub_02062C18(v0->unk_14.unk_08);
-    } else {
-        v0->unk_08 = MapObject_GetMapHeaderID(v0->unk_14.unk_08);
-    }
-
-    return 1;
-}
-
-static void ov5_021F1600(OverworldAnimManager *param0, void *param1)
-{
-    return;
-}
-
-static void ov5_021F1604(OverworldAnimManager *param0, void *param1)
-{
-    UnkStruct_ov5_021F15B4 *v0 = param1;
-    MapObject *v1 = v0->unk_14.unk_08;
-
-    if (sub_020627B4(v1, v0->unk_00, v0->unk_04, v0->unk_08) == 0) {
-        FieldEffectManager_FinishAnimManager(param0);
-        return;
-    }
-
-    if (MapObject_CheckManagerStatus(v1, (1 << 3))) {
-        FieldEffectManager_FinishAnimManager(param0);
-        return;
-    }
-
-    v0->unk_0C = 0;
-
-    if (MapObject_CheckStatusFlag(v1, MAP_OBJ_STATUS_HIDE | MAP_OBJ_STATUS_HIDE_SHADOW) == 1) {
-        v0->unk_0C = 1;
-#ifdef SDK_PORT
-        // Keep enhanced shadows in tall grass, where the original blob hides.
-        // Stepping out of it, the game keeps the shadow hidden until the
-        // step ends; keep them then too, unless the new tile hides shadows.
-        u32 curr = MapObject_GetCurrTileBehavior(v1), prev = MapObject_GetPrevTileBehavior(v1);
-        if (!MapObject_CheckStatusFlag(v1, MAP_OBJ_STATUS_HIDE)
-            && (TileBehavior_IsTallGrass(curr)
-                || (TileBehavior_IsTallGrass(prev) && !MapObject_TileHidesShadow(v1, curr)))) {
-            v0->unk_0C = 2;
-        }
-#endif
-        if (v0->unk_0C == 1) {
-            return;
-        }
-    }
-
-    {
-        VecFx32 v2;
-
-        MapObject_GetPosPtr(v1, &v2);
-        OverworldAnimManager_SetPosition(param0, &v2);
-    }
-}
-
-static void ov5_021F1670(OverworldAnimManager *param0, void *param1)
-{
-    UnkStruct_ov5_021F15B4 *v0 = param1;
-
-    if (v0->unk_0C != 1) {
-        VecFx32 v1, v2;
-        MtxFx33 v3 = { FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0, FX32_ONE };
-        Simple3DRenderObj *v4 = &v0->unk_14.unk_04->unk_64[0];
-
-        ov5_021F13B8(v0->unk_14.unk_04, &v2);
-        OverworldAnimManager_GetPosition(param0, &v1);
-
-        v1.x += (FX32_ONE * -1) / 2;
-        v1.y += (FX32_ONE * -4);
-        v1.z += (FX32_ONE * 1);
-
-#ifdef SDK_PORT
-        FieldSystem *field = FieldEffectManager_GetFieldSystem(v0->unk_14.unk_00);
-        if (FieldVisualEffects_DrawContactShadow(field, v0->unk_14.unk_08,
-                &v1, &v2, &v4->g3DRenderObj.resMdl->info)
-            || v0->unk_0C == 2) {
-            return;
-        }
-#endif
-        Simple3D_DrawRenderObj(v4, &v1, &v2, &v3);
-    }
-}
-
-static const OverworldAnimManagerFuncs Unk_ov5_022002AC = {
-    sizeof(UnkStruct_ov5_021F15B4),
-    ov5_021F15B4,
-    ov5_021F1600,
-    ov5_021F1604,
-    ov5_021F1670
+enum ShadowAppearanceState {
+    SHADOW_APPEARANCE_INIT = 0,
+    SHADOW_APPEARANCE_IDLE,
+    SHADOW_APPEARANCE_TRANSITION,
 };
 
-OverworldAnimManager *ov5_021F16D4(MapObject *param0, int param1)
-{
-    int v0;
-    UnkStruct_ov5_021F1570 v1;
-    FieldEffectManager *v2;
-    VecFx32 v3;
-
-    v2 = MapObject_GetFieldEffectManager(param0);
-
-    v1.unk_00 = v2;
-    v1.unk_04 = FieldEffectManager_GetRendererContext(v2, 0);
-    v1.unk_08 = param0;
-
-    MapObject_GetPosPtr(param0, &v3);
-
-    v0 = MapObject_CalculateTaskPriority(param0, 2);
-    return FieldEffectManager_InitAnimManager(v2, &Unk_ov5_02200298, &v3, param1, &v1, v0);
-}
-
-static void ov5_021F1718(OverworldAnimManager *param0, void *param1)
-{
-    UnkStruct_ov5_021F15B4 *v0 = param1;
-    MapObject *v1 = v0->unk_14.unk_08;
-
-    if (sub_020627B4(v1, v0->unk_00, v0->unk_04, v0->unk_08) == 0) {
-        FieldEffectManager_FinishAnimManager(param0);
-        return;
-    }
-
-    v0->unk_0C = 0;
-
-    if (MapObject_CheckStatusFlag(v1, MAP_OBJ_STATUS_HIDE | MAP_OBJ_STATUS_HIDE_SHADOW) == 1) {
-        v0->unk_0C = 1;
-        return;
-    }
-
-    {
-        VecFx32 v2;
-
-        MapObject_GetPosPtr(v1, &v2);
-        OverworldAnimManager_SetPosition(param0, &v2);
-    }
-}
-
-static void ov5_021F176C(OverworldAnimManager *param0, void *param1)
-{
-    UnkStruct_ov5_021F15B4 *v0 = param1;
-
-    if (v0->unk_0C == 1) {
-        return;
-    }
-
-    {
-        int v1 = OverworldAnimManager_GetUserInt(param0);
-        VecFx32 v2;
-        Simple3DRenderObj *v3 = &v0->unk_14.unk_04->unk_64[v1];
-
-        OverworldAnimManager_GetPosition(param0, &v2);
-        v2.x += (FX32_ONE * -1) / 2;
-        v2.y += (FX32_ONE * -4);
-        v2.z += (FX32_ONE * 1);
-        Simple3D_DrawRenderObjWithPos(v3, &v2);
-    }
-}
-
-static const OverworldAnimManagerFuncs Unk_ov5_02200298 = {
-    (sizeof(UnkStruct_ov5_021F15B4)),
-    ov5_021F15B4,
-    ov5_021F1600,
-    ov5_021F1718,
-    ov5_021F176C
+enum ShadowVisibility {
+    SHADOW_VISIBLE = 0,
+    SHADOW_HIDDEN,
+    SHADOW_CONTACT_ONLY,
 };
 
-#ifdef SDK_BUILD_ARM
-static
-#endif
-const VecFx32 Unk_ov5_022002E4[] = {
+typedef struct MapObjectShadowRenderer {
+    enum ShadowAppearanceState state;
+    enum TimeOfDay timeOfDay;
+    fx32 alpha;
+    VecFx32 scale;
+    FieldEffectManager *effectManager;
+    SysTask *timeOfDayTask;
+    Simple3DModel models[3];
+    Simple3DRenderObj renderObjs[3];
+} MapObjectShadowRenderer;
+
+typedef struct MapObjectShadowParams {
+    FieldEffectManager *effectManager;
+    MapObjectShadowRenderer *renderer;
+    MapObject *mapObj;
+} MapObjectShadowParams;
+
+typedef struct MapObjectShadow {
+    int graphicsID;
+    int localID;
+    int mapHeaderID;
+    enum ShadowVisibility visibility;
+    MapObjectShadowParams params;
+} MapObjectShadow;
+
+static void StartTimeOfDayTask(MapObjectShadowRenderer *renderer);
+static void StopTimeOfDayTask(MapObjectShadowRenderer *renderer);
+static void InitTimeOfDayAppearance(MapObjectShadowRenderer *renderer, enum TimeOfDay timeOfDay);
+static void StepTowardTarget(fx32 *value, fx32 target, fx32 step);
+static void UpdateTimeOfDay(SysTask *task, void *data);
+static void LoadShadowModels(MapObjectShadowRenderer *renderer);
+static void FreeShadowModels(MapObjectShadowRenderer *renderer);
+static void SetShadowAlpha(MapObjectShadowRenderer *renderer, int alpha);
+
+static const OverworldAnimManagerFuncs sShadowFuncs;
+static const OverworldAnimManagerFuncs sFixedShadowFuncs;
+static const VecFx32 sShadowScalesByTimeOfDay[] = {
     { FX32_ONE, FX32_ONE, FX32_ONE },
     { FX32_ONE + (FX32_ONE / 4), FX32_ONE, FX32_ONE + (FX32_ONE / 4) },
     { FX32_ONE + (FX32_ONE / 4), FX32_ONE, FX32_ONE },
@@ -406,10 +77,7 @@ const VecFx32 Unk_ov5_022002E4[] = {
     { FX32_ONE - (FX32_ONE / 8), FX32_ONE, FX32_ONE - (FX32_ONE / 8) }
 };
 
-#ifdef SDK_BUILD_ARM
-static
-#endif
-const fx32 Unk_ov5_02200284[] = {
+static const fx32 sShadowAlphaByTimeOfDay[] = {
     FX32_ONE * 14,
     FX32_ONE * 18,
     FX32_ONE * 18,
@@ -417,8 +85,313 @@ const fx32 Unk_ov5_02200284[] = {
     FX32_ONE * 4,
 };
 
-static const int Unk_ov5_02200278[3] = {
+static const int sShadowModelIDs[3] = {
     0x11,
     0x12,
     0x13
+};
+
+void *MapObjectShadowRenderer_New(FieldEffectManager *effectManager)
+{
+    MapObjectShadowRenderer *renderer = FieldEffectManager_HeapAllocInit(effectManager, sizeof(MapObjectShadowRenderer), 0, 0);
+    renderer->effectManager = effectManager;
+
+    LoadShadowModels(renderer);
+    StartTimeOfDayTask(renderer);
+
+    return renderer;
+}
+
+void MapObjectShadowRenderer_Free(void *data)
+{
+    MapObjectShadowRenderer *renderer = data;
+
+    StopTimeOfDayTask(renderer);
+    FreeShadowModels(renderer);
+    FieldEffectManager_HeapFree(renderer);
+}
+
+static void StartTimeOfDayTask(MapObjectShadowRenderer *renderer)
+{
+    FieldSystem *fieldSystem = FieldEffectManager_GetFieldSystem(renderer->effectManager);
+    int priority = MapObjectMan_GetTaskBasePriority(fieldSystem->mapObjMan) - 1;
+    SysTask *task = SysTask_Start(UpdateTimeOfDay, renderer, priority);
+
+    renderer->timeOfDayTask = task;
+}
+
+static void StopTimeOfDayTask(MapObjectShadowRenderer *renderer)
+{
+    SysTask_Done(renderer->timeOfDayTask);
+}
+
+static void InitTimeOfDayAppearance(MapObjectShadowRenderer *renderer, enum TimeOfDay timeOfDay)
+{
+    renderer->alpha = sShadowAlphaByTimeOfDay[timeOfDay];
+    renderer->scale = sShadowScalesByTimeOfDay[timeOfDay];
+}
+
+static void StepTowardTarget(fx32 *value, fx32 target, fx32 step)
+{
+    if (*value < target) {
+        *value += step;
+
+        if (*value > target) {
+            *value = target;
+        }
+    } else if (*value > target) {
+        *value -= step;
+
+        if (*value < target) {
+            *value = target;
+        }
+    }
+}
+
+static void UpdateTimeOfDay(SysTask *task, void *data)
+{
+    enum TimeOfDay timeOfDay = GetTimeOfDay();
+    MapObjectShadowRenderer *renderer = data;
+
+    switch (renderer->state) {
+    case SHADOW_APPEARANCE_INIT:
+        renderer->timeOfDay = timeOfDay;
+        InitTimeOfDayAppearance(renderer, renderer->timeOfDay);
+        SetShadowAlpha(renderer, renderer->alpha / FX32_ONE);
+        renderer->state = SHADOW_APPEARANCE_IDLE;
+        break;
+    case SHADOW_APPEARANCE_IDLE:
+        if (renderer->timeOfDay == timeOfDay) {
+            break;
+        }
+
+        renderer->state = SHADOW_APPEARANCE_TRANSITION;
+        // Fall through to begin the transition immediately.
+    case SHADOW_APPEARANCE_TRANSITION: {
+        fx32 targetAlpha = sShadowAlphaByTimeOfDay[timeOfDay];
+        VecFx32 targetScale = sShadowScalesByTimeOfDay[timeOfDay];
+
+        StepTowardTarget(&renderer->scale.x, targetScale.x, FX32_ONE / 256);
+        StepTowardTarget(&renderer->scale.y, targetScale.y, FX32_ONE / 256);
+        StepTowardTarget(&renderer->scale.z, targetScale.z, FX32_ONE / 256);
+        StepTowardTarget(&renderer->alpha, targetAlpha, FX32_ONE / 8);
+        SetShadowAlpha(renderer, renderer->alpha / FX32_ONE);
+
+        if ((targetScale.x == renderer->scale.x) && (targetScale.y == renderer->scale.y) && (targetScale.z == renderer->scale.z) && (targetAlpha == renderer->alpha)) {
+            renderer->timeOfDay = timeOfDay;
+            renderer->state = SHADOW_APPEARANCE_IDLE;
+        }
+    } break;
+    }
+}
+
+static void LoadShadowModels(MapObjectShadowRenderer *renderer)
+{
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        FieldEffectManager_LoadModel(renderer->effectManager, &renderer->models[i], 0, sShadowModelIDs[i], 0);
+        Simple3D_CreateRenderObject(&renderer->renderObjs[i], &renderer->models[i]);
+    }
+}
+
+static void FreeShadowModels(MapObjectShadowRenderer *renderer)
+{
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        Simple3D_FreeModel(&renderer->models[i]);
+    }
+}
+
+static void SetShadowAlpha(MapObjectShadowRenderer *renderer, int alpha)
+{
+    NNS_G3dMdlUseMdlAlpha(renderer->models[0].g3DModel);
+    NNS_G3dMdlSetMdlAlphaAll(renderer->models[0].g3DModel, alpha);
+}
+
+void MapObjectShadow_Start(MapObject *mapObj)
+{
+    int priority;
+    MapObjectShadowParams params;
+    FieldEffectManager *effectManager;
+    VecFx32 position;
+
+    effectManager = MapObject_GetFieldEffectManager(mapObj);
+
+    params.effectManager = effectManager;
+    params.renderer = FieldEffectManager_GetRendererContext(effectManager, FIELD_EFFECT_RENDERER_SHADOW);
+    params.mapObj = mapObj;
+
+    MapObject_GetPosPtr(mapObj, &position);
+
+    priority = MapObject_CalculateTaskPriority(mapObj, 2);
+
+    FieldEffectManager_InitAnimManager(effectManager, &sShadowFuncs, &position, 0, &params, priority);
+}
+
+static BOOL InitShadow(OverworldAnimManager *animManager, void *data)
+{
+    MapObjectShadow *shadow = data;
+    const MapObjectShadowParams *params = OverworldAnimManager_GetUserData(animManager);
+
+    shadow->params = *params;
+    shadow->graphicsID = MapObject_GetGraphicsID(shadow->params.mapObj);
+    shadow->localID = MapObject_GetLocalID(shadow->params.mapObj);
+
+    if (sub_02062E94(shadow->params.mapObj) == TRUE) {
+        shadow->mapHeaderID = sub_02062C18(shadow->params.mapObj);
+    } else {
+        shadow->mapHeaderID = MapObject_GetMapHeaderID(shadow->params.mapObj);
+    }
+
+    return TRUE;
+}
+
+static void UpdateShadow(OverworldAnimManager *animManager, void *data)
+{
+    MapObjectShadow *shadow = data;
+    MapObject *mapObj = shadow->params.mapObj;
+
+    if (sub_020627B4(mapObj, shadow->graphicsID, shadow->localID, shadow->mapHeaderID) == FALSE) {
+        FieldEffectManager_FinishAnimManager(animManager);
+        return;
+    }
+
+    if (MapObject_CheckManagerStatus(mapObj, MAP_OBJ_STATUS_END_MOVEMENT)) {
+        FieldEffectManager_FinishAnimManager(animManager);
+        return;
+    }
+
+    shadow->visibility = SHADOW_VISIBLE;
+
+    if (MapObject_CheckStatusFlag(mapObj, MAP_OBJ_STATUS_HIDE | MAP_OBJ_STATUS_HIDE_SHADOW) == TRUE) {
+        shadow->visibility = SHADOW_HIDDEN;
+#ifdef SDK_PORT
+        // Keep enhanced shadows in tall grass, where the original blob hides.
+        // Stepping out of it, the game keeps the shadow hidden until the
+        // step ends; keep them then too, unless the new tile hides shadows.
+        u32 currTileBehavior = MapObject_GetCurrTileBehavior(mapObj);
+        u32 prevTileBehavior = MapObject_GetPrevTileBehavior(mapObj);
+        if (!MapObject_CheckStatusFlag(mapObj, MAP_OBJ_STATUS_HIDE)
+            && (TileBehavior_IsTallGrass(currTileBehavior)
+                || (TileBehavior_IsTallGrass(prevTileBehavior) && !MapObject_TileHidesShadow(mapObj, currTileBehavior)))) {
+            shadow->visibility = SHADOW_CONTACT_ONLY;
+        }
+#endif
+        if (shadow->visibility == SHADOW_HIDDEN) {
+            return;
+        }
+    }
+
+    VecFx32 position;
+
+    MapObject_GetPosPtr(mapObj, &position);
+    OverworldAnimManager_SetPosition(animManager, &position);
+}
+
+static void DrawShadow(OverworldAnimManager *animManager, void *data)
+{
+    MapObjectShadow *shadow = data;
+
+    if (shadow->visibility == SHADOW_HIDDEN) {
+        return;
+    }
+
+    VecFx32 position;
+    VecFx32 scale = shadow->params.renderer->scale;
+    MtxFx33 rotation = { FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0, FX32_ONE };
+    Simple3DRenderObj *renderObj = &shadow->params.renderer->renderObjs[0];
+
+    OverworldAnimManager_GetPosition(animManager, &position);
+
+    position.x -= FX32_ONE / 2;
+    position.y -= 4 * FX32_ONE;
+    position.z += FX32_ONE;
+
+#ifdef SDK_PORT
+    FieldSystem *fieldSystem = FieldEffectManager_GetFieldSystem(shadow->params.effectManager);
+    if (FieldVisualEffects_DrawContactShadow(fieldSystem, shadow->params.mapObj, &position, &scale, &renderObj->g3DRenderObj.resMdl->info)
+        || shadow->visibility == SHADOW_CONTACT_ONLY) {
+        return;
+    }
+#endif
+    Simple3D_DrawRenderObj(renderObj, &position, &scale, &rotation);
+}
+
+static const OverworldAnimManagerFuncs sShadowFuncs = {
+    sizeof(MapObjectShadow),
+    InitShadow,
+    OverworldAnimManager_DummyExitFunc,
+    UpdateShadow,
+    DrawShadow
+};
+
+OverworldAnimManager *MapObjectShadow_StartFixed(MapObject *mapObj, int modelIndex)
+{
+    int priority;
+    MapObjectShadowParams params;
+    FieldEffectManager *effectManager;
+    VecFx32 position;
+
+    effectManager = MapObject_GetFieldEffectManager(mapObj);
+
+    params.effectManager = effectManager;
+    params.renderer = FieldEffectManager_GetRendererContext(effectManager, FIELD_EFFECT_RENDERER_SHADOW);
+    params.mapObj = mapObj;
+
+    MapObject_GetPosPtr(mapObj, &position);
+
+    priority = MapObject_CalculateTaskPriority(mapObj, 2);
+    return FieldEffectManager_InitAnimManager(effectManager, &sFixedShadowFuncs, &position, modelIndex, &params, priority);
+}
+
+static void UpdateFixedShadow(OverworldAnimManager *animManager, void *data)
+{
+    MapObjectShadow *shadow = data;
+    MapObject *mapObj = shadow->params.mapObj;
+
+    if (sub_020627B4(mapObj, shadow->graphicsID, shadow->localID, shadow->mapHeaderID) == FALSE) {
+        FieldEffectManager_FinishAnimManager(animManager);
+        return;
+    }
+
+    shadow->visibility = SHADOW_VISIBLE;
+
+    if (MapObject_CheckStatusFlag(mapObj, MAP_OBJ_STATUS_HIDE | MAP_OBJ_STATUS_HIDE_SHADOW) == TRUE) {
+        shadow->visibility = SHADOW_HIDDEN;
+        return;
+    }
+
+    VecFx32 position;
+
+    MapObject_GetPosPtr(mapObj, &position);
+    OverworldAnimManager_SetPosition(animManager, &position);
+}
+
+static void DrawFixedShadow(OverworldAnimManager *animManager, void *data)
+{
+    MapObjectShadow *shadow = data;
+
+    if (shadow->visibility == SHADOW_HIDDEN) {
+        return;
+    }
+
+    int modelIndex = OverworldAnimManager_GetUserInt(animManager);
+    VecFx32 position;
+    Simple3DRenderObj *renderObj = &shadow->params.renderer->renderObjs[modelIndex];
+
+    OverworldAnimManager_GetPosition(animManager, &position);
+    position.x -= FX32_ONE / 2;
+    position.y -= 4 * FX32_ONE;
+    position.z += FX32_ONE;
+    Simple3D_DrawRenderObjWithPos(renderObj, &position);
+}
+
+static const OverworldAnimManagerFuncs sFixedShadowFuncs = {
+    sizeof(MapObjectShadow),
+    InitShadow,
+    OverworldAnimManager_DummyExitFunc,
+    UpdateFixedShadow,
+    DrawFixedShadow
 };

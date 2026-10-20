@@ -40,7 +40,7 @@
 #include "overlay005/veilstone_gym_object_renderer.h"
 
 const FieldEffectRendererFuncs sFieldEffectRendererHandlers[FIELD_EFFECT_RENDERER_COUNT + 1] = {
-    { FIELD_EFFECT_RENDERER_00, ov5_021F134C, ov5_021F1370 },
+    { FIELD_EFFECT_RENDERER_SHADOW, MapObjectShadowRenderer_New, MapObjectShadowRenderer_Free },
     { FIELD_EFFECT_RENDERER_01, ov5_021F17B8, ov5_021F17D4 },
     { FIELD_EFFECT_RENDERER_02, ov5_021F4DAC, ov5_021F4DC8 },
     { FIELD_EFFECT_RENDERER_03, ov5_021F4E08, ov5_021F4E28 },
@@ -79,7 +79,7 @@ const FieldEffectRendererFuncs sFieldEffectRendererHandlers[FIELD_EFFECT_RENDERE
 
 const u32 sDefaultFieldEffectRenderers[FIELD_EFFECT_RENDERER_COUNT + 1] = {
     FIELD_EFFECT_RENDERER_1D,
-    FIELD_EFFECT_RENDERER_00,
+    FIELD_EFFECT_RENDERER_SHADOW,
     FIELD_EFFECT_RENDERER_0B,
     FIELD_EFFECT_RENDERER_BERRY_PATCH,
     FIELD_EFFECT_RENDERER_0E,
