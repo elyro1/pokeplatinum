@@ -944,6 +944,22 @@ typedef struct BagMenuData {
 static void BattleDisplay_HideBattleScene(BattleSystem *battleSys, BattleMenuSceneVisibility *visibility);
 static void BattleDisplay_RestoreBattleScene(BattleSystem *battleSys, const BattleMenuSceneVisibility *visibility);
 
+static void BattleDisplay_StartMenuFade(BattleSystem *battleSys, int initialAlpha, int targetAlpha)
+{
+    PaletteData *paletteData = BattleSystem_GetPaletteData(battleSys);
+#ifdef SDK_PORT
+    // Match the quick submenu fades, including Pokémon and their shadows.
+    const int paletteWait = -8;
+    const int spriteDelay = -8;
+#else
+    const int paletteWait = 1;
+    const int spriteDelay = 0;
+#endif
+    PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, paletteWait, initialAlpha, targetAlpha, 0);
+    PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(battleSys), initialAlpha, targetAlpha, spriteDelay, 0);
+    PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, initialAlpha, targetAlpha, 0);
+}
+
 static BOOL BattleDisplay_IsSceneFadeComplete(BattleSystem *battleSys)
 {
     for (int i = 0; i < BattleSystem_GetMaxBattlers(battleSys); i++) {
@@ -4080,9 +4096,7 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
     case 0:
         bagMenuData->isCursorEnabled = BattleSubscreen_GetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(bagMenuData->battleSys));
         sub_02015738(BattleSystem_GetPaletteAnimator(bagMenuData->battleSys), 1);
-        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 0, 16, 0);
-        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(bagMenuData->battleSys), 0, 16, 0, 0);
-        PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 0, 16, 0);
+        BattleDisplay_StartMenuFade(bagMenuData->battleSys, 0, 16);
         bagMenuData->state++;
         break;
     case 1:
@@ -4194,9 +4208,7 @@ static void Task_PlayerShowBagMenu(SysTask *task, void *data)
         BattleSystem_SetupBattleScreen(bagMenuData->battleSys, TRUE);
         BattleDisplay_RestoreBattleScene(bagMenuData->battleSys, &bagMenuData->sceneVisibility);
         BattleSubscreen_SetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(bagMenuData->battleSys), bagMenuData->isCursorEnabled);
-        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
-        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(bagMenuData->battleSys), 16, 0, 0, 0);
-        PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 16, 0, 0);
+        BattleDisplay_StartMenuFade(bagMenuData->battleSys, 16, 0);
         bagMenuData->state++;
         break;
     case 7:
@@ -4682,9 +4694,7 @@ static void Task_PlayerShowPartyMenu(SysTask *task, void *data)
     case 0:
         partyMenuData->isCursorEnabled = BattleSubscreen_GetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(partyMenuData->battleSys));
         sub_02015738(BattleSystem_GetPaletteAnimator(partyMenuData->battleSys), 1);
-        PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 0, 16, 0);
-        PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(partyMenuData->battleSys), 0, 16, 0, 0);
-        PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 0, 16, 0);
+        BattleDisplay_StartMenuFade(partyMenuData->battleSys, 0, 16);
         partyMenuData->state++;
         break;
     case 1:
@@ -4795,9 +4805,7 @@ static void Task_PlayerShowPartyMenu(SysTask *task, void *data)
             BattleSystem_SetupBattleScreen(partyMenuData->battleSys, TRUE);
             BattleDisplay_RestoreBattleScene(partyMenuData->battleSys, &partyMenuData->sceneVisibility);
             BattleSubscreen_SetSuppressActivationSFX(BattleSystem_GetBattleSubscreen(partyMenuData->battleSys), partyMenuData->battlePartyCtx->isCursorEnabled);
-            PaletteData_StartFade(paletteData, PLTTBUF_MAIN_BG_F | PLTTBUF_MAIN_OBJ_F, 0xFFFF, 1, 16, 0, 0);
-            PokemonSpriteManager_StartFadeAll(BattleSystem_GetPokemonSpriteManager(partyMenuData->battleSys), 16, 0, 0, 0);
-            PaletteData_StartFade(paletteData, PLTTBUF_SUB_BG_F | PLTTBUF_SUB_OBJ_F, 0xFFFF, -8, 16, 0, 0);
+            BattleDisplay_StartMenuFade(partyMenuData->battleSys, 16, 0);
             partyMenuData->state++;
         }
         break;

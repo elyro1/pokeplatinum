@@ -1953,6 +1953,11 @@ BOOL BwAdapter_StartMoveAnimation(BattleSystem *battleSys, MoveAnimation *animat
     if (!sActive) {
         return FALSE;
     }
+    // Bag items animate during command selection, before OnCommandSelection(FALSE). Once the idle camera's
+    // delay expires it starts another effect before queued animations can run, so stop it before queueing ours.
+    if (BwBattleView_IsIdleCameraActive()) {
+        BwBattleView_SetIdleCamera(false);
+    }
     if (animation->animMode == 0) {
         for (int i = 0; i < BW_ADAPTER_BATTLERS; i++) {
             sBattlers[i].announcedAbility = 0;

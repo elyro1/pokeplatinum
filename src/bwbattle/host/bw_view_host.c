@@ -218,7 +218,7 @@ void BwBattleView_SetObjExtension(bool on) {
 }
 
 void BwBattleView_SetIdleCamera(bool on) {
-    if (!sViewActive || on == sIdleCamera) {
+    if (!sViewActive || (on && sIdleCamera)) {
         return;
     }
     sIdleCamera = on;
@@ -226,6 +226,8 @@ void BwBattleView_SetIdleCamera(bool on) {
     if (on) {
         BtlvEffect_SetIdleEffectMode(2);
     } else {
+        // Command selection must reset the camera even if an item already stopped the idle effects:
+        // the item's script locks camera commands until the reset script (0x236) clears the lock.
         BtlvEffect_StopIdleEffect();
     }
 }

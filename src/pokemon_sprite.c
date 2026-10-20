@@ -1206,6 +1206,10 @@ void PokemonSprite_SetPartialDraw(PokemonSprite *monSprite, int xOffset, int yOf
 void PokemonSprite_StartFade(PokemonSprite *monSprite, int initAlpha, int targetAlpha, int delay, int color)
 {
 #ifdef SDK_PORT
+    monSprite->fadeStep = delay < 0 ? 2 - delay : 1;
+    if (delay < 0) {
+        delay = 0;
+    }
     // Scene fades follow their UI owner; move/send-out fades follow animation.
     monSprite->battleFadeTimingDomain = BattleTiming_GetDomain();
     if (monSprite->battleFadeTimingDomain == BATTLE_TIMING_NONE) {
@@ -1610,12 +1614,24 @@ static void BufferPokemonSpritePlttData(PokemonSpriteManager *monSpriteMan)
                         monSpriteMan->sprites[i].transforms.fadeTargetColor);
                 }
 
+                int fadeStep = 1;
+#ifdef SDK_PORT
+                if (monSpriteMan->sprites[i].fadeStep != 0) {
+                    fadeStep = monSpriteMan->sprites[i].fadeStep;
+                }
+#endif
                 if (monSpriteMan->sprites[i].transforms.fadeInitAlpha == monSpriteMan->sprites[i].transforms.fadeTargetAlpha) {
                     monSpriteMan->sprites[i].transforms.fadeActive = FALSE;
                 } else if (monSpriteMan->sprites[i].transforms.fadeInitAlpha > monSpriteMan->sprites[i].transforms.fadeTargetAlpha) {
-                    monSpriteMan->sprites[i].transforms.fadeInitAlpha--;
+                    int next = monSpriteMan->sprites[i].transforms.fadeInitAlpha - fadeStep;
+                    monSpriteMan->sprites[i].transforms.fadeInitAlpha = next < monSpriteMan->sprites[i].transforms.fadeTargetAlpha
+                        ? monSpriteMan->sprites[i].transforms.fadeTargetAlpha
+                        : next;
                 } else {
-                    monSpriteMan->sprites[i].transforms.fadeInitAlpha++;
+                    int next = monSpriteMan->sprites[i].transforms.fadeInitAlpha + fadeStep;
+                    monSpriteMan->sprites[i].transforms.fadeInitAlpha = next > monSpriteMan->sprites[i].transforms.fadeTargetAlpha
+                        ? monSpriteMan->sprites[i].transforms.fadeTargetAlpha
+                        : next;
                 }
             } else {
                 monSpriteMan->sprites[i].transforms.fadeDelayCounter--;

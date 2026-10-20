@@ -152,7 +152,8 @@ bool BwBattleView_GetMessageWindow(unsigned char tiles[BW_MSG_WINDOW_TILES * 32]
 // libntr's OBJ extension for the view's 2D sprites (BwBattleView_Create turns it on): off while the view stops for a
 // menu's screen, whose sprites take the OAM entries the extension would read from BW2's characters and palettes
 void BwBattleView_SetObjExtension(bool on);
-// BW2's idle camera, which moves around the field while the commands are chosen; off, its camera goes back
+// BW2's idle camera, which moves around the field while the commands are chosen; off always resets the camera,
+// including the camera lock set by item scripts after the idle camera was stopped
 void BwBattleView_SetIdleCamera(bool on);
 bool BwBattleView_IsIdleCameraActive(void);
 // Fades the view's 2D sprites (the gauges) level of 16 of the way to color, as Platinum's fades do its own, which don't

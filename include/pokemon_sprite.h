@@ -110,6 +110,7 @@ struct PokemonSprite {
     SpriteAnimFrame animFrames[MAX_ANIMATION_FRAMES];
 #ifdef SDK_PORT
     u8 battleFadeTimingDomain;
+    u8 fadeStep;
     BOOL battleSmoothDisabled;
     BattleVisualHistory battleVisualHistory;
 #endif
@@ -166,6 +167,7 @@ void PokemonSprite_SetAttribute(PokemonSprite *monSprite, enum PokemonSpriteAttr
 int PokemonSprite_GetAttribute(PokemonSprite *monSprite, enum PokemonSpriteAttribute attribute);
 void PokemonSprite_AddAttribute(PokemonSprite *monSprite, enum PokemonSpriteAttribute attribute, int delta);
 void PokemonSprite_SetPartialDraw(PokemonSprite *monSprite, int xOffset, int yOffset, int width, int height);
+// On PC, negative delay advances the blend by 2 + abs(delay) each tick, like PaletteData_StartFade.
 void PokemonSprite_StartFade(PokemonSprite *monSprite, int initAlpha, int targetAlpha, int delay, int color);
 void PokemonSpriteManager_StartFadeAll(PokemonSpriteManager *monSpriteMan, int initAlpha, int targetAlpha, int delay, int color);
 void PokemonSprite_ClearFade(PokemonSprite *monSprite);
