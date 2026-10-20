@@ -146,7 +146,7 @@ static u8 UpdateSelectedPartyIndex(BattleParty *battleParty, s32 selectedPartyIn
 static void DrawXPBar(BattleParty *battleParty, enum BattlePartyScreen screen);
 static void DrawXPBarSegment(BattleParty *battleParty, u16 fillVal, u16 x, u16 y);
 static void DrawMoveContestStats(BattleParty *battleParty, enum BattlePartyScreen screen);
-static BOOL CheckSelectedMoveIsHM(BattleParty *battleParty);
+static BOOL CheckSelectedMoveCannotBeForgotten(BattleParty *battleParty);
 static void ClearMoveStats(BattleParty *battleParty);
 static void ClearMoveContestStats(BattleParty *battleParty);
 static u8 CheckSelectedPokemonIsEgg(BattleParty *battleParty);
@@ -716,7 +716,7 @@ static u8 BattlePartyTask_ConfirmLearnMoveScreen(BattleParty *battleParty)
             BattlePartyButtons_PressButton(battleParty, BATTLE_CONFIRM_LEARN_MOVE_SCREEN_BUTTON_OFFSET + 1);
         }
 
-        if (CheckSelectedMoveIsHM(battleParty) == TRUE) {
+        if (CheckSelectedMoveCannotBeForgotten(battleParty) == TRUE) {
             BattlePartyText_PrintHMMovesCantBeForgottenText(battleParty);
 
             if (battleParty->displayingContestStats == FALSE) {
@@ -1722,7 +1722,7 @@ BOOL BattlePartyTask_CheckIfSwitchingWithPartnersPokemon(BattleParty *battlePart
     return FALSE;
 }
 
-static BOOL CheckSelectedMoveIsHM(BattleParty *battleParty)
+static BOOL CheckSelectedMoveCannotBeForgotten(BattleParty *battleParty)
 {
     u16 move;
 
@@ -1732,7 +1732,7 @@ static BOOL CheckSelectedMoveIsHM(BattleParty *battleParty)
         move = battleParty->partyPokemon[battleParty->context->selectedPartyIndex].moves[battleParty->context->selectedMoveSlot].move;
     }
 
-    return Item_IsHMMove(move);
+    return !Item_CanForgetMove(move);
 }
 
 static void ClearMoveStats(BattleParty *battleParty)

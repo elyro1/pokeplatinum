@@ -10,6 +10,10 @@
 #include "narc.h"
 #include "string_gf.h"
 
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
+
 #include "res/items/item_berry_list.h"
 #include "res/items/item_icon.naix"
 #include "res/items/item_id_map.h"
@@ -312,6 +316,17 @@ u8 Item_IsHMMove(u16 move)
     }
 
     return FALSE;
+}
+
+BOOL Item_CanForgetMove(u16 move)
+{
+#ifdef SDK_PORT
+    if (GameplayConfig_Get()->forgettableHMs) {
+        return TRUE;
+    }
+#endif
+
+    return !Item_IsHMMove(move);
 }
 
 u8 Item_TMHMNumber(u16 item)

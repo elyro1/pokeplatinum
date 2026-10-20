@@ -256,6 +256,13 @@ u16 Item_MoveForTMHM(u16 item);
 u8 Item_IsHMMove(u16 move);
 
 /**
+ * @brief Check whether a move can be replaced when learning another move.
+ *
+ * HM moves are protected unless the port's forgettable-HMs setting is enabled.
+ */
+BOOL Item_CanForgetMove(u16 move);
+
+/**
  * @brief Get the TM number for a given item, if it is a TM or HM.
  *
  * HMs are considered to be TMs 93 - 100.

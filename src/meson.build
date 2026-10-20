@@ -1024,6 +1024,7 @@ pokeplatinum_c += files(
     'port/field_visual_effects.c',
     'port/scripted_npc_scene.c',
     'port/sim_config_prj.c',
+    'port/gameplay_config.c',
     'port/sim_gui_prj.cpp',
     'port/gui_cheats.cpp',
     'port/gui_configPrj.cpp',

@@ -818,7 +818,7 @@ static int HandleInput_SelectMove(PokemonSummaryScreen *summaryScreen)
         Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
 
         if (summaryScreen->cursor != LEARNED_MOVES_MAX) {
-            if (Item_IsHMMove(summaryScreen->monData.moves[summaryScreen->cursor]) == TRUE && summaryScreen->data->move != MOVE_NONE) {
+            if (!Item_CanForgetMove(summaryScreen->monData.moves[summaryScreen->cursor]) && summaryScreen->data->move != MOVE_NONE) {
                 Sprite_SetDrawFlag2(summaryScreen->sprites[SUMMARY_SPRITE_MOVE_CATEGORY_ICON], FALSE);
                 DrawEmptyHearts(summaryScreen);
                 PokemonSummaryScreen_PrintHMMovesCantBeForgotten(summaryScreen);

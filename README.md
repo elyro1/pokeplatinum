@@ -14,6 +14,7 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 - **Pokétch in the in-game menu:** open it after acquiring it, switch apps with L/R, and return to the game with B or X.
 - **Quit from the in-game menu:** a confirmation prompt lets you cancel before closing the game.
 - **QoL Repels:** when a Repel wears off, you can use another without reopening the Bag. If that type has run out, an available alternative is offered.
+- **Forgettable HMs:** HM moves can be replaced when learning moves, including after leveling up in battle.
 - **Stability and visual fixes:**
 
 ## Visual upgrades
@@ -64,6 +65,8 @@ Press **Tab** to access:
 - **libntr → Application tools:** cheats, Pokémon and item generation, and map jumping while a game is loaded.
 
 Settings are stored locally in `sim_config.ini` and `sim_config_prj.ini`. If performance is poor, lower the internal resolution scale in the PC settings.
+
+Gameplay options currently use internal defaults in `src/port/gameplay_config.c`, separate from graphics and developer settings. Forgettable HMs are enabled by default on PC. There is no gameplay config file or menu control yet.
 
 ## Saves
 

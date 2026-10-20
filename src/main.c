@@ -36,6 +36,7 @@
 
 #ifdef SDK_PORT
 #include "port/sim_config_prj.h"
+#include "port/gameplay_config.h"
 #include <simulator/sim.h>
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
 #include "port/map_patches.h"
@@ -86,6 +87,7 @@ void NitroMain(void)
 {
 #ifdef SDK_PORT
     SIM_Config_prj_init();
+    GameplayConfig_Init();
     #ifdef SDK_BUILD_LINUX
     SetPokeplatinumAppIcon();
     #endif
