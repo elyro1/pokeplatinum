@@ -18,6 +18,8 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 - **Free move relearning:** the Move Maniac in Pastoria City no longer requires Heart Scales.
 - **Unlimited Great Marsh steps:** explore until you retire or run out of Safari Balls; the entry fee and Ball limit still apply.
 - **Faster egg hatching:** eggs have zero remaining hatch cycles by default and hatch at the next hatch check. Hatch checks take one fifth as many steps.
+- **Instant Honey Trees:** slather Honey, then interact again immediately for the encounter. Original encounter tables, failure chances, and Honey costs remain.
+- **Reusable TMs:** teaching a move no longer consumes its TM. Selling or discarding a TM still removes it; obtain another to use it again.
 - **Stability and visual fixes:**
 
 ## Visual upgrades
@@ -74,6 +76,10 @@ Gameplay options currently use internal defaults in `src/port/gameplay_config.c`
 Free move relearning and unlimited Great Marsh steps are also enabled by default. Each has an independent boolean in `GameplayConfig`. `eggHatchSpeedMultiplier` defaults to 5; set it to 1 for original hatching speed (0 also uses original speed). These options apply to existing saves without changing their format.
 
 `zeroEggCycles` defaults to `TRUE`: newly created eggs start with zero hatch cycles, and existing eggs are set to zero at their next hatch check. Set it to `FALSE` to retain normal egg cycles and use only the hatch-speed multiplier; Flame Body/Magma Armor bonuses still apply in that mode. For new eggs at original hatching speed, disable `zeroEggCycles` and set the multiplier to 1.
+
+`instantHoneyTrees` and `infiniteTMs` default to `TRUE`; set either to `FALSE` to restore the original behavior. Honey Tree encounters still expire after 24 hours, and enabling instant encounters also makes already-slathered trees ready immediately.
+
+`shinyRolls` defaults to 1, keeping the original shiny odds of 1/8192. Higher values add rolls only when generating new wild/scripted encounters, eggs, roaming Pokémon, and eligible gifts. For ordinary generation, 2 rolls are approximately 1/4096, and 16 rolls approximately 1/512; the probability is `1 - (8191/8192)^rolls`. Existing Pokémon keep their shiny status, and fixed-personality gifts and shiny locks are preserved. Extra rolls retain nature, gender, ability, and Wurmple's evolution branch; existing breeding and Poké Radar bonuses remain. A value of 0 also keeps original odds.
 
 ## Saves
 

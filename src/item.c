@@ -329,6 +329,19 @@ BOOL Item_CanForgetMove(u16 move)
     return !Item_IsHMMove(move);
 }
 
+BOOL Item_IsReusableTMHM(u16 item)
+{
+    if (item >= ITEM_HM01 && item <= ITEM_HM08) {
+        return TRUE;
+    }
+#ifdef SDK_PORT
+    if (item >= ITEM_TM01 && item <= ITEM_TM92) {
+        return GameplayConfig_Get()->infiniteTMs;
+    }
+#endif
+    return FALSE;
+}
+
 u8 Item_TMHMNumber(u16 item)
 {
     if (item < ITEM_TM01 || item > ITEM_HM08) {

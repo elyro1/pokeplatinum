@@ -719,6 +719,7 @@ void Egg_CreateEgg(Pokemon *egg, u16 species, u8 param2, TrainerInfo *trainerInf
     }
 
     UpdateMonStatusAndTrainerInfo(egg, trainerInfo, param4, metLocation, HEAP_ID_SYSTEM);
+    Pokemon_ApplyShinyRolls(egg, TrainerInfo_ID(trainerInfo));
 }
 
 static void Egg_SetInitialData(Pokemon *mon, u16 species, Daycare *daycare, u32 monOTID, u8 form)
@@ -782,6 +783,7 @@ void Daycare_GiveEggFromDaycare(Daycare *daycare, Party *party, TrainerInfo *tra
     Egg_BuildMoveset(mon, Daycare_GetBoxMon(daycare, parentSlots[1]), Daycare_GetBoxMon(daycare, parentSlots[0]));
 
     UpdateMonStatusAndTrainerInfo(mon, trainerInfo, 3, SpecialMetLoc_GetId(1, 0), HEAP_ID_FIELD1);
+    Pokemon_ApplyShinyRolls(mon, monOTID);
 
     if (species == SPECIES_PICHU) {
         Egg_TryGiveVoltTackle(mon, daycare);

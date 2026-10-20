@@ -3,6 +3,10 @@
 #include <nitro.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
+
 #include "constants/charcode.h"
 #include "constants/flavor.h"
 #include "constants/forms.h"
@@ -2757,6 +2761,41 @@ static inline BOOL Pokemon_InlineIsPersonalityShiny(u32 monOTID, u32 monPersonal
 u8 Pokemon_IsPersonalityShiny(u32 monOTID, u32 monPersonality)
 {
     return Pokemon_InlineIsPersonalityShiny(monOTID, monPersonality);
+}
+
+void Pokemon_ApplyShinyRolls(Pokemon *mon, u32 trainerID)
+{
+#ifdef SDK_PORT
+    u32 rolls = GameplayConfig_Get()->shinyRolls;
+    if (rolls <= 1) {
+        return;
+    }
+
+    u32 personality = Pokemon_GetValue(mon, MON_DATA_PERSONALITY, NULL);
+    if (Pokemon_IsPersonalityShiny(trainerID, personality)) {
+        return;
+    }
+
+    for (u32 roll = 1; roll < rolls; roll++) {
+        if (LCRNG_RandMod(8192) != 0) {
+            continue;
+        }
+
+        u16 species = Pokemon_GetValue(mon, MON_DATA_SPECIES, NULL);
+        u8 gender = Pokemon_GetGenderOf(species, personality);
+        u32 shinyPersonality;
+        do {
+            shinyPersonality = Pokemon_FindShinyPersonality(trainerID);
+        } while (Pokemon_GetNatureOf(shinyPersonality) != Pokemon_GetNatureOf(personality)
+            || (shinyPersonality & 1) != (personality & 1)
+            || Pokemon_GetGenderOf(species, shinyPersonality) != gender
+            || (species == SPECIES_WURMPLE && ((shinyPersonality >> 16) % 10 < 5) != ((personality >> 16) % 10 < 5)));
+
+        // Reshuffle and re-encrypt the existing data blocks for the new personality.
+        sub_020780C4(mon, shinyPersonality);
+        return;
+    }
+#endif
 }
 
 u32 Pokemon_FindShinyPersonality(u32 monOTID)

@@ -262,6 +262,9 @@ u8 Item_IsHMMove(u16 move);
  */
 BOOL Item_CanForgetMove(u16 move);
 
+/** @brief Whether teaching this TM/HM leaves the item in the Bag. */
+BOOL Item_IsReusableTMHM(u16 item);
+
 /**
  * @brief Get the TM number for a given item, if it is a TM or HM.
  *

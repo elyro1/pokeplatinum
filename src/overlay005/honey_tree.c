@@ -2,6 +2,10 @@
 
 #include <nitro.h>
 
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
+
 #include "constants/map_object.h"
 #include "constants/versions.h"
 #include "generated/map_headers.h"
@@ -35,7 +39,7 @@ static u8 GetTreeIDFromMapHeaderID(const enum MapHeaderID mapHeaderID);
 static const int GetEncounterTableFromGroup(const u8 param0);
 static const int GetShakesFromGroup(const u8 param0);
 static const BOOL GetShakingValue(const int numShakes, u8 *value);
-static const BOOL SixHoursSinceSlathered(const int param0);
+static const BOOL TreeIsReadyForEncounter(const int minutesLeft);
 static BOOL IsMunchlaxTree(const u32 param0, const u8 param1);
 
 static const int sHoneyTreeMapHeaderIDs[NUM_HONEY_TREES] = {
@@ -123,7 +127,7 @@ u16 HoneyTree_GetTreeSlatherStatus(FieldSystem *fieldSystem)
     PlayerHoneyTreeStates *treeDat = SpecialEncounter_GetPlayerHoneyTreeStates(SaveData_GetSpecialEncounters(fieldSystem->saveData));
     HoneyTree *tree = SpecialEncounter_GetHoneyTree(treeId, treeDat);
 
-    if (SixHoursSinceSlathered(tree->minutesRemaining)) {
+    if (TreeIsReadyForEncounter(tree->minutesRemaining)) {
         return TREE_STATUS_ENCOUNTER; // tree can have Pokemon
     } else if (tree->minutesRemaining != 0) {
         return TREE_STATUS_SLATHERED; // tree is slathered
@@ -150,6 +154,9 @@ void HoneyTree_SlatherTree(FieldSystem *fieldSystem)
         if ((LCRNG_RandMod(100)) < 90) {
             GetTreeEncounterSlot(&tree->encounterSlot);
             tree->numShakes = GetShakesFromGroup(tree->encounterGroup);
+            if (tree->encounterGroup == TREE_GROUP_NO_ENCOUNTER) {
+                tree->minutesRemaining = 0;
+            }
             return;
         }
     }
@@ -336,7 +343,7 @@ static void DoTreeShakingAnimation(FieldSystem *fieldSystem, MapPropManager *par
         PlayerHoneyTreeStates *treeDat = SpecialEncounter_GetPlayerHoneyTreeStates(SaveData_GetSpecialEncounters(fieldSystem->saveData));
         HoneyTree *tree = SpecialEncounter_GetHoneyTree(treeId, treeDat);
 
-        if (SixHoursSinceSlathered(tree->minutesRemaining)) {
+        if (TreeIsReadyForEncounter(tree->minutesRemaining)) {
             u8 shakeValue;
             BOOL isShaking = GetShakingValue(tree->numShakes, &shakeValue);
             if (!isShaking) {
@@ -372,8 +379,14 @@ static u8 GetTreeIDFromMapHeaderID(const enum MapHeaderID mapHeaderID)
     return i;
 }
 
-static const BOOL SixHoursSinceSlathered(const int minutesLeft)
+static const BOOL TreeIsReadyForEncounter(const int minutesLeft)
 {
+#ifdef SDK_PORT
+    if (GameplayConfig_Get()->instantHoneyTrees) {
+        return minutesLeft > 0;
+    }
+#endif
+
     if ((0 < minutesLeft) && (minutesLeft <= (18 * 60))) {
         return TRUE;
     } else {

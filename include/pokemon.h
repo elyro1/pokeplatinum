@@ -414,6 +414,10 @@ u8 Pokemon_IsPersonalityShiny(u32 monOTID, u32 monPersonality);
  */
 u32 Pokemon_FindShinyPersonality(u32 monOTID);
 
+// Apply extra shiny rolls once at generation, after the recipient's trainer ID is known.
+// Never call when loading, trading, hatching, or reconstructing an existing Pokemon.
+void Pokemon_ApplyShinyRolls(Pokemon *mon, u32 trainerID);
+
 /**
  * @brief Build a PokemonSpriteTemplate for a Pokemon.
  *

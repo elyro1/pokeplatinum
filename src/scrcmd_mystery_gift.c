@@ -289,6 +289,10 @@ static void GivePokemon(FieldSystem *fieldSystem, GiftData *dummy)
 
     UpdateMonStatusAndTrainerInfo(mon, trainerInfo, 4, SpecialMetLoc_GetId(2, metLocation), HEAP_ID_FIELD3);
 
+    if (giftPersonality == RANDOMIZE_PERSONALITY) {
+        Pokemon_ApplyShinyRolls(mon, Pokemon_GetValue(mon, MON_DATA_OT_ID, NULL));
+    }
+
     if (Pokemon_GetValue(mon, MON_DATA_SPECIES, NULL) == SPECIES_ARCEUS) {
         if (Pokemon_GetValue(mon, MON_DATA_FATEFUL_ENCOUNTER, NULL) == TRUE) {
             if (SystemVars_GetArceusEventState(varsFlags) == FALSE) {

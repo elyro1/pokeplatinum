@@ -12,6 +12,9 @@ typedef struct {
     BOOL freeMoveRelearning;
     BOOL unlimitedGreatMarshSteps;
     BOOL zeroEggCycles; // Eggs start ready to hatch; also applies to existing eggs at the next hatch check.
+    BOOL instantHoneyTrees;
+    BOOL infiniteTMs;
+    u16 shinyRolls; // Total rolls for new eligible Pokemon; 0 and 1 preserve original odds.
     u8 eggHatchSpeedMultiplier; // 1 = original speed; 0 also falls back to original speed.
 } GameplayConfig;
 

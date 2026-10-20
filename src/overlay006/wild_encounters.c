@@ -1463,6 +1463,7 @@ static BOOL TryEncounterRoamer(FieldSystem *fieldSystem, Roamer **encounteredRoa
 
 static BOOL AddWildMonToParty(const int partySlot, const WildEncounters_FieldParams *encounterFieldParams, Pokemon *mon, FieldBattleDTO *battleParams)
 {
+    Pokemon_ApplyShinyRolls(mon, encounterFieldParams->trainerID);
     int hasCompoundEyes = 0;
 
     if (encounterFieldParams->isFirstMonEgg == FALSE && encounterFieldParams->firstMonAbility == ABILITY_COMPOUND_EYES) {
