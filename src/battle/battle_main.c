@@ -687,7 +687,7 @@ static void BattleMain_InitGraphics(ApplicationManager *appMan)
     sub_02015738(battleSys->paletteAnimator, 1);
 
     battleSys->taskDrawSprites = SysTask_StartUnscaled(SysTask_DrawSprites, battleSys, 60000);
-    battleSys->taskUpdateRedHPSound = SysTask_StartBattleUI(SysTask_UpdateRedHPSound, battleSys, 50000);
+    battleSys->taskUpdateRedHPSound = SysTask_StartUnscaled(SysTask_UpdateRedHPSound, battleSys, 50000);
     battleSys->taskFlyInMessageBox = SysTask_ExecuteOnVBlank(SysTask_FlyInMessageBox, battleSys, 1200);
     battleSys->yOffset = -51;
 
@@ -1635,7 +1635,7 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
     int maxBattlers = BattleSystem_GetMaxBattlers(battleSys);
     int flags = 0;
     int redHPSoundFlag = BattleSystem_GetRedHPSoundFlag(battleSys);
-    int redHPSoundDelay = 4; // This task advances on the battle UI clock.
+    int redHPSoundDelay = 4; // Pause in 30 Hz frames, independent of battle pacing.
 
     if (BattleSystem_GetBattleType(battleSys) & (BATTLE_TYPE_SAFARI | BATTLE_TYPE_PAL_PARK)) {
         return;
@@ -1679,8 +1679,8 @@ static void SysTask_UpdateRedHPSound(SysTask *task, void *inBattleSys)
 
         if (Sound_IsEffectPlaying(SEQ_SE_DP_HINSI_sseq) == FALSE
 #ifdef SDK_PORT
-            // The pause between beeps is Platinum's 30 Hz frames, though this UI task runs on each of the 60 FPS loop's
-            && BattleTiming_ShouldTick(BATTLE_TIMING_ANIMATION)
+            // Audio plays in real time. Keep its pause at 30 Hz even with Quick pacing or accelerated UI.
+            && (!SIM_Config_prj_GetConfig()->enable60fps || (BattleTiming_GetFrame() & 1))
 #endif
         ) {
             if (--delay == 0) {
