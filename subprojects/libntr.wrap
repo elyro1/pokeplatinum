@@ -1,10 +1,8 @@
 [wrap-git]
 url = https://github.com/elyro1/libntr.git
-revision = 5a6c5b23165a325101fd17257ffcb5f14b439b9a
+revision = b4436f544dcfc544dddb901fb6fcbf24a6bf4065
 depth = 1
 directory = libntr
-# Retain the single-screen battle, extended VRAM, and texture-cache support.
-diff_files = libntr_patch/single-screen-graphics-compat.patch
 
 [provide]
 dependency_names = NitroSDK

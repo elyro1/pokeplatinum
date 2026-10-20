@@ -36,6 +36,9 @@ jobs:
       - name: Build (Linux)
         run: ./drun.sh make linux
 
+      - name: Verify gamepad input
+        run: ./drun.sh python3 tools/scripts/test_gamepad_input.py
+
       - name: Verify embedded resource patches
         run: ./drun.sh python3 tools/scripts/test_map_patches.py
 

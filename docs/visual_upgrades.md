@@ -278,12 +278,12 @@ existing authored fog and background composition. Enhancements reset to neutral
 for each new frame until the field explicitly opts in. The Nintendo DS target
 keeps the original rendering path.
 
-Backend changes are committed separately on the `codex/libntr-visual` branch, based
-on `lib_single_screen_mod`. `subprojects/libntr.wrap` pins that visual SDK
-commit and applies `single-screen-graphics-compat.patch` to retain this branch's
-extended battle VRAM, matrix and DMA behavior, widescreen edge rendering, and
-compressed-texture cache support. The patch also retains the local simulator
-automation hooks. Android compatibility changes live on separate Android branches.
+Backend changes are committed in libntr on the `lib_single_screen_mod` branch.
+`subprojects/libntr.wrap` pins the SDK commit directly, including the visual
+upgrades, extended battle VRAM, matrix and DMA behavior, widescreen edge
+rendering, compressed-texture cache support, simulator automation hooks, and
+gamepad settings. No libntr patches are applied during setup. Android
+compatibility changes live on separate Android branches.
 
 After building the Linux executable, run:
 
