@@ -4,6 +4,10 @@
 #include <nitro/fx/fx_trig.h>
 #include <string.h>
 
+#ifdef SDK_PORT
+#include <simulator/g3_draw.h>
+#endif
+
 #include "port/battle_timing.h"
 
 #include "camera.h"
@@ -437,7 +441,13 @@ void ParticleSystem_Draw(ParticleSystem *particleSystem)
     NNS_G3dGlbFlush();
 
     const MtxFx43 *viewMatrix = NNS_G3dGlbGetCameraMtx();
+#ifdef SDK_PORT
+    G3SIM_SetTextureSmoothing(particleSystem->smoothTextures);
+#endif
     SPLManager_Draw(particleSystem->manager, viewMatrix);
+#ifdef SDK_PORT
+    G3SIM_SetTextureSmoothing(FALSE);
+#endif
 
     if (particleSystem->camera != NULL) {
         Camera_ClearActive();

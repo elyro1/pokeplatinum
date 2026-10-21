@@ -58,6 +58,8 @@ typedef struct ParticleSystem {
     BattleTimingDomain timingDomain;
     // Updated but not drawn: the BW2 battle view stands in for it (Sprite.portHidden for particles)
     BOOL portHidden;
+    // Filter enlarged transition textures without softening ordinary particles.
+    BOOL smoothTextures;
 #endif
 } ParticleSystem;
 

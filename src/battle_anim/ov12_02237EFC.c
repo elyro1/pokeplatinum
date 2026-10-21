@@ -168,6 +168,7 @@ void BattleParticleEffect_StartUnscaled(UnkStruct_ov12_02238004 *param0)
 #ifdef SDK_PORT
     // Intro particles must match the opening flash and fast platform slide.
     param0->unk_10->timingDomain = BATTLE_TIMING_NONE;
+    param0->unk_10->smoothTextures = TRUE;
     param0->unk_18->timingDomain = BATTLE_TIMING_NONE;
 #endif
 }
