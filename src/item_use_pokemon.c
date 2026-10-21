@@ -11,6 +11,8 @@
 #include "generated/moves.h"
 #include "generated/species.h"
 
+#include "port/gameplay_config.h"
+
 #include "heap.h"
 #include "item.h"
 #include "move_table.h"
@@ -19,7 +21,7 @@
 
 #define PP_UP_REQUIREMENT 5 // Moves with fewer max PP can't benefit from PP Ups (e.g. Sketch)
 
-#define MAX_EV_VITAMIN 100
+#define MAX_EV_VITAMIN (GameplayConfig_Get()->unlimitedVitaminEVs ? MAX_EVS_SINGLE_STAT : 100)
 #define EV_UNCHANGED   -1
 
 #define HEAL_FULL_HP    255
@@ -512,7 +514,7 @@ static s32 CalculateEVUpdate(s32 current, s32 sumOthers, s32 change)
 
     current += change;
 
-    if (current > MAX_EV_VITAMIN) {
+    if (change > 0 && current > MAX_EV_VITAMIN) {
         current = MAX_EV_VITAMIN;
     } else if (current < 0) {
         current = 0;

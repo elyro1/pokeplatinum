@@ -95,6 +95,12 @@ Free move relearning and unlimited Great Marsh steps are also enabled by default
 
 `feebasWaterStoneEvolution` defaults to `TRUE`, replacing Feebas's Beauty requirement with using a Water Stone. `instantSpiritomb` defaults to `TRUE`, starting the level-25 encounter as soon as an Odd Keystone is inserted (or on interaction if one is already inserted), with the usual battle outcome and tower reset behavior. It bypasses the 32 Underground conversations without changing the saved counter. `disableOverworldPoisonDamage` defaults to `TRUE`, skipping walking/running poison damage, screen effects, and poison-survival events while leaving poison status and battle damage intact. Set each boolean to `FALSE` to restore its original behavior.
 
+`prohibitBattleItems` defaults to `TRUE`, blocking player medicine and battle items before they can take effect or be consumed. Poké Balls, held items, and opponents' items remain usable. `forceSetBattleStyle` defaults to `TRUE`, suppressing the Shift prompt regardless of the saved Options selection. Set either to `FALSE` to restore normal behavior.
+
+`unlimitedVitaminEVs` defaults to `TRUE`, allowing all six vitamins (Protein, Calcium, Iron, Zinc, Carbos, HP Up) beyond 100 EVs, while retaining the normal 255-per-stat and 510-total limits. Set it to `FALSE` to restore the 100-EV vitamin cap. EV-reducing berries still remove only their normal amount, including from stats above 100.
+
+BP prices are configured centrally in `src/port/gameplay_config.c`: `bpPricePercent` defaults to 30 and scales BP shop prices (100 = original, 50 = half, rounded up; 0 = free). `rareCandyBPPrice` sets Rare Candy's exact price independently of that percentage and defaults to 1 BP (0 = free). Both are plain numeric fields in `GameplayConfig`. These settings affect displayed prices and payment together, without changing shop inventories or cash prices.
+
 ## Saves
 
 The three slots use `save1.bin`, `save2.bin`, and `save3.bin` in the game folder. Save through the normal in-game Save action before quitting.

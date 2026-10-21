@@ -13,6 +13,7 @@
 #include "field/field_system.h"
 #include "overlay005/fieldmap.h"
 #include "overlay005/sprite_resource_manager.h"
+#include "port/gameplay_config.h"
 
 #include "bag.h"
 #include "bag_context.h"
@@ -938,7 +939,7 @@ static u8 Shop_SelectBuyMenu(ShopMenu *shopMenu)
             return Shop_ShowPurchaseMessage(shopMenu);
         }
 
-        shopMenu->itemAmountMax = currMoney / shopMenu->itemPrice;
+        shopMenu->itemAmountMax = shopMenu->itemPrice == 0 ? 99 : currMoney / shopMenu->itemPrice;
 
         if (shopMenu->itemAmountMax > 99) {
             shopMenu->itemAmountMax = 99;
@@ -1400,7 +1401,7 @@ static u16 Shop_GetItemBPPrice(ShopMenu *shopMenu, u16 itemId)
 
     for (u32 i = 0; i < (NELEMS(itemToBpPrice)); i++) {
         if (itemToBpPrice[i][0] == itemId) {
-            return itemToBpPrice[i][1];
+            return GameplayConfig_GetBPPrice(itemId, itemToBpPrice[i][1]);
         }
     }
 

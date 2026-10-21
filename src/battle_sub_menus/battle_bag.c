@@ -12,6 +12,7 @@
 #include "battle_sub_menus/battle_bag_text.h"
 #include "battle_sub_menus/battle_bag_utils.h"
 #include "battle_sub_menus/battle_sub_menu_cursor.h"
+#include "port/gameplay_config.h"
 
 #include "bag.h"
 #include "bg_window.h"
@@ -407,6 +408,14 @@ static u8 BattleBagTask_UseItemScreen(BattleBag *battleBag)
 static u8 TryUseItem(BattleBag *battleBag)
 {
     BattleBagContext *context = battleBag->context;
+
+    if (GameplayConfig_Get()->prohibitBattleItems
+        && battleBag->currentBattlePocket != ITEM_BATTLE_CATEGORY_POKE_BALLS) {
+        MessageLoader_GetString(battleBag->messageLoader, BattleBag_Text_ItemHasNoUse, battleBag->string);
+        BattleBagText_DisplayMessage(battleBag);
+        battleBag->queuedState = TASK_STATE_CLEAR_ERROR_MESSAGE;
+        return TASK_STATE_AWAITING_TEXT_FINISH;
+    }
 
     if (battleBag->currentBattlePocket == ITEM_BATTLE_CATEGORY_BATTLE_ITEMS) {
         int partySlot = BattleBagTask_GetSelectedPartySlot(battleBag);

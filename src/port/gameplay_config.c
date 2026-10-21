@@ -1,9 +1,24 @@
 #include "port/gameplay_config.h"
 
+#include "constants/items.h"
+
 static GameplayConfig sGameplayConfig;
 
 void GameplayConfig_LoadDefaults(GameplayConfig *config)
 {
+    // Block player medicine and battle items, while allowing captures and held-item effects.
+    config->prohibitBattleItems = TRUE;
+
+    // Always use Set battle style, regardless of the saved Options selection.
+    config->forceSetBattleStyle = TRUE;
+
+    // Let all six vitamins raise a stat past 100 EVs, up to the normal 255/510 limits.
+    config->unlimitedVitaminEVs = TRUE;
+
+    // Scale BP shop prices globally, with a separate exact price for Rare Candy.
+    config->bpPricePercent = 30;
+    config->rareCandyBPPrice = 1;
+
     // Allow HM moves to be replaced when learning another move, including after leveling up in battle.
     // FALSE restores HM replacement protection; field-use requirements and HM item reuse stay unchanged.
     config->forgettableHMs = TRUE;
@@ -80,4 +95,17 @@ void GameplayConfig_Init(void)
 GameplayConfig *GameplayConfig_Get(void)
 {
     return &sGameplayConfig;
+}
+
+// Shared by price display, affordability checks, and payment through the shop lookup.
+u16 GameplayConfig_GetBPPrice(u16 item, u16 originalPrice)
+{
+    const GameplayConfig *config = GameplayConfig_Get();
+
+    if (item == ITEM_RARE_CANDY) {
+        return config->rareCandyBPPrice;
+    }
+
+    u32 price = ((u32)originalPrice * config->bpPricePercent + 99) / 100;
+    return price > 65535 ? 65535 : price;
 }
