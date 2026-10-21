@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/elyro1/libntr.git
-revision = ae77b3f3dfadffaa22253f3e6549a0a17d558972
+revision = 01998ce00bad8e33580a1369a6225f988f33cc0d
 depth = 1
 directory = libntr
 

@@ -120,6 +120,7 @@ int main(int argc, char **argv)
         glEnableVertexAttribArray(i);
         glVertexAttribPointer(i, sizes[i], GL_FLOAT, GL_FALSE, 13 * sizeof(float), (void *)(offsets[i] * sizeof(float)));
     }
+    std::array<float, 3> vertexColor = { .6f, .7f, .8f };
     auto draw = [&](float w, bool triangle) {
         glBindFramebuffer(GL_FRAMEBUFFER, target.DrawFramebuffer(resolve));
         glViewport(0, 0, 64, 64);
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
             if (triangle && i == 2) {
                 x = -0.37f;
             }
-            const float vertex[] = { x, y, 0, w, (x+1)*0.5f, (y+1)*0.5f, 0.6f, 0.7f, 0.8f, 1, 0, 0, 0 };
+            const float vertex[] = { x, y, 0, w, (x+1)*0.5f, (y+1)*0.5f, vertexColor[0], vertexColor[1], vertexColor[2], 1, 0, 0, 0 };
             vertices.insert(vertices.end(), vertex, vertex + 13);
         }
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
@@ -403,6 +404,21 @@ int main(int argc, char **argv)
     auto bulb = texel(50, 100, 255), wall = texel(215, 190, 150);
     assert(bulb.second[2] > 240 && bulb.second[2] > bulb.second[0] * 3);
     assert(wall.first[0] < 15 && wall.second[2] == 0);
+    // Game Corner roof palette colors share the neon material. Warm dusk
+    // lighting must not turn them into emitters as the lights switch on.
+    glUniform1i(loc("polygonMode"), 0);
+    vertexColor = { 1.0f, .65f, .4f };
+    for (float activation : { .5f, 1.0f }) {
+        glUniform1f(loc("fieldEffectPhase"), activation);
+        for (auto roof : { std::array<int, 3>{ 24, 20, 17 }, { 26, 22, 18 }, { 21, 16, 13 } }) {
+            auto emitted = texel(roof[0] * 255 / 31, roof[1] * 255 / 31, roof[2] * 255 / 31).second;
+            assert(emitted[0] == 0 && emitted[1] == 0 && emitted[2] == 0);
+        }
+        auto pink = texel(255, 0, 173).second;
+        auto yellow = texel(222, 255, 0).second;
+        assert(pink[0] > 100 && pink[2] > 20 && yellow[0] > 100 && yellow[1] > 50);
+    }
+    vertexColor = { .6f, .7f, .8f };
     glUniform1i(loc("polygonMode"), 0);
     glUniform1i(loc("useTexture"), 0);
     glDeleteTextures(1, &lampTexel);
