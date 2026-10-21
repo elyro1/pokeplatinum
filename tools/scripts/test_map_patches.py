@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-from make_map_patches import LAND, MATRIX, ROOT, TEXT, SCRIPTS, MENU, menu_baseline, resource_baselines
+from make_map_patches import LAND, MATRIX, ROOT, TEXT, SCRIPTS, MENU, menu_baseline, resource_baselines, members as narc_members
 from verify_hearthome_scenery import members
 
 
@@ -60,11 +60,20 @@ def main():
     templates = {LAND: land, MATRIX: matrix,
                  TEXT: build / 'res/text/pl_msg.narc',
                  SCRIPTS: build / 'res/field/scripts/scr_seq.narc'}
-    for path in (TEXT, SCRIPTS):
+    from iris_patch_baselines import resources as iris_resources, SOUND
+    iris, original_sound = iris_resources(build, narc_members)
+    for path, (archive, _) in iris.items():
+        templates[path] = archive
+    for path in templates:
+        if path in (LAND, MATRIX):
+            continue
+
         expected[path] = members(templates[path])
         originals[path] = list(expected[path])
     for path, _, index, before in resource_baselines(build):
         originals[path][index] = before
+    for path, (_, retail) in iris.items():
+        originals[path] = originals[path][:len(retail)]
     menu, _, original_menu = menu_baseline(build)
     templates[MENU] = menu
     expected[MENU] = members(menu)
@@ -109,9 +118,13 @@ def main():
                 target = directory / path
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(repack(templates[path], files))
+            target = directory / SOUND
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(original_sound if data is originals else (build / 'res/sound/pl_sound_data.sdat').read_bytes())
         clean = work / 'clean'
         populate(clean, originals)
         run(clean)
+        assert (clean / SOUND).read_bytes() == (build / 'res/sound/pl_sound_data.sdat').read_bytes()
         for path in expected:
             assert members(clean / path) == expected[path], path
             assert members(clean / '.map-patch-originals' / path) == originals[path]
@@ -137,14 +150,22 @@ def main():
         run(clean)
         assert members(clean / MENU) == expected[MENU]
         print('PASS: appended menu resources upgrade from retail backups')
+        (clean / SOUND).write_bytes(b'older sound archive')
+        run(clean)
+        assert (clean / SOUND).read_bytes() == (build / 'res/sound/pl_sound_data.sdat').read_bytes()
+        print('PASS: sound archive upgrades from its verified retail backup')
         dev = work / 'dev'
         populate(dev, expected)
         run(dev)
         assert not (dev / '.map-patch-originals').exists()
         print('PASS: development assets are recognized without backups or rewriting')
         corrupt_indices = {MATRIX: 0, MENU: 3}
-        for path, _, index, _ in resource_baselines(build):
-            corrupt_indices.setdefault(path, index)
+        for path, _, index, before_member in resource_baselines(build):
+            if expected[path][index] != before_member:
+                corrupt_indices.setdefault(path, index)
+        for path in iris:
+            if len(expected[path]) > len(originals[path]):
+                corrupt_indices[path] = 0
         for number, (path, index) in enumerate(corrupt_indices.items()):
             corrupt = work / ('corrupt-%d' % number)
             bad = {p: list(files) for p, files in originals.items()}
@@ -153,6 +174,12 @@ def main():
             before = {p: (corrupt / p).read_bytes() for p in expected}
             assert 'Original map data unavailable' in run(corrupt, False)
             assert before == {p: (corrupt / p).read_bytes() for p in expected}
+        corrupt_sound = work / 'corrupt-sound'
+        populate(corrupt_sound, originals)
+        (corrupt_sound / SOUND).write_bytes(b'unknown sound archive')
+        before = {p: (corrupt_sound / p).read_bytes() for p in expected}
+        assert 'Unexpected original map member' in run(corrupt_sound, False)
+        assert before == {p: (corrupt_sound / p).read_bytes() for p in expected}
         print('PASS: unknown assets fail without replacing any game archives')
         missing = work / 'missing'
         missing.mkdir()

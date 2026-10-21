@@ -648,7 +648,9 @@ void ConvertPathToSdat(int argc, char **argv)
     WriteU32_LE(sdatHeader + offset+12, fatBlockSize);
     uint32_t fileOffset = 0x40 + symbBlockSize + infoBlockSize + fatBlockSize;
     WriteU32_LE(sdatHeader + offset+16, fileOffset);
-    filePackage->size += PADDINGSIZE(fileOffset, 0x20);
+    // FILE includes its header and the padding before the first aligned sound file.
+    // The FAT must point past both, even when a new bank changes block alignment.
+    filePackage->size += 0x0C + PADDINGSIZE(fileOffset + 0x0C, 0x20);
     WriteU32_LE(sdatHeader + offset+20, filePackage->size);
     uint32_t sdatSize = fileOffset + filePackage->size;
     WriteU32_LE(sdatHeader + 0x08, sdatSize);
@@ -786,7 +788,7 @@ void ConvertPathToSdat(int argc, char **argv)
     fwrite(fatHeader, 1, 0x0C, outFile);
 
     fileOffset += 0x0C;
-    offset = fileOffset;
+    offset = fileOffset + PADDINGSIZE(fileOffset, 0x20);
     uint8_t *fileEntry = calloc(1, 0x10);
     if (fileEntry == NULL) FATAL_ERROR("Failed to allocate memory for fileEntry\n");
     for (struct FileStream *fileStream = filePackage->head; fileStream != NULL; fileStream = fileStream->next)

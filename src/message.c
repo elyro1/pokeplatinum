@@ -3,6 +3,9 @@
 #include <nitro.h>
 #include <string.h>
 
+#include "constants/charcode.h"
+#include "constants/extra_species.h"
+
 #include "heap.h"
 #include "narc.h"
 #include "string_gf.h"
@@ -285,8 +288,23 @@ void MessageLoader_Free(MessageLoader *loader)
     }
 }
 
+static const charcode_t sHydreigonName[] = {
+    CHAR_H, CHAR_Y, CHAR_D, CHAR_R, CHAR_E, CHAR_I, CHAR_G, CHAR_O, CHAR_N, CHAR_EOS
+};
+
+static BOOL MessageLoader_IsHydreigon(const MessageLoader *loader, u32 entryID)
+{
+    return loader->narcID == NARC_INDEX_MSGDATA__PL_MSG
+        && (loader->bankID == TEXT_BANK_SPECIES_NAME || loader->bankID == TEXT_BANK_SPECIES_NAME_WITH_ARTICLES)
+        && entryID == SPECIES_HYDREIGON;
+}
+
 void MessageLoader_GetString(const MessageLoader *loader, u32 entryID, String *string)
 {
+    if (MessageLoader_IsHydreigon(loader, entryID)) {
+        String_CopyChars(string, sHydreigonName);
+        return;
+    }
     switch (loader->mode) {
     case MSG_LOADER_PRELOAD_ENTIRE_BANK:
         MessageBank_GetString(loader->bank, entryID, string);
@@ -299,6 +317,11 @@ void MessageLoader_GetString(const MessageLoader *loader, u32 entryID, String *s
 
 String *MessageLoader_GetNewString(const MessageLoader *loader, u32 entryID)
 {
+    if (MessageLoader_IsHydreigon(loader, entryID)) {
+        String *name = String_Init(11, loader->heapID);
+        String_CopyChars(name, sHydreigonName);
+        return name;
+    }
     switch (loader->mode) {
     case MSG_LOADER_PRELOAD_ENTIRE_BANK:
         return MessageBank_GetNewString(loader->bank, entryID, loader->heapID);
@@ -323,6 +346,10 @@ u32 MessageLoader_MessageCount(const MessageLoader *loader)
 
 void MessageLoader_Get(const MessageLoader *loader, u32 entryID, charcode_t *dst)
 {
+    if (MessageLoader_IsHydreigon(loader, entryID)) {
+        MI_CpuCopy8(sHydreigonName, dst, sizeof(sHydreigonName));
+        return;
+    }
     switch (loader->mode) {
     case MSG_LOADER_PRELOAD_ENTIRE_BANK:
         MessageBank_Get(loader->bank, entryID, dst);

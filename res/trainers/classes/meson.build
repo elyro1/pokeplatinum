@@ -103,6 +103,9 @@ castle_valet = ['castle_valet']
 castle_valet_png = []
 
 foreach trainer_class : trainer_class_dirnames
+    if trainer_class == 'champion_iris'
+        continue
+    endif
     # castle valet has a special front sprite with overlapping OAMs
     if castle_valet.contains(trainer_class)
         castle_valet_png += files(trainer_class / 'front.png')
@@ -227,12 +230,9 @@ trfgra_narc = custom_target('trfgra.narc',
         castle_valet_NCGR,
     ],
     command: [
-        nitroarc_exe,
-        '--create',
-        '--index',
-        '--files-from', trfgra_order,
-        '--file', '@OUTPUT0@',
-        '@PRIVATE_DIR@',
+        find_program('python3', native: true),
+        files('../../../tools/scripts/pack_trfgra.py'),
+        nitroarc_exe, trfgra_order, '@OUTPUT0@', '@PRIVATE_DIR@',
     ],
 )
 naix_headers += trfgra_narc[1]

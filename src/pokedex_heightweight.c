@@ -3,6 +3,8 @@
 #include <nitro.h>
 #include <string.h>
 
+#include "constants/extra_species.h"
+
 #include "graphics.h"
 #include "heap.h"
 #include "narc.h"
@@ -77,6 +79,9 @@ void Pokedex_HeightWeightData_Release(HeightWeightData *HWData)
 
 int Pokedex_HeightWeightData_Height(const HeightWeightData *HWData, int species)
 {
+    if (species == SPECIES_HYDREIGON) {
+        return 18;
+    }
     GF_ASSERT(HWData);
     GF_ASSERT(HWData->height);
     return HWData->height[species];
@@ -84,6 +89,9 @@ int Pokedex_HeightWeightData_Height(const HeightWeightData *HWData, int species)
 
 int Pokedex_HeightWeightData_Weight(const HeightWeightData *HWData, int species)
 {
+    if (species == SPECIES_HYDREIGON) {
+        return 1600;
+    }
     GF_ASSERT(HWData);
     GF_ASSERT(HWData->weight);
     return HWData->weight[species];

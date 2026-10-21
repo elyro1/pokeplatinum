@@ -1,5 +1,9 @@
 #include "sound_playback.h"
 
+#ifdef SDK_PORT
+#include "bwbattle/bwbattle.h"
+#endif
+
 #include <nitro.h>
 #include <string.h>
 
@@ -61,6 +65,9 @@ BOOL Sound_PlayBasicBGM(u16 seqID)
 
 BOOL Sound_PlayBGM(u16 bgmID)
 {
+#ifdef SDK_PORT
+    BwBattle_StopMusic();
+#endif
     BOOL result;
     u8 player = Sound_GetPlayerForSequence(bgmID);
     enum SoundHandleType handleType = SoundSystem_GetSoundHandleTypeFromPlayerID(player);
@@ -74,6 +81,13 @@ BOOL Sound_PlayBGM(u16 bgmID)
         return FALSE;
     }
 
+#ifdef SDK_PORT
+    if (bgmID == BATTLE_IRIS_sseq) {
+        result = BwBattle_PlayIrisMusic(SoundSystem_GetSoundHandle(handleType), player)
+            ? TRUE
+            : Sound_Impl_PlayBGM(bgmID, player, handleType);
+    }
+#endif
     // Field BGM Bank may or may not have been switched, so set it to idle
     Sound_SetFieldBGMBankState(FIELD_BGM_BANK_STATE_IDLE);
 
@@ -136,6 +150,9 @@ BOOL Sound_SetBGM(u8 scene, u16 seqID)
 
 void Sound_StopBGM(u16 bgmID, int fadeOutFrames)
 {
+#ifdef SDK_PORT
+    BwBattle_StopMusic();
+#endif
     NNS_SndPlayerStopSeqBySeqNo(bgmID, fadeOutFrames);
 
     u8 playerID = Sound_GetPlayerForSequence(bgmID);
@@ -325,6 +342,14 @@ void Sound_PanAllEffects(int pan)
 
 BOOL Sound_PlayPokemonCry(u16 species, u8 form)
 {
+    if (species == SPECIES_HYDREIGON) {
+        Sound_StopPokemonCries(0);
+#ifdef SDK_PORT
+        return BwBattle_PlayHydreigonCry(SoundSystem_GetSoundHandle(SOUND_HANDLE_TYPE_POKEMON_CRY), PLAYER_PV);
+#else
+        return FALSE;
+#endif
+    }
     BOOL success;
     u8 *echoEnabled = SoundSystem_GetParam(SOUND_SYSTEM_PARAM_ECHO_ENABLED);
     ChatotCry **chatotCry = SoundSystem_GetParam(SOUND_SYSTEM_PARAM_CHATOT_CRY);
@@ -414,6 +439,12 @@ BOOL Sound_IsPokemonCryPlaying(void)
 
 BOOL Sound_PlayPokemonCryEx(enum PokemonCryMod cryMod, u16 species, int pan, int volume, enum HeapID heapID, u8 form)
 {
+    if (species == SPECIES_HYDREIGON) {
+        BOOL success = Sound_PlayPokemonCry(species, form);
+        Sound_SetPanForHandle(SOUND_HANDLE_TYPE_POKEMON_CRY, SOUND_PLAYBACK_TRACK_ALL, pan);
+        Sound_Impl_SetPokemonCryVolume(species, SOUND_HANDLE_TYPE_POKEMON_CRY, volume);
+        return success;
+    }
     int waveOutPan, echoVolume; // Need to be declared up here to match
     u8 *wavePrimaryAllocated = SoundSystem_GetParam(SOUND_SYSTEM_PARAM_WAVE_OUT_PRIMARY_ALLOCATED);
     u8 *waveSecondaryAllocated = SoundSystem_GetParam(SOUND_SYSTEM_PARAM_WAVE_OUT_SECONDARY_ALLOCATED);

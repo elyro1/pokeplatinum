@@ -541,6 +541,15 @@ foreach texture : field_sprites_textures_32_px_single_palette
     )
 endforeach
 
+# Reserve Iris's resource ID with Platinum art; the runtime BW2 loader replaces it.
+field_sprites_nsbtxs += custom_target('iris_placeholder',
+    input: files('npc/picnicker.png'),
+    build_subdir: field_sprites_private_dir,
+    output: 'iris.nsbtx',
+    command: [nitrobtx_exe, 'pack', '--texture', '@INPUT@', '--name', 'iris',
+              '--spritesheet', '--frame-height', '32', '--extract-palette', '@OUTPUT@'],
+)
+
 foreach index : range(12)
     field_sprites_nsbtxs += custom_target(
         input: files('dummy.png'),

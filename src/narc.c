@@ -8,6 +8,8 @@
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "bwbattle/bwbattle.h"
 #endif
 
 // Mapping of NARC indices to filesystem paths.
@@ -436,6 +438,23 @@ static void ReadFromNarcMemberByPathAndIndex(void *dest, const char *path, int m
 static void ReadFromNarcMemberByPathAndIndex(void *dest, const char *path, int memberIndex, int offset, int bytesToRead)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u32 optionalSize;
+    const u8 *optional = BwBattle_IrisResource(path, memberIndex, &optionalSize);
+    if (optional) {
+        u32 count = bytesToRead ? bytesToRead : optionalSize;
+        GF_ASSERT(offset >= 0 && offset <= optionalSize && count <= optionalSize - offset);
+        if (offset < 0 || offset > optionalSize || count > optionalSize - offset) {
+            return;
+        }
+
+        if (dest) {
+            memcpy(dest, optional + offset, count);
+        }
+        return;
+    }
+#endif
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     ResidentNARC *resident = ResidentByPath(path);
     if (resident) {
         u32 start;
@@ -500,6 +519,23 @@ static void ReadFromNarcMemberByPathAndIndex(void *dest, const char *path, int m
 
 static void *AllocAndReadFromNarcMemberByPathAndIndex(const char *path, int memberIndex, enum HeapID heapID, int offset, int bytesToRead, BOOL allocAtEnd)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u32 optionalSize;
+    const u8 *optional = BwBattle_IrisResource(path, memberIndex, &optionalSize);
+    if (optional) {
+        u32 count = bytesToRead ? bytesToRead : optionalSize;
+        GF_ASSERT(offset >= 0 && offset <= optionalSize && count <= optionalSize - offset);
+        if (offset < 0 || offset > optionalSize || count > optionalSize - offset) {
+            return NULL;
+        }
+        void *dest = allocAtEnd ? Heap_AllocAtEnd(heapID, count) : Heap_Alloc(heapID, count);
+        if (dest) {
+            memcpy(dest, optional + offset, count);
+        }
+        return dest;
+    }
+#endif
+
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     ResidentNARC *resident = ResidentByPath(path);
     if (resident) {
@@ -608,6 +644,13 @@ void *NARC_AllocAtEndAndReadFromMemberByIndexPair(enum NarcID narcID, int member
 u32 NARC_GetMemberSizeByIndexPair(enum NarcID narcID, int memberIndex)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u32 optionalSize;
+    if (BwBattle_IrisResource(sNarcPaths[narcID], memberIndex, &optionalSize)) {
+        return optionalSize;
+    }
+#endif
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     ResidentNARC *resident = ResidentGet(narcID);
     if (resident) {
         u32 start;
@@ -668,6 +711,9 @@ NARC *NARC_ctor(enum NarcID narcID, enum HeapID heapID)
         u32 chunkSize;
 
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+        narc->narcID = narcID;
+        narc->optionalData = NULL;
+        narc->optionalSize = narc->optionalCursor = 0;
         narc->resident = ResidentGet(narcID);
         narc->cursor = narc->readEnd = 0;
         if (narc->resident) {
@@ -718,6 +764,18 @@ void NARC_dtor(NARC *param0)
 void *NARC_AllocAndReadWholeMember(NARC *narc, u32 memberIndex, enum HeapID heapID)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u32 optionalSize;
+    const void *optional = BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &optionalSize);
+    if (optional) {
+        void *dest = Heap_Alloc(heapID, optionalSize);
+        if (dest) {
+            NARC_ReadFromMember(narc, memberIndex, 0, optionalSize, dest);
+        }
+        return dest;
+    }
+#endif
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     if (narc->resident) {
         u32 start;
         u32 size = ResidentSpan(narc->resident, memberIndex, &start);
@@ -751,6 +809,14 @@ void *NARC_AllocAndReadWholeMember(NARC *narc, u32 memberIndex, enum HeapID heap
 void NARC_ReadWholeMember(NARC *narc, u32 memberIndex, void *dest)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u32 optionalSize;
+    if (BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &optionalSize)) {
+        NARC_ReadFromMember(narc, memberIndex, 0, optionalSize, dest);
+        return;
+    }
+#endif
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     if (narc->resident) {
         u32 start;
         u32 size = ResidentSpan(narc->resident, memberIndex, &start);
@@ -772,6 +838,14 @@ void NARC_ReadWholeMember(NARC *narc, u32 memberIndex, void *dest)
 
 u32 NARC_GetMemberSize(NARC *narc, u32 memberIndex)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    u32 optionalSize;
+    narc->optionalData = NULL;
+    if (BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &optionalSize)) {
+        return optionalSize;
+    }
+#endif
+
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     if (narc->resident) {
         u32 start;
@@ -795,6 +869,15 @@ u32 NARC_GetMemberSize(NARC *narc, u32 memberIndex)
 
 void NARC_ReadFromMember(NARC *narc, u32 memberIndex, u32 offset, u32 bytesToRead, void *dest)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    narc->optionalData = BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &narc->optionalSize);
+    if (narc->optionalData) {
+        narc->optionalCursor = offset;
+        NARC_ReadFile(narc, bytesToRead, dest);
+        return;
+    }
+#endif
+
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     if (narc->resident) {
         u32 start;
@@ -824,6 +907,17 @@ void NARC_ReadFromMember(NARC *narc, u32 memberIndex, u32 offset, u32 bytesToRea
 void NARC_ReadFile(NARC *narc, u32 bytesToRead, void *dest)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (narc->optionalData) {
+        GF_ASSERT(narc->optionalCursor <= narc->optionalSize && bytesToRead <= narc->optionalSize - narc->optionalCursor);
+        if (narc->optionalCursor <= narc->optionalSize && bytesToRead <= narc->optionalSize - narc->optionalCursor) {
+            memcpy(dest, (const u8 *)narc->optionalData + narc->optionalCursor, bytesToRead);
+            narc->optionalCursor += bytesToRead;
+        }
+        return;
+    }
+#endif
+
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     if (narc->resident) {
         GF_ASSERT(narc->cursor <= narc->readEnd && bytesToRead <= narc->readEnd - narc->cursor);
         if (narc->cursor > narc->readEnd || bytesToRead > narc->readEnd - narc->cursor) {
@@ -839,6 +933,16 @@ void NARC_ReadFile(NARC *narc, u32 bytesToRead, void *dest)
 
 void NARC_Seek(NARC *narc, u32 offset)
 {
+#if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    if (narc->optionalData) {
+        GF_ASSERT(narc->optionalCursor <= narc->optionalSize && offset <= narc->optionalSize - narc->optionalCursor);
+        if (narc->optionalCursor <= narc->optionalSize && offset <= narc->optionalSize - narc->optionalCursor) {
+            narc->optionalCursor += offset;
+        }
+        return;
+    }
+#endif
+
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     if (narc->resident) {
         GF_ASSERT(narc->cursor <= narc->readEnd && offset <= narc->readEnd - narc->cursor);

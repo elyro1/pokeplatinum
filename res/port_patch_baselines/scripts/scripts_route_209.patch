@@ -1,0 +1,9 @@
+# original-sha256: c824e425e03e548d9cb80c673d82f97017894ed21596c1d6df8ad48ea0f68e66
+--- scripts_route_209
++++ scripts_route_209
+@@ -59,2 +58,0 @@
+-    CheckInstantSpiritomb VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, Route209_EncounterSpiritomb
+@@ -66,2 +63,0 @@
+-    CheckInstantSpiritomb VAR_RESULT
+-    GoToIfEq VAR_RESULT, TRUE, Route209_EncounterSpiritomb

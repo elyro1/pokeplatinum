@@ -6,6 +6,7 @@
     ScriptEntry IronIsland_OnTransition
     ScriptEntry IronIsland_Sailor
     ScriptEntry IronIsland_Riley
+    ScriptEntry IronIsland_Iris
     ScriptEntryEnd
 
 IronIsland_OnTransition:
@@ -127,3 +128,77 @@ IronIsland_RileyEnterIronIsland:
 IronIsland_Movement_RileyWalkOnSpotNorth:
     WalkOnSpotNormalNorth
     EndMovement
+
+IronIsland_Iris:
+    PlaySE SE_CONFIRM_sseq_3
+    LockAll
+    FacePlayer
+    CheckIrisAssets VAR_RESULT
+    GoToIfEq VAR_RESULT, FALSE, IronIsland_Visitor
+    GoToIfUnset FLAG_GAME_COMPLETED, IronIsland_IrisNotReady
+    Message IronIsland_Text_IrisChallenge
+    ShowYesNoMenu VAR_RESULT
+    CloseMessage
+    GoToIfEq VAR_RESULT, MENU_NO, IronIsland_IrisEnd
+    StartTrainerBattle TRAINER_CHAMPION_IRIS
+    CheckWonBattle VAR_RESULT
+    GoToIfEq VAR_RESULT, FALSE, IronIsland_IrisLost
+    Message IronIsland_Text_IrisVictory
+    WaitButton
+    CheckItem ITEM_AZURE_FLUTE, 1, VAR_RESULT
+    GoToIfEq VAR_RESULT, TRUE, IronIsland_IrisRepeatReward
+    Message IronIsland_Text_IrisAzureFlute
+    SetVar VAR_0x8004, ITEM_AZURE_FLUTE
+    SetVar VAR_0x8005, 1
+    GoTo IronIsland_IrisGiveReward
+
+IronIsland_IrisRepeatReward:
+    Message IronIsland_Text_IrisRepeatReward
+    SetVar VAR_0x8005, 50
+    GetRandom VAR_RESULT, 7
+    SetVar VAR_0x8004, ITEM_RARE_CANDY
+    GoToIfEq VAR_RESULT, 0, IronIsland_IrisGiveReward
+    SetVar VAR_0x8004, ITEM_HP_UP
+    GoToIfEq VAR_RESULT, 1, IronIsland_IrisGiveReward
+    SetVar VAR_0x8004, ITEM_PROTEIN
+    GoToIfEq VAR_RESULT, 2, IronIsland_IrisGiveReward
+    SetVar VAR_0x8004, ITEM_IRON
+    GoToIfEq VAR_RESULT, 3, IronIsland_IrisGiveReward
+    SetVar VAR_0x8004, ITEM_CALCIUM
+    GoToIfEq VAR_RESULT, 4, IronIsland_IrisGiveReward
+    SetVar VAR_0x8004, ITEM_ZINC
+    GoToIfEq VAR_RESULT, 5, IronIsland_IrisGiveReward
+    SetVar VAR_0x8004, ITEM_CARBOS
+
+IronIsland_IrisGiveReward:
+    CanFitItem VAR_0x8004, VAR_0x8005, VAR_RESULT
+    GoToIfEq VAR_RESULT, FALSE, IronIsland_IrisBagFull
+    Common_GiveItemQuantity
+    CloseMessage
+    GoTo IronIsland_IrisEnd
+
+IronIsland_IrisBagFull:
+    Common_MessageBagIsFull
+    CloseMessage
+IronIsland_IrisEnd:
+    ReleaseAll
+    End
+
+IronIsland_IrisNotReady:
+    Message IronIsland_Text_IrisNotReady
+    WaitButton
+    CloseMessage
+    ReleaseAll
+    End
+
+IronIsland_IrisLost:
+    BlackOutFromBattle
+    ReleaseAll
+    End
+
+IronIsland_Visitor:
+    Message IronIsland_Text_Visitor
+    WaitButton
+    CloseMessage
+    ReleaseAll
+    End

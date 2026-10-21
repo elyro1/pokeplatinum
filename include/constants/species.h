@@ -1,6 +1,7 @@
 #ifndef POKEPLATINUM_CONSTANTS_SPECIES_H
 #define POKEPLATINUM_CONSTANTS_SPECIES_H
 
+#include "constants/extra_species.h"
 #include "generated/species.h"
 
 #define MAX_SPECIES        SPECIES_BAD_EGG

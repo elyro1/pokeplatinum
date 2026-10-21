@@ -10343,6 +10343,14 @@
 			"channelPriority":	0,
 			"playerPriority":	0,
 			"player":	"PLAYER_PV"
+		}, {
+			"name": "SEQ_BA_IRIS",
+			"fileName": "BATTLE_IRIS.sseq",
+			"bank": "BANK_BGM_BATTLE",
+			"volume": 90,
+			"channelPriority": 30,
+			"playerPriority": 64,
+			"player": "PLAYER_BGM"
 		}],
 	"seqarcInfo":	[],
 	"bankInfo":	[{

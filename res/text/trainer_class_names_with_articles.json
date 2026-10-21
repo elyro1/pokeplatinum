@@ -420,6 +420,10 @@
     {
       "id": "pl_msg_00000620_00104",
       "en_US": "a ₧₦ Trainer"
+    },
+    {
+      "id": "TrainerClass_Iris",
+      "en_US": "the Champion"
     }
   ]
 }

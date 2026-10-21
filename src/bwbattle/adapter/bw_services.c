@@ -104,7 +104,7 @@ void BwPlat_FormatNumber(unsigned short *dest, unsigned int size, int number, un
 
 void BwPlat_PlayCry(unsigned short species, unsigned char form, int pan)
 {
-    if (species == 0 || species > NATIONAL_DEX_COUNT) {
+    if (species == 0 || (species > NATIONAL_DEX_COUNT && species != SPECIES_HYDREIGON)) {
         return;
     }
     Sound_PlayPokemonCryEx(POKECRY_NORMAL, species, pan < -128 ? -128 : (pan > 127 ? 127 : pan), 127, HEAP_ID_BATTLE,

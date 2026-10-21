@@ -1,22 +1,38 @@
 #!/bin/bash
 BUILDDIR=$1
 OUTPUTDIR=$BUILDDIR/$3
-mkdir -p $OUTPUTDIR
+mkdir -p "$OUTPUTDIR" || exit 1
 
-cat $2 | while read line; do
-  if [[ "$line" != "Source File,Target File" ]] ;
-    then
-    SourceFile=$(echo $line | cut -d, -f1)
-    DestFile=$(echo $line | cut -d, -f2)
-    mkdir -p `dirname $OUTPUTDIR$DestFile`
-    
-    cp -u $BUILDDIR/$SourceFile $OUTPUTDIR$DestFile
+# A running game caches archive indexes and keeps the corresponding files open.
+# Never overwrite their inodes: replacing a completed copy lets existing readers
+# keep the old bytes until they close the file, while the next run gets the update.
+copy_newer_atomic() {
+  local source=$1 destination=$2 temporary
+  if [[ ! -f "$source" ]]; then
+    printf 'Missing build resource: %s\n' "$source" >&2
+    return 1
   fi
-done
-cp -u $BUILDDIR/../res/pc_port/header.bin $OUTPUTDIR/header.bin
-cp -u $BUILDDIR/../res/pc_port/dwc_nv.bin $OUTPUTDIR/firmware.bin
+  if [[ -e "$destination" && ! "$source" -nt "$destination" ]]; then
+    return 0
+  fi
+  mkdir -p "$(dirname "$destination")" || return 1
+  temporary=$(mktemp "$destination.tmp.XXXXXX") || return 1
+  if cp -p "$source" "$temporary" && mv -f "$temporary" "$destination"; then
+    return 0
+  fi
+  rm -f "$temporary"
+  return 1
+}
+
+while IFS=, read -r SourceFile DestFile; do
+  if [[ "$SourceFile" != "Source File" ]]; then
+    copy_newer_atomic "$BUILDDIR/$SourceFile" "$OUTPUTDIR$DestFile" || exit 1
+  fi
+done < "$2"
+copy_newer_atomic "$BUILDDIR/../res/pc_port/header.bin" "$OUTPUTDIR/header.bin" || exit 1
+copy_newer_atomic "$BUILDDIR/../res/pc_port/dwc_nv.bin" "$OUTPUTDIR/firmware.bin" || exit 1
 # The field light table; edits in the game's folder survive until the source changes.
-cp -u $BUILDDIR/../res/pc_port/field_lights.txt $OUTPUTDIR/field_lights.txt
+copy_newer_atomic "$BUILDDIR/../res/pc_port/field_lights.txt" "$OUTPUTDIR/field_lights.txt" || exit 1
 cp "$BUILDDIR/main" "$OUTPUTDIR/main.tmp" || exit 1
 mv -f "$OUTPUTDIR/main.tmp" "$OUTPUTDIR/main" || exit 1
 

@@ -2,6 +2,7 @@
 
 #ifdef SDK_PORT
 #include "bwbattle/bw_adapter.h"
+#include "bwbattle/bwbattle.h"
 #endif
 
 #include <dwc.h>
@@ -843,6 +844,7 @@ static void BattleMain_CopyBattleSysToDTOAndFree(ApplicationManager *appMan)
     DisableTouchPad();
 
 #ifdef SDK_PORT
+    BwBattle_StopMusic();
     BwAdapter_BattleDelete(battleSys);
 #endif
     FreeG3DPipelineBuffers(battleSys->pipelineBuffers);
@@ -1464,6 +1466,7 @@ static BOOL TrainerIsGymLeaderE4OrChampion(u16 trainerClass)
     case TRAINER_CLASS_ELITE_FOUR_BERTHA:
     case TRAINER_CLASS_ELITE_FOUR_FLINT:
     case TRAINER_CLASS_ELITE_FOUR_LUCIAN:
+    case TRAINER_CLASS_CHAMPION_IRIS:
     case TRAINER_CLASS_CHAMPION_CYNTHIA:
         return TRUE;
         break;

@@ -52,6 +52,9 @@ static inline void CheckPokedexIntegrity(const Pokedex *pokedexData)
 
 static BOOL SpeciesInvalid(u16 species)
 {
+    if (species == SPECIES_HYDREIGON) {
+        return TRUE;
+    }
     if (species == SPECIES_NONE || species > NATIONAL_DEX_COUNT) {
         GF_ASSERT(FALSE);
         return TRUE;

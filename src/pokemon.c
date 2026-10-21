@@ -17,11 +17,13 @@
 #include "constants/pokemon.h"
 #include "constants/sound.h"
 #include "generated/abilities.h"
+#include "generated/egg_groups.h"
 #include "generated/evolution_methods.h"
 #include "generated/exp_rates.h"
 #include "generated/gender_ratios.h"
 #include "generated/genders.h"
 #include "generated/natures.h"
+#include "generated/pokemon_colors.h"
 #include "generated/species_data_params.h"
 
 #include "struct_defs/chatot_cry.h"
@@ -57,6 +59,7 @@
 #include "unk_02017038.h"
 #include "unk_02092494.h"
 
+#include "res/pokemon/pl_otherpoke.naix"
 #include "res/pokemon/regional_pokedex_size.h"
 #include "res/trainers/classes/trbgra.naix"
 
@@ -2894,6 +2897,14 @@ void BoxPokemon_BuildSpriteTemplate(PokemonSpriteTemplate *spriteTemplate, BoxPo
 
 void BuildPokemonSpriteTemplate(PokemonSpriteTemplate *spriteTemplate, u16 species, u8 gender, u8 face, u8 shiny, u8 form, u32 personality)
 {
+    if (species == SPECIES_HYDREIGON) {
+        memset(spriteTemplate, 0, sizeof(*spriteTemplate));
+        spriteTemplate->narcID = NARC_INDEX_POKETOOL__POKEGRA__PL_OTHERPOKE;
+        spriteTemplate->character = face == FACE_FRONT ? zz_hydreigon_front_NCGR : zz_hydreigon_back_NCGR;
+        spriteTemplate->palette = shiny ? zz_hydreigon_shiny_NCLR : zz_hydreigon_normal_NCLR;
+        return;
+    }
+
     spriteTemplate->spindaSpots = 0;
     spriteTemplate->dummy = 0;
     spriteTemplate->personality = 0;
@@ -3090,6 +3101,14 @@ u8 Pokemon_SanitizeFormId(u16 monSpecies, u8 monForm)
  */
 static void BuildPokemonSpriteTemplateDP(PokemonSpriteTemplate *spriteTemplate, u16 species, u8 gender, u8 face, u8 shiny, u8 form, u32 personality)
 {
+    if (species == SPECIES_HYDREIGON) {
+        memset(spriteTemplate, 0, sizeof(*spriteTemplate));
+        spriteTemplate->narcID = NARC_INDEX_POKETOOL__POKEGRA__PL_OTHERPOKE;
+        spriteTemplate->character = face == FACE_FRONT ? zz_hydreigon_front_NCGR : zz_hydreigon_back_NCGR;
+        spriteTemplate->palette = shiny ? zz_hydreigon_shiny_NCLR : zz_hydreigon_normal_NCLR;
+        return;
+    }
+
     spriteTemplate->spindaSpots = 0;
     spriteTemplate->dummy = 0;
     spriteTemplate->personality = 0;
@@ -3250,6 +3269,10 @@ u8 BoxPokemon_SpriteYOffset(BoxPokemon *boxMon, u8 face, BOOL preferDP)
 
 u8 LoadPokemonSpriteYOffset(u16 species, u8 gender, u8 face, u8 form, u32 personality)
 {
+    if (species == SPECIES_HYDREIGON) {
+        return 0;
+    }
+
     form = Pokemon_SanitizeFormId(species, form);
 
     enum NarcID narcID;
@@ -3338,6 +3361,10 @@ u8 LoadPokemonSpriteYOffset(u16 species, u8 gender, u8 face, u8 form, u32 person
 
 static u8 LoadPokemonDPSpriteHeight(u16 species, u8 gender, u8 face, u8 form, u32 personality)
 {
+    if (species == SPECIES_HYDREIGON) {
+        return 0;
+    }
+
     // TODO enum values?
     form = Pokemon_SanitizeFormId(species, form);
 
@@ -4180,6 +4207,9 @@ u8 Party_GetMaxLevel(Party *party)
 
 u16 Pokemon_SinnohDexNumber(u16 species)
 {
+    if (species == SPECIES_HYDREIGON) {
+        return 0;
+    }
     u16 result;
 
     NARC_ReadFromMemberByIndexPair(&result, NARC_INDEX_POKETOOL__PL_POKEZUKAN, 0, species * 2, 2);
@@ -4687,6 +4717,11 @@ BOOL Pokemon_SetRotomForm(Pokemon *mon, int form, int moveSlot)
 
 void Pokemon_LoadLevelUpMovesOf(int monSpecies, int monForm, u16 *monLevelUpMoves)
 {
+    // This battle-only species always receives its explicit trainer moveset.
+    if (monSpecies == SPECIES_HYDREIGON) {
+        monLevelUpMoves[0] = LEARNSET_SENTINEL_ENTRY;
+        return;
+    }
     monSpecies = Pokemon_GetFormNarcIndex(monSpecies, monForm);
     NARC_ReadWholeMemberByIndexPair(monLevelUpMoves, NARC_INDEX_POKETOOL__PERSONAL__WOTBL, monSpecies);
 }
@@ -4903,17 +4938,43 @@ void sub_020780C4(Pokemon *mon, u32 monPersonality)
 
 static void SpeciesData_LoadSpecies(int monSpecies, SpeciesData *speciesData)
 {
+    if (monSpecies == SPECIES_HYDREIGON) {
+        // Gen 5's base EXP (270) exceeds Platinum's u8 field. Use the Gen 4 pseudo-legendary reward.
+        *speciesData = (SpeciesData) {
+            .baseStats = { 92, 105, 90, 98, 125, 90 },
+            .types = { TYPE_DARK, TYPE_DRAGON },
+            .catchRate = 45,
+            .baseExpReward = 218,
+            .evYields = { .spAttack = 3 },
+            .genderRatio = GENDER_RATIO_FEMALE_50,
+            .hatchCycles = 40,
+            .baseFriendship = 35,
+            .expRate = EXP_RATE_SLOW,
+            .eggGroups = { EGG_GROUP_DRAGON, EGG_GROUP_DRAGON },
+            .abilities = { ABILITY_LEVITATE, ABILITY_LEVITATE },
+            .bodyColor = MON_COLOR_BLUE,
+        };
+        return;
+    }
     NARC_ReadWholeMemberByIndexPair(speciesData, NARC_INDEX_POKETOOL__PERSONAL__PL_PERSONAL, monSpecies);
 }
 
 static void SpeciesData_LoadForm(int monSpecies, int monForm, SpeciesData *speciesData)
 {
     monSpecies = Pokemon_GetFormNarcIndex(monSpecies, monForm);
+    if (monSpecies == SPECIES_HYDREIGON) {
+        SpeciesData_LoadSpecies(monSpecies, speciesData);
+        return;
+    }
     NARC_ReadWholeMemberByIndexPair(speciesData, NARC_INDEX_POKETOOL__PERSONAL__PL_PERSONAL, monSpecies);
 }
 
 static void LoadSpeciesEvolutions(int monSpecies, SpeciesEvolution speciesEvolutions[MAX_EVOLUTIONS])
 {
+    if (monSpecies == SPECIES_HYDREIGON) {
+        memset(speciesEvolutions, 0, sizeof(SpeciesEvolution) * MAX_EVOLUTIONS);
+        return;
+    }
     NARC_ReadWholeMemberByIndexPair(speciesEvolutions, NARC_INDEX_POKETOOL__PERSONAL__EVO, monSpecies);
 }
 
@@ -5234,6 +5295,9 @@ void PokemonSprite_LoadAnimFrames(NARC *narc, SpriteAnimFrame *frames, u16 speci
     int face = Pokemon_Face(clientType);
 
     SpeciesSpriteData data;
+    if (species == SPECIES_HYDREIGON) {
+        species = SPECIES_SALAMENCE;
+    }
     NARC_ReadFromMember(narc, 0, species * sizeof(SpeciesSpriteData), sizeof(SpeciesSpriteData), &data);
     MI_CpuCopy8(data.faceAnims[face].frames, frames, sizeof(SpriteAnimFrame) * MAX_ANIMATION_FRAMES);
 }
@@ -5243,6 +5307,9 @@ void PokemonSprite_LoadAnim(NARC *narc, PokemonAnimManager *monAnimMan, PokemonS
     int faceType = (face == FACE_FRONT) ? 0 : 1;
 
     SpeciesSpriteData spriteData;
+    if (species == SPECIES_HYDREIGON) {
+        species = SPECIES_SALAMENCE;
+    }
     NARC_ReadFromMember(narc, 0, species * sizeof(SpeciesSpriteData), sizeof(SpeciesSpriteData), &spriteData);
 
     PokemonAnimTemplate animTemplate;
@@ -5258,6 +5325,9 @@ void PokemonSprite_LoadCryDelay(NARC *narc, u8 *cryDelay, u16 species, u16 clien
     int face = Pokemon_Face(clientType);
 
     SpeciesSpriteData data;
+    if (species == SPECIES_HYDREIGON) {
+        species = SPECIES_SALAMENCE;
+    }
     NARC_ReadFromMember(narc, 0, species * sizeof(SpeciesSpriteData), sizeof(SpeciesSpriteData), &data);
 
     *cryDelay = data.faceAnims[face].cryDelay;
@@ -5267,6 +5337,9 @@ void PokemonSprite_LoadYOffset(NARC *narc, s8 *yOffset, u16 species)
 {
     SpeciesSpriteData data;
 
+    if (species == SPECIES_HYDREIGON) {
+        species = SPECIES_SALAMENCE;
+    }
     NARC_ReadFromMember(narc, 0, species * sizeof(SpeciesSpriteData), sizeof(SpeciesSpriteData), &data);
     *yOffset = data.yOffset;
 }
@@ -5275,6 +5348,9 @@ void PokemonSprite_LoadXOffsetShadow(NARC *narc, s8 *xOffsetShadow, u16 species)
 {
     SpeciesSpriteData data;
 
+    if (species == SPECIES_HYDREIGON) {
+        species = SPECIES_SALAMENCE;
+    }
     NARC_ReadFromMember(narc, 0, species * sizeof(SpeciesSpriteData), sizeof(SpeciesSpriteData), &data);
     *xOffsetShadow = data.xOffsetShadow;
 }
@@ -5283,6 +5359,9 @@ void PokemonSprite_LoadShadowSize(NARC *narc, u8 *shadowSize, u16 species)
 {
     SpeciesSpriteData data;
 
+    if (species == SPECIES_HYDREIGON) {
+        species = SPECIES_SALAMENCE;
+    }
     NARC_ReadFromMember(narc, 0, species * sizeof(SpeciesSpriteData), sizeof(SpeciesSpriteData), &data);
     *shadowSize = data.shadowSize;
 }

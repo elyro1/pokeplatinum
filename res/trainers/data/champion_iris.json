@@ -1,0 +1,160 @@
+{
+    "name": "Iris",
+    "class": "TRAINER_CLASS_CHAMPION_IRIS",
+    "items": [],
+    "ai_flags": [
+        "AI_FLAG_BASIC",
+        "AI_FLAG_EVAL_ATTACK",
+        "AI_FLAG_EXPERT",
+        "AI_FLAG_CHECK_HP",
+        "AI_FLAG_WEATHER"
+    ],
+    "double_battle": false,
+    "party": [
+        {
+            "species": "SPECIES_HYDREIGON",
+            "form": 0,
+            "level": 100,
+            "item": "ITEM_LIFE_ORB",
+            "moves": [
+                "MOVE_DRACO_METEOR",
+                "MOVE_DARK_PULSE",
+                "MOVE_SUPERPOWER",
+                "MOVE_ROOST"
+            ],
+            "iv_scale": 255,
+            "ball_seal": 0,
+            "nature": "NATURE_HASTY",
+            "ability": "ABILITY_LEVITATE",
+            "evs": [
+                0,
+                4,
+                0,
+                252,
+                252,
+                0
+            ]
+        },
+        {
+            "species": "SPECIES_KYOGRE",
+            "form": 0,
+            "level": 100,
+            "item": "ITEM_MYSTIC_WATER",
+            "moves": [
+                "MOVE_WATER_SPOUT",
+                "MOVE_SURF",
+                "MOVE_THUNDER",
+                "MOVE_ICE_BEAM"
+            ],
+            "iv_scale": 255,
+            "ball_seal": 0,
+            "nature": "NATURE_TIMID",
+            "ability": "ABILITY_DRIZZLE",
+            "evs": [
+                0,
+                0,
+                4,
+                252,
+                252,
+                0
+            ]
+        },
+        {
+            "species": "SPECIES_PALKIA",
+            "form": 0,
+            "level": 100,
+            "item": "ITEM_LUSTROUS_ORB",
+            "moves": [
+                "MOVE_SPACIAL_REND",
+                "MOVE_HYDRO_PUMP",
+                "MOVE_THUNDER",
+                "MOVE_AURA_SPHERE"
+            ],
+            "iv_scale": 255,
+            "ball_seal": 0,
+            "nature": "NATURE_TIMID",
+            "ability": "ABILITY_PRESSURE",
+            "evs": [
+                0,
+                0,
+                4,
+                252,
+                252,
+                0
+            ]
+        },
+        {
+            "species": "SPECIES_ARCEUS",
+            "form": 0,
+            "level": 100,
+            "item": "ITEM_SPOOKY_PLATE",
+            "moves": [
+                "MOVE_JUDGMENT",
+                "MOVE_FOCUS_BLAST",
+                "MOVE_RECOVER",
+                "MOVE_CALM_MIND"
+            ],
+            "iv_scale": 255,
+            "ball_seal": 0,
+            "nature": "NATURE_TIMID",
+            "ability": "ABILITY_MULTITYPE",
+            "evs": [
+                4,
+                0,
+                0,
+                252,
+                252,
+                0
+            ]
+        },
+        {
+            "species": "SPECIES_DIALGA",
+            "form": 0,
+            "level": 100,
+            "item": "ITEM_LUM_BERRY",
+            "moves": [
+                "MOVE_STEALTH_ROCK",
+                "MOVE_DRACO_METEOR",
+                "MOVE_THUNDER",
+                "MOVE_ROAR"
+            ],
+            "iv_scale": 255,
+            "ball_seal": 0,
+            "nature": "NATURE_MODEST",
+            "ability": "ABILITY_PRESSURE",
+            "evs": [
+                252,
+                0,
+                0,
+                0,
+                56,
+                200
+            ]
+        },
+        {
+            "species": "SPECIES_SKARMORY",
+            "form": 0,
+            "level": 100,
+            "item": "ITEM_LEFTOVERS",
+            "moves": [
+                "MOVE_SPIKES",
+                "MOVE_ROOST",
+                "MOVE_WHIRLWIND",
+                "MOVE_BRAVE_BIRD"
+            ],
+            "iv_scale": 255,
+            "ball_seal": 0,
+            "nature": "NATURE_IMPISH",
+            "ability": "ABILITY_STURDY",
+            "evs": [
+                252,
+                0,
+                252,
+                0,
+                0,
+                4
+            ]
+        }
+    ],
+    "messages": []
+}

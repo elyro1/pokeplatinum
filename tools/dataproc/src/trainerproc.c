@@ -20,11 +20,13 @@
 #include "struct_defs/trainer_data.h"
 
 static enum_template_t enums[] = {
-    include_enum("generated/ai_flags.h",              "enum AIFlag"),
-    include_enum("generated/items.h",                 "enum Item"),
-    include_enum("generated/moves.h",                 "enum Move"),
-    include_enum("generated/species.h",               "enum Species"),
-    include_enum("generated/trainer_classes.h",       "enum TrainerClass"),
+    include_enum("generated/natures.h", "enum Nature"),
+    include_enum("generated/abilities.h", "enum Ability"),
+    include_enum("generated/ai_flags.h", "enum AIFlag"),
+    include_enum("generated/items.h", "enum Item"),
+    include_enum("generated/moves.h", "enum Move"),
+    include_enum("generated/species.h", "enum Species"),
+    include_enum("generated/trainer_classes.h", "enum TrainerClass"),
     include_enum("generated/trainer_message_types.h", "enum TrainerMessageType"),
     { .from_file = NULL },
 };
@@ -64,6 +66,9 @@ static char *output_dir    = ".";
 
 typedef struct TrainerParty {
     TrainerMonWithMovesAndItem party[MAX_PARTY_SIZE];
+    u8 natures[MAX_PARTY_SIZE];
+    u8 abilities[MAX_PARTY_SIZE];
+    u8 evs[MAX_PARTY_SIZE][6];
     unsigned size;
 } TrainerParty;
 
@@ -185,11 +190,22 @@ Container proc_trainer(datafile_t *df, enum TrainerID trainer) {
     const bool party_has_moves = dp_objmemb(party_member, "moves").type == DATAPROC_T_ARRAY;
     header.monDataType = (u8)((party_has_moves << 0) | (party_has_items << 1));
 
+    const bool competitive = dp_hasmemb(party_member, "nature");
+    if (competitive) {
+        if (!party_has_moves || !party_has_items) {
+            dp_error(&party, "competitive parties require moves and held items");
+        }
+        header.monDataType = TRDATATYPE_COMPETITIVE;
+    }
+
     for (size_t i = 0; i < party_size; i++) {
         party_member = dp_arrelem(party, i);
 
         // We always store the maximum possible data, then trim it when packing
-        u16 species = dp_u16(dp_lookup(dp_objmemb(party_member, "species"), "enum Species"));
+        datanode_t species_node = dp_objmemb(party_member, "species");
+        u16 species = strcmp(dp_string(species_node), "SPECIES_HYDREIGON") == 0
+            ? SPECIES_HYDREIGON
+            : dp_u16(dp_lookup(species_node, "enum Species"));
         u16 form    = dp_u8(dp_objmemb(party_member, "form"));
         trparty.party[i] = (TrainerMonWithMovesAndItem){
             .ivScale = dp_u16(dp_objmemb(party_member, "iv_scale")),
@@ -198,6 +214,22 @@ Container proc_trainer(datafile_t *df, enum TrainerID trainer) {
             .cbSeal  = dp_u16(dp_objmemb(party_member, "ball_seal")),
         };
 
+        if (competitive) {
+            trparty.natures[i] = dp_u8(dp_lookup(dp_objmemb(party_member, "nature"), "enum Nature"));
+            trparty.abilities[i] = dp_u8(dp_lookup(dp_objmemb(party_member, "ability"), "enum Ability"));
+            datanode_t evs = dp_objmemb(party_member, "evs");
+            if (dp_arrlen(evs) != 6) {
+                dp_error(&evs, "expected six EVs: HP, Atk, Def, Speed, SpAtk, SpDef");
+            }
+            unsigned total = 0;
+            for (size_t stat = 0; stat < 6 && stat < dp_arrlen(evs); stat++) {
+                trparty.evs[i][stat] = dp_u8(dp_arrelem(evs, stat));
+                total += trparty.evs[i][stat];
+            }
+            if (total > MAX_EVS_ALL_STATS) {
+                dp_error(&evs, "total EVs must not exceed 510");
+            }
+        }
         if (party_has_items) trparty.party[i].item = dp_u16(dp_lookup(dp_objmemb(party_member, "item"), "enum Item"));
         if (party_has_moves) {
             datanode_t moves      = dp_objmemb(party_member, "moves");
@@ -402,14 +434,16 @@ static int emit_trainer_messages(enum_seq_t *trainers) {
         || EXIT_SUCCESS;
 }
 
-#define PARTY_HAS_MOVES (!!(trainer->header.monDataType & 0x01))
-#define PARTY_HAS_ITEMS (!!(trainer->header.monDataType & 0x02))
+#define PARTY_IS_COMPETITIVE (trainer->header.monDataType == TRDATATYPE_COMPETITIVE)
+#define PARTY_HAS_MOVES      (PARTY_IS_COMPETITIVE || !!(trainer->header.monDataType & 0x01))
+#define PARTY_HAS_ITEMS      (PARTY_IS_COMPETITIVE || !!(trainer->header.monDataType & 0x02))
 
 static void pack(Container *trainer) {
-    char   party_buf[sizeof(trainer->party.party)] = { 0 };
+    char party_buf[sizeof(TrainerMonCompetitive) * MAX_PARTY_SIZE] = { 0 };
     size_t mon_size = sizeof(TrainerMonBase)
         + (PARTY_HAS_MOVES ? (sizeof(u16) * LEARNED_MOVES_MAX) : 0)
-        + (PARTY_HAS_ITEMS ? sizeof(u16) : 0);
+        + (PARTY_HAS_ITEMS ? sizeof(u16) : 0)
+        + (PARTY_IS_COMPETITIVE ? 8 : 0);
 
     char  *p = party_buf;
     for (size_t i = 0; i < trainer->party.size; i++) {
@@ -432,6 +466,18 @@ static void pack(Container *trainer) {
         copy_size = sizeof(trainer->party.party[i].cbSeal);
         memcpy(p, &trainer->party.party[i].cbSeal, copy_size);
         p += copy_size;
+    }
+
+    if (PARTY_IS_COMPETITIVE) {
+        for (size_t i = 0; i < trainer->party.size; i++) {
+            TrainerMonCompetitive mon = {
+                .base = trainer->party.party[i],
+                .nature = trainer->party.natures[i],
+                .ability = trainer->party.abilities[i],
+            };
+            memcpy(mon.evs, trainer->party.evs[i], sizeof(mon.evs));
+            memcpy(party_buf + i * sizeof(mon), &mon, sizeof(mon));
+        }
     }
 
     // TRAINER_NONE has 0 party members, but a non-zero file size in the archive

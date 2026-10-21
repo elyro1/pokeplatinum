@@ -1,4 +1,7 @@
 #include "enc_effects.h"
+#ifdef SDK_PORT
+#include "bwbattle/bwbattle.h"
+#endif
 
 #include <nitro.h>
 #include <string.h>
@@ -40,6 +43,7 @@ enum EncEffectsPairID {
     ENCEFF_ELITE_FOUR_FLINT,
     ENCEFF_ELITE_FOUR_LUCIAN,
     ENCEFF_CHAMPION_CYNTHIA,
+    ENCEFF_CHAMPION_IRIS,
 
     ENCEFF_RIVAL,
 
@@ -71,7 +75,7 @@ enum EncEffectsPairID {
     ENCEFF_MAX,
 };
 
-static const EncEffectsPair sEncEffectsTable[35] = {
+static const EncEffectsPair sEncEffectsTable[ENCEFF_MAX] = {
     [ENCEFF_LEADER_ROARK] = { ENCEFF_CUTIN_LEADER_ROARK, BATTLE_GYM_LEADER_sseq },
     [ENCEFF_LEADER_GARDENIA] = { ENCEFF_CUTIN_LEADER_GARDENIA, BATTLE_GYM_LEADER_sseq },
     [ENCEFF_LEADER_WAKE] = { ENCEFF_CUTIN_LEADER_WAKE, BATTLE_GYM_LEADER_sseq },
@@ -84,6 +88,7 @@ static const EncEffectsPair sEncEffectsTable[35] = {
     [ENCEFF_ELITE_FOUR_BERTHA] = { ENCEFF_CUTIN_ELITE_FOUR_BERTHA, BATTLE_ELITE_FOUR_sseq },
     [ENCEFF_ELITE_FOUR_FLINT] = { ENCEFF_CUTIN_ELITE_FOUR_FLINT, BATTLE_ELITE_FOUR_sseq },
     [ENCEFF_ELITE_FOUR_LUCIAN] = { ENCEFF_CUTIN_ELITE_FOUR_LUCIAN, BATTLE_ELITE_FOUR_sseq },
+    [ENCEFF_CHAMPION_IRIS] = { ENCEFF_CUTIN_CHAMPION_IRIS, BATTLE_IRIS_sseq },
     [ENCEFF_CHAMPION_CYNTHIA] = { ENCEFF_CUTIN_CHAMPION_CYNTHIA, BATTLE_CHAMPION_sseq },
     [ENCEFF_RIVAL] = { ENCEFF_CUTIN_USE_LOCAL, BATTLE_RIVAL_sseq },
     [ENCEFF_SHAYMIN] = { ENCEFF_CUTIN_MYTHICAL, BATTLE_WILD_POKEMON_sseq },
@@ -182,6 +187,15 @@ static u32 EncEffects_GetEffectPair(const FieldBattleDTO *dto)
 
 static u32 EncEffects_CutInEffectForPair(u32 effectPairID, const FieldBattleDTO *dto)
 {
+    if (effectPairID == ENCEFF_CHAMPION_IRIS) {
+#ifdef SDK_PORT
+        if (BwBattle_IrisVsReady()) {
+            return ENCEFF_CUTIN_CHAMPION_IRIS;
+        }
+#endif
+        return EncEffects_CutInEffectForPair(ENCEFF_NORMAL_TRAINER, dto);
+    }
+
     GF_ASSERT(effectPairID < ENCEFF_MAX);
 
     // If the cut-in effect specifies, determine what effect to use
@@ -250,6 +264,9 @@ static u32 EncEffects_TrainerClassEffect(u32 trainerClass)
         break;
     case TRAINER_CLASS_ELITE_FOUR_LUCIAN:
         result = ENCEFF_ELITE_FOUR_LUCIAN;
+        break;
+    case TRAINER_CLASS_CHAMPION_IRIS:
+        result = ENCEFF_CHAMPION_IRIS;
         break;
     case TRAINER_CLASS_CHAMPION_CYNTHIA:
         result = ENCEFF_CHAMPION_CYNTHIA;

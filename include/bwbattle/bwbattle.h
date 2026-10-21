@@ -26,6 +26,19 @@ typedef enum {
 
 // Whether every archive bwbattle needs has been extracted
 bool BwBattle_AssetsReady(void);
+// Iris's extra overworld archive and sound, plus the native-view conversions.
+bool BwBattle_IrisAssetsReady(void);
+bool BwBattle_IrisVsReady(void);
+// Virtual members of graphic/field_encounteffect.narc. They exist only in
+// memory, derived from the player's extraction; retail members stay unchanged.
+enum {
+    BWBATTLE_IRIS_VS_PALETTE = 0x1000,
+    BWBATTLE_IRIS_VS_TILES,
+    BWBATTLE_IRIS_VS_CELLS,
+    BWBATTLE_IRIS_VS_ANIM,
+};
+const void *BwBattle_IrisResource(const char *path, unsigned int member, unsigned int *size);
+bool BwBattle_PlayHydreigonCry(void *handle, unsigned int player);
 // Extracts the archives bwbattle needs from a ROM, skipping those already there
 BwBattleExtractResult BwBattle_ExtractAssets(const char *romPath);
 const char *BwBattle_ExtractResultMessage(BwBattleExtractResult result);
@@ -81,6 +94,11 @@ typedef struct BwBattleSetup {
 } BwBattleSetup;
 
 void BwBattle_SetSetup(const BwBattleSetup *setup);
+
+// Play Iris's original BW2 theme on Platinum's BGM handle/player. Its own
+// archive/heap keeps move-effect sound cleanup from unloading the music.
+bool BwBattle_PlayIrisMusic(void *handle, unsigned int player);
+void BwBattle_StopMusic(void);
 
 // The view (src/bwbattle/host), inside Platinum's battle once it has set up its screens. Create sets the battle up
 // as BwBattle_SetSetup does; it fails if the assets aren't there. Main updates the view and draws its 3D scene, from

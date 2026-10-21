@@ -54,6 +54,49 @@
         "You just go on and tell me whenever\n",
         "you want to set sail again!"
       ]
+    },
+    {
+      "id": "IronIsland_Text_IrisNotReady",
+      "en_US": [
+        "Iris: Hi! I’m Iris, a Champion from\n",
+        "Unova! You made it through the cave!\r",
+        "But you’re not ready to battle me yet.\n",
+        "Beat the Pokémon League first!"
+      ]
+    },
+    {
+      "id": "IronIsland_Text_IrisChallenge",
+      "en_US": [
+        "Iris: Hey, hey! Are you",
+        "up for a challenge?"
+      ]
+    },
+    {
+      "id": "IronIsland_Text_IrisVictory",
+      "en_US": [
+        "Iris: Yay! You did it!"
+      ]
+    },
+    {
+      "id": "IronIsland_Text_IrisAzureFlute",
+      "en_US": [
+        "Iris: Yay! You did it! \n",
+        "Here, I have something special for you!"
+      ]
+    },
+    {
+      "id": "IronIsland_Text_IrisRepeatReward",
+      "en_US": [
+        "Iris: Here’s a little something\n",
+        "to help you train your Pokémon!"
+      ]
+    },
+    {
+      "id": "IronIsland_Text_Visitor",
+      "en_US": [
+        "You didn’t enable BW2 battle\n",
+        "visuals? You really should."
+      ]
     }
   ]
 }

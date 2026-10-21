@@ -3,6 +3,7 @@
 import argparse
 import pathlib
 import subprocess
+import shutil
 
 argparser = argparse.ArgumentParser(
     prog='pl_poke_icon.narc packer',
@@ -106,6 +107,12 @@ subprocess.run([
     '-nopad',
     '-comp', '10'
 ])
+
+# Stable optional slots contain Platinum templates until BW2 resources are loaded.
+for name in ['back', 'front']:
+    shutil.copyfile(private_dir / 'pl_otherpoke_0000.NCGR', private_dir / f'zz_hydreigon_{name}.NCGR')
+for name in ['normal', 'shiny']:
+    shutil.copyfile(private_dir / 'pl_otherpoke_0154.NCLR', private_dir / f'zz_hydreigon_{name}.NCLR')
 
 subprocess.run([
     args.narc,

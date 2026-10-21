@@ -14,6 +14,7 @@ trainer_backs_header = custom_target('trainer_backs.inc',
 
 libbwbattle_srcs = files(
     'assets/bw2_assets.c',
+    'assets/iris_assets.c',
     'assets/trainer_backs.c',
     'view/btlv_b_gauge.c',
     'view/btlv_bg.c',

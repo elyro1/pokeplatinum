@@ -5,6 +5,8 @@
 
 #ifdef SDK_PORT
 #include <simulator/sim.h>
+
+#include "bwbattle/bwbattle.h"
 #endif
 
 #include "constants/heap.h"
@@ -2756,7 +2758,7 @@ typedef struct EliterFourChampionEncounterParam {
     u16 trainerID;
 } EliterFourChampionEncounterParam;
 
-static const EliterFourChampionEncounterParam sEliteFourChampionEncounterParams[5] = {
+static const EliterFourChampionEncounterParam sEliteFourChampionEncounterParams[6] = {
     {
         .mugshotPlttIdx = elite_four_aaron_mugshot_NCLR,
         .bannerPlttIdx = elite_four_aaron_banner_NCLR,
@@ -2791,6 +2793,17 @@ static const EliterFourChampionEncounterParam sEliteFourChampionEncounterParams[
         .facePanFrames = 9,
         .trainerClass = TRAINER_CLASS_CHAMPION_CYNTHIA,
         .trainerID = TRAINER_CHAMPION_CYNTHIA,
+    },
+    {
+#ifdef SDK_PORT
+        .mugshotPlttIdx = BWBATTLE_IRIS_VS_PALETTE,
+#else
+        .mugshotPlttIdx = champion_cynthia_mugshot_NCLR,
+#endif
+        .bannerPlttIdx = champion_cynthia_banner_NCLR,
+        .facePanFrames = 9,
+        .trainerClass = TRAINER_CLASS_CHAMPION_IRIS,
+        .trainerID = TRAINER_CHAMPION_IRIS,
     },
 };
 
@@ -3492,7 +3505,8 @@ static BOOL EncounterEffect_EliteFourChampion(EncounterEffect *encEffect, enum H
         if (v1 == 1) {
             encEffect->state++;
 
-            encEffect->effectComplete = 8;
+            // Hold Iris's fully revealed VS screen for two seconds at 60 FPS.
+            encEffect->effectComplete = param->trainerID == TRAINER_CHAMPION_IRIS ? 120 : 8;
         }
 
         break;
@@ -3683,6 +3697,15 @@ void EncounterEffect_ChampionCynthia(SysTask *task, void *param)
     EncounterEffect *encEffect = param;
     BOOL done = EncounterEffect_EliteFourChampion(encEffect, HEAP_ID_FIELD1, &sEliteFourChampionEncounterParams[4]);
 
+    if (done == TRUE) {
+        EncounterEffect_Finish(encEffect, task);
+    }
+}
+
+void EncounterEffect_ChampionIris(SysTask *task, void *param)
+{
+    EncounterEffect *encEffect = param;
+    BOOL done = EncounterEffect_EliteFourChampion(encEffect, HEAP_ID_FIELD1, &sEliteFourChampionEncounterParams[5]);
     if (done == TRUE) {
         EncounterEffect_Finish(encEffect, task);
     }

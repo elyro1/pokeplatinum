@@ -139,3 +139,6 @@ compile_commands.json
 # Cheat files
 *.dct
 *.mch
+
+# Optional resources extracted from the player's BW2 ROM
+/bw2/

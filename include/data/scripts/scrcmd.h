@@ -863,6 +863,8 @@ ScriptCommand(SCRCMD_CHECKUNLIMITEDGREATMARSHSTEPS,                         ScrC
 ScriptCommand(SCRCMD_CHECKFREEMOVETUTORS,                                  ScrCmd_CheckFreeMoveTutors)
 ScriptCommand(SCRCMD_CHECKINSTANTSPIRITOMB,                                ScrCmd_CheckInstantSpiritomb)
 
+ScriptCommand(SCRCMD_CHECKIRISASSETS,                                      ScrCmd_CheckIrisAssets)
+
 // clang-format on
 
 #endif // POKEPLATINUM_DATA_SCRIPTS_SCRCMD_H

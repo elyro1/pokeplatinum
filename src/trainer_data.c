@@ -2,7 +2,10 @@
 
 #include "constants/battle.h"
 #include "constants/pokemon.h"
+#include "generated/battle_backgrounds.h"
+#include "generated/battle_terrains.h"
 #include "generated/trainer_message_types.h"
+#include "generated/trainers.h"
 
 #include "struct_defs/trainer.h"
 
@@ -47,6 +50,10 @@ void Trainer_Encounter(FieldBattleDTO *dto, const SaveData *saveData, enum HeapI
         TrainerData_BuildParty(dto, i, heapID);
     }
 
+    if (dto->trainerIDs[1] == TRAINER_CHAMPION_IRIS) {
+        dto->background = BACKGROUND_CYNTHIA;
+        dto->terrain = TERRAIN_BUILDING;
+    }
     dto->battleType |= trdata.header.battleType;
     MessageLoader_Free(msgLoader);
 }
@@ -186,7 +193,7 @@ static void TrainerData_BuildParty(FieldBattleDTO *dto, int battler, enum HeapID
 
     // alloc enough space to support the maximum possible data size
     Party_InitWithCapacity(dto->parties[battler], MAX_PARTY_SIZE);
-    buf = Heap_Alloc(heapID, sizeof(TrainerMonWithMovesAndItem) * MAX_PARTY_SIZE);
+    buf = Heap_Alloc(heapID, sizeof(TrainerMonCompetitive) * MAX_PARTY_SIZE);
     mon = Pokemon_New(heapID);
 
     Trainer_LoadParty(dto->trainerIDs[battler], buf);
@@ -197,6 +204,33 @@ static void TrainerData_BuildParty(FieldBattleDTO *dto, int battler, enum HeapID
         : 136;
 
     switch (dto->trainer[battler].header.monDataType) {
+    case TRDATATYPE_COMPETITIVE: {
+        TrainerMonCompetitive *trmon = buf;
+        for (i = 0; i < dto->trainer[battler].header.partySize; i++) {
+            TrainerMonWithMovesAndItem *base = &trmon[i].base;
+            u16 species = base->species & 0x3FF;
+            u8 form = base->species >> TRAINER_MON_FORM_SHIFT;
+            rnd = LCRNG_Next();
+            rnd = rnd - rnd % 25 + trmon[i].nature;
+            ivs = base->ivScale * MAX_IVS_SINGLE_STAT / MAX_IV_SCALE;
+            Pokemon_InitWith(mon, species, base->level, ivs, TRUE, rnd, OTID_NOT_SHINY, 0);
+            Pokemon_SetValue(mon, MON_DATA_HELD_ITEM, &base->item);
+            Pokemon_SetValue(mon, MON_DATA_ABILITY, &trmon[i].ability);
+            Pokemon_SetValue(mon, MON_DATA_FORM, &form);
+            for (j = 0; j < 6; j++) {
+                Pokemon_SetValue(mon, MON_DATA_HP_EV + j, &trmon[i].evs[j]);
+            }
+            for (j = 0; j < LEARNED_MOVES_MAX; j++) {
+                Pokemon_SetMoveSlot(mon, base->moves[j], j);
+            }
+            Pokemon_SetArceusForm(mon);
+            Pokemon_CalcLevelAndStats(mon);
+            Pokemon_SetBallSeal(base->cbSeal, mon, heapID);
+            Party_AddPokemon(dto->parties[battler], mon);
+        }
+        break;
+    }
+
     case TRDATATYPE_BASE: {
         TrainerMonBase *trmon = (TrainerMonBase *)buf;
         for (i = 0; i < dto->trainer[battler].header.partySize; i++) {

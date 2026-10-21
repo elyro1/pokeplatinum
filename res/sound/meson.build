@@ -2,6 +2,14 @@ subdir('BANK')
 subdir('SEQ')
 subdir('WAVARC')
 
+# A native Champion fallback also gives Iris a normal Platinum BGM ID. The
+# actual track is read from the player's extracted BW2 sound archive at runtime.
+iris_fallback_mid = custom_target('iris_music_fallback',
+    input: files('SEQ/BATTLE_CHAMPION.mid'),
+    output: 'BATTLE_IRIS.mid',
+    command: [find_program('cp', native: true), '@INPUT@', '@OUTPUT@'],
+)
+
 # wave archives are duplicated in order to place them in the sdat private folder
 
 pl_sound_data_sdat = custom_target('pl_sound_data.sdat',
@@ -11,6 +19,7 @@ pl_sound_data_sdat = custom_target('pl_sound_data.sdat',
         sbnk_gen.process(sound_bank_files),
         sbnk_gen.process(cry_banks, preserve_path_from: pokemon_data_root),
         sseq_gen.process(sound_sequence_files),
+        sseq_gen.process(iris_fallback_mid),
         swar_gen.process(cry_waves, extra_args: ['-pcm8'], preserve_path_from: pokemon_data_root),
         copy_gen.process(WAVE_ARC_BASIC),
         copy_gen.process(WAVE_ARC_BGM_BATTLE),

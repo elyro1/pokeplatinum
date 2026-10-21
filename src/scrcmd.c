@@ -1,4 +1,7 @@
 #include "scrcmd.h"
+#ifdef SDK_PORT
+#include "bwbattle/bwbattle.h"
+#endif
 
 #include <nitro.h>
 #include <nitro/code16.h>
@@ -237,6 +240,7 @@ typedef struct {
 } UnkStruct_02040F28;
 
 static BOOL ScrCmd_CheckInstantSpiritomb(ScriptContext *ctx);
+static BOOL ScrCmd_CheckIrisAssets(ScriptContext *ctx);
 static BOOL ScrCmd_CheckFreeMoveRelearning(ScriptContext *ctx);
 static BOOL ScrCmd_CheckUnlimitedGreatMarshSteps(ScriptContext *ctx);
 static BOOL ScrCmd_Noop(ScriptContext *ctx);
@@ -780,6 +784,16 @@ const ScrCmdFunc gFieldScriptCommands[] = {
 };
 
 const u32 gNumFieldScriptCommands = NELEMS(gFieldScriptCommands);
+
+static BOOL ScrCmd_CheckIrisAssets(ScriptContext *ctx)
+{
+    u16 *dest = ScriptContext_GetVarPointer(ctx);
+    *dest = FALSE;
+#ifdef SDK_PORT
+    *dest = BwBattle_IrisAssetsReady();
+#endif
+    return FALSE;
+}
 
 static BOOL ScrCmd_CheckInstantSpiritomb(ScriptContext *ctx)
 {

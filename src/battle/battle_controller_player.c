@@ -4312,6 +4312,7 @@ static BOOL BattleControllerPlayer_CheckBattleOver(BattleSystem *battleSys, Batt
             Sound_PlayBGM(VICTORY_FRONTIER_BRAIN_sseq);
             break;
 
+        case TRAINER_CLASS_CHAMPION_IRIS:
         case TRAINER_CLASS_CHAMPION_CYNTHIA:
             Sound_PlayBGM(VICTORY_CHAMPION_sseq);
             break;

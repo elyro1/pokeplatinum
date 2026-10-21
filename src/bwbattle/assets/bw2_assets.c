@@ -301,6 +301,15 @@ BwBattleExtractResult BwBattle_ExtractAssets(const char *romPath) {
             result = Bw2Rom_ExtractFile(&rom, Bw2Rom_FindArc(&rom, sNeededArcs[i]), path);
         }
     }
+    // Iris's overworld and VS mugshot archives are optional to the battle view,
+    // but extracted by the same action. Older extractions can be upgraded.
+    static const u16 optionalArcs[] = { 48, 267 };
+    for (size_t i = 0; i < NELEMS(optionalArcs) && result == BWBATTLE_EXTRACT_OK; i++) {
+        if (!BwAssets_ArcExists(optionalArcs[i])) {
+            ArcPath(optionalArcs[i], path, sizeof(path));
+            result = Bw2Rom_ExtractFile(&rom, Bw2Rom_FindArc(&rom, optionalArcs[i]), path);
+        }
+    }
     // The sound archive (the effects' sounds), which the view does without when it is missing
     if (result == BWBATTLE_EXTRACT_OK && !FileExists(BWBATTLE_SOUND_ARCHIVE)) {
         result = Bw2Rom_ExtractFile(&rom, Bw2Rom_FindEntry(&rom, FNT_DIR_ID_BASE, BW2_SOUND_ARCHIVE_ROM_NAME, false),

@@ -11,6 +11,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "constants/sound.h"
 
 #include "bwbattle.h"
 
@@ -160,6 +163,103 @@ void GFL_SndStop(void) {
     if (sSndReady) {
         BwSnd_StopAll();
     }
+}
+
+// Music has a separate archive instance as well as a separate heap: archive file
+// address caches must never refer to allocations owned by the effects' heap.
+#define BW_MUSIC_HEAP_SIZE 0x800000
+static NNSSndArc sMusicArc;
+static NNSSndHeapHandle sMusicHeap;
+static void *sMusicMemory;
+static int sMusicHeapEmpty;
+static NNSSndHandle *sMusicHandle;
+
+void BwBattle_StopMusic(void)
+{
+    if (sMusicHandle != NULL) {
+        NNS_SndPlayerStopSeq(sMusicHandle, 0);
+        sMusicHandle = NULL;
+        NNS_SndHeapLoadState(sMusicHeap, sMusicHeapEmpty);
+    }
+}
+
+bool BwBattle_PlayIrisMusic(void *handle, unsigned int player)
+{
+    NNSSndArc *current;
+    FILE *file;
+    BOOL loaded, playing;
+
+    BwBattle_StopMusic();
+    if (sMusicMemory == NULL) {
+        file = fopen(BWBATTLE_SOUND_ARCHIVE, "rb");
+        if (file == NULL) {
+            return false;
+        }
+        fclose(file);
+        sMusicMemory = malloc(BW_MUSIC_HEAP_SIZE);
+        if (sMusicMemory == NULL) {
+            return false;
+        }
+        sMusicHeap = NNS_SndHeapCreate(sMusicMemory, BW_MUSIC_HEAP_SIZE);
+        current = NNS_SndArcGetCurrent();
+        NNS_SndArcInit(&sMusicArc, BWBATTLE_SOUND_ARCHIVE, sMusicHeap, FALSE);
+        NNS_SndArcSetCurrent(current);
+        sMusicHeapEmpty = NNS_SndHeapSaveState(sMusicHeap);
+    }
+    current = NNS_SndArcGetCurrent();
+    NNS_SndArcSetCurrent(&sMusicArc);
+    loaded = NNS_SndArcLoadSeq(SEQ_BGM_VS_IRIS, sMusicHeap);
+    playing = loaded && NNS_SndArcPlayerStartSeqEx(handle, player, -1, -1, SEQ_BGM_VS_IRIS);
+    NNS_SndArcSetCurrent(current);
+    if (!playing) {
+        NNS_SndHeapLoadState(sMusicHeap, sMusicHeapEmpty);
+        BwShim_Log("Iris music unavailable; keeping Platinum Champion theme");
+        return false;
+    }
+    sMusicHandle = handle;
+    BwShim_Log("Iris music started: BW2 sequence %u", SEQ_BGM_VS_IRIS);
+    return true;
+}
+
+// The cry uses the BW2 archive on Platinum's ordinary cry handle, so the
+// existing pan, volume and stop controls continue to work. Its allocations are
+// separate from both move effects and music.
+bool BwBattle_PlayHydreigonCry(void *handle, unsigned int player)
+{
+    static NNSSndArc arc;
+    static NNSSndHeapHandle heap;
+    static void *memory;
+    static int bank = -1;
+    NNSSndArc *current = NNS_SndArcGetCurrent();
+    if (memory == NULL) {
+        FILE *file = fopen(BWBATTLE_SOUND_ARCHIVE, "rb");
+        if (file == NULL) {
+            return false;
+        }
+        fclose(file);
+        memory = malloc(0x100000);
+        if (memory == NULL) {
+            return false;
+        }
+        heap = NNS_SndHeapCreate(memory, 0x100000);
+        NNS_SndArcInit(&arc, BWBATTLE_SOUND_ARCHIVE, heap, TRUE);
+        for (unsigned int i = 0; i < NNS_SndArcGetBankCount(); i++) {
+            const char *name = NNS_SndArcGetBankSymbol(i);
+            if (name != NULL && strcmp(name, "BANK_PMWB_635") == 0) {
+                bank = i;
+                break;
+            }
+        }
+        NNS_SndArcSetCurrent(current);
+    }
+    if (bank < 0) {
+        return false;
+    }
+    NNS_SndArcSetCurrent(&arc);
+    bool ok = NNS_SndArcLoadSeq(SEQ_PV001, heap) && NNS_SndArcLoadBank(bank, heap)
+        && NNS_SndArcPlayerStartSeqEx(handle, player, bank, -1, SEQ_PV001);
+    NNS_SndArcSetCurrent(current);
+    return ok;
 }
 
 // The battle music: Platinum's battle plays its own, so the view's music changes (the low HP music, the trainer's

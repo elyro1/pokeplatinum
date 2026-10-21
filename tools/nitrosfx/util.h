@@ -20,7 +20,7 @@ do {                                        \
     exit(1);                                \
 } while (0)
 
-#define PADDINGSIZE(length, padTo) (padTo - length) % padTo
+#define PADDINGSIZE(length, padTo) (((padTo) - ((length) % (padTo))) % (padTo))
 
 struct NitroChunk
 {

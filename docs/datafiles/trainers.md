@@ -229,3 +229,62 @@ The tool produces the following outputs:
     ]
 }
 ```
+
+## Competitive parties
+
+A party whose first member has `nature` uses `TRDATATYPE_COMPETITIVE`. Every
+member must then supply `item`, four `moves`, `nature` (a `NATURE_*` constant),
+`ability` (an `ABILITY_*` constant), and `evs`. The six EV values are ordered
+**HP, Attack, Defense, Speed, Special Attack, Special Defense** and must total
+at most 510. `iv_scale: 255` gives 31 IVs in every stat. Existing party formats
+retain their original binary layout. Competitive parties also support the
+normal victory prize calculation.
+
+See `res/trainers/data/champion_iris.json` for the complete six-member example.
+Hydreigon retains National Dex ID 635 as a battle-only addition; the saved
+Platinum Pokédex and its existing species/form IDs are unchanged. Its assigned
+trainer moves, base stats, typing, Levitate, experience rate, weight, name,
+cry and graphics are supported. It is not added to wild encounters, evolution
+lines, breeding, or the Pokédex. BW2 visuals animate it from the extracted ROM;
+the original battle view derives a static pose from those same extracted files.
+
+Iris uses Basic, Attack Evaluation, Expert, HP and Weather AI. Seven-member
+parties would require changing party storage and battle/UI code, so
+the optional Thundurus is omitted. Iris remains available for rematches.
+Each victory awards an Azure Flute if the player does not have one in the bag.
+Otherwise, Iris randomly awards 50 of one item: Rare Candy, HP Up, Protein,
+Iron, Calcium, Zinc, or Carbos, with equal chances. The reward is only given
+if the bag can hold the entire quantity.
+
+Iris appears only when the BW2 extraction contains the battle archives, sound
+archive, and overworld archive `a/0/4/8`. Without them, a Platinum Picnicker
+appears on the ledge and comments on the quiet spot; she does not offer Iris's
+battle. The logical NPC ID stays in field saves, so the selection also applies
+when loading a save made on this map.
+
+Use the existing **Select BW2 ROM / Re-extract BW2 ROM** action to extract the
+required files from an owned US Black 2 or White 2 ROM. Older extractions need
+one re-extraction to add the overworld archive. No Iris or Hydreigon graphics,
+palettes, or cry recordings are stored in the source tree or release patches.
+Native resource slots contain existing Platinum templates. The runtime creates
+native Iris/Hydreigon graphics in memory from BW2, including when the Platinum
+battle view is selected, and plays Hydreigon's cry directly from BW2's SDAT.
+The optional files remain local under `bw2/` and are ignored by Git.
+
+Run `python tools/scripts/test_iris_encounter.py` after building. Release startup
+patches the corresponding resources extracted from Platinum; the patcher test
+also checks original-ROM startup, repeated startup, and upgrades.
+
+Iris uses the Champion arena (`BACKGROUND_CYNTHIA`; BW2's starry arena). Her
+battle plays `SEQ_BGM_VS_IRIS` from the runtime BW2 sound extraction. The normal
+Platinum Champion theme is a fallback if that archive is unavailable. Victory
+and field music keep their normal transitions.
+
+Iris also has a Champion-style VS cut-in with the league banner and her original
+BW2 mugshot, reframed to Platinum's portrait layout at runtime. The fully revealed
+VS screen holds for two seconds before continuing into battle.
+The ROM extractor adds the mugshot archive `a/2/6/7`; older extractions can add
+it with **Re-extract BW2 ROM**. Until it is present, Iris retains the generic
+trainer transition. Her portrait and palette use virtual NARC members in memory,
+so no BW2 artwork is added to the source tree or release patches. Cynthia's VS
+resources and transition remain independent.

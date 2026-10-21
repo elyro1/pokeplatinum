@@ -2,6 +2,8 @@
 
 #ifdef SDK_PORT
 #include <simulator/sim.h>
+
+#include "bwbattle/bwbattle.h"
 #endif
 
 #include "nitro/fx/fx.h"
@@ -152,7 +154,8 @@ static const SysTaskFunc sEncounterEffectTaskFuncs[] = {
     EncounterEffect_GalacticBoss,
 
     EncounterEffect_Frontier,
-    EncounterEffect_Double
+    EncounterEffect_Double,
+    EncounterEffect_ChampionIris
 };
 
 static const u8 Unk_ov5_021F9988[8] = {
@@ -791,6 +794,12 @@ void EncounterEffect_BlendTrainerSpritePltt(Sprite *mugshotSprite, enum HeapID h
     u16 *objPltt;
 
     SpriteSystem_SetTrainerClassGraphicsIndex(trainerClass, FACE_FRONT, &classIndex);
+#ifdef SDK_PORT
+    if (trainerClass == TRAINER_CLASS_CHAMPION_IRIS && BwBattle_IrisVsReady()) {
+        classIndex.narcID = NARC_INDEX_GRAPHIC__FIELD_ENCOUNTEFFECT;
+        classIndex.palette = BWBATTLE_IRIS_VS_PALETTE;
+    }
+#endif
     objPltt = Heap_Alloc(heapID, PALETTE_SIZE_BYTES);
     nclrBuffer = Graphics_GetPlttData(classIndex.narcID, classIndex.palette, &paletteData, heapID);
     BlendPalette(paletteData->pRawData, objPltt, SLOTS_PER_PALETTE, fraction, target);

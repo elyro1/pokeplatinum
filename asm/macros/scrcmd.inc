@@ -5434,3 +5434,8 @@
     .text
     .globl _start
 _start:
+
+    .macro CheckIrisAssets destVarID
+    .short SCRCMD_CHECKIRISASSETS
+    .short \destVarID
+    .endm

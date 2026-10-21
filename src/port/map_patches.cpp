@@ -185,6 +185,20 @@ void patchAll() {
     std::map<std::string,Bytes> pending;
     for (const auto &group:groups) {
         const auto &path=group.first;
+        if (group.second.size()==1 && group.second.front()->member==0xffffffffu) {
+            const auto &patch=*group.second.front();
+            Bytes current=read(path);
+            if (sha256(current)==patch.after) continue;
+            auto backup=std::filesystem::path(".map-patch-originals") / path;
+            Bytes original=std::filesystem::exists(backup)?read(backup):current;
+            Bytes patched=applyDelta(patch,original);
+            if (!std::filesystem::exists(backup)) {
+                std::filesystem::create_directories(backup.parent_path());
+                writeAtomic(backup,original);
+            }
+            pending[path]=std::move(patched);
+            continue;
+        }
         Archive current(read(path));
         bool complete=true;
         for (auto p:group.second) {

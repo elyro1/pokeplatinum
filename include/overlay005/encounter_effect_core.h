@@ -34,5 +34,6 @@ void EncounterEffect_EliteFourBertha(SysTask *task, void *param);
 void EncounterEffect_EliteFourFlint(SysTask *task, void *param);
 void EncounterEffect_EliteFourLucian(SysTask *task, void *param);
 void EncounterEffect_ChampionCynthia(SysTask *task, void *param);
+void EncounterEffect_ChampionIris(SysTask *task, void *param);
 
 #endif // POKEPLATINUM_ENCOUNTER_EFFECT_CORE_H

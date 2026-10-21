@@ -55,6 +55,11 @@ static void Bw2BattleVisualsConfig(SIM_Config_prj_type *myConfig, bool &configCh
     } else if (!ready) {
         ImGui::TextUnformatted("BW2 battle graphics not extracted.");
     }
+    if (ready && !BwBattle_IrisAssetsReady()) {
+        ImGui::TextUnformatted("Re-extract your BW2 ROM to enable Iris on Iron Island.");
+    } else if (ready && !BwBattle_IrisVsReady()) {
+        ImGui::TextUnformatted("Re-extract your BW2 ROM to enable Iris's VS portrait.");
+    }
 }
 
 void ConfigPrjMain(bool * openState) {

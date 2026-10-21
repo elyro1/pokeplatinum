@@ -19,6 +19,7 @@ enum TrainerDataType {
     TRDATATYPE_WITH_MOVES,
     TRDATATYPE_WITH_ITEM,
     TRDATATYPE_WITH_MOVES_AND_ITEM,
+    TRDATATYPE_COMPETITIVE,
 };
 
 typedef struct TrainerHeader {
@@ -62,5 +63,13 @@ typedef struct TrainerMonWithMovesAndItem {
     u16 moves[LEARNED_MOVES_MAX];
     u16 cbSeal;
 } TrainerMonWithMovesAndItem;
+
+// Stat order matches MON_DATA_HP_EV through MON_DATA_SPDEF_EV.
+typedef struct TrainerMonCompetitive {
+    TrainerMonWithMovesAndItem base;
+    u8 nature;
+    u8 ability;
+    u8 evs[6];
+} TrainerMonCompetitive;
 
 #endif // POKEPLATINUM_STRUCT_TRAINER_DATA_H

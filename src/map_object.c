@@ -1,4 +1,7 @@
 #include "map_object.h"
+#ifdef SDK_PORT
+#include "bwbattle/bwbattle.h"
+#endif
 
 #include <nitro.h>
 #include <string.h>
@@ -518,7 +521,9 @@ static void MapObject_Save(FieldSystem *fieldSystem, MapObject *mapObj, MapObjec
     mapObjSave->unk_04 = sub_020628EC(mapObj);
     mapObjSave->localID = MapObject_GetLocalID(mapObj);
     mapObjSave->mapID = MapObject_GetMapHeaderID(mapObj);
-    mapObjSave->graphicsID = MapObject_GetGraphicsID(mapObj);
+    // Preserve the logical ID so adding/removing optional assets between runs
+    // also changes an NPC restored from the field save.
+    mapObjSave->graphicsID = mapObj->graphicsID;
     mapObjSave->movementType = MapObject_GetMovementType(mapObj);
     mapObjSave->trainerType = MapObject_GetTrainerType(mapObj);
     mapObjSave->flag = MapObject_GetFlag(mapObj);
@@ -1364,6 +1369,14 @@ void MapObject_SetGraphicsID(MapObject *mapObj, u32 graphicsID)
 
 u32 MapObject_GetGraphicsID(const MapObject *mapObj)
 {
+    if (mapObj->graphicsID == OBJ_EVENT_GFX_IRIS) {
+#ifdef SDK_PORT
+        if (BwBattle_IrisAssetsReady()) {
+            return OBJ_EVENT_GFX_IRIS;
+        }
+#endif
+        return OBJ_EVENT_GFX_PICNICKER;
+    }
     return mapObj->graphicsID;
 }
 
