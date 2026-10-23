@@ -337,15 +337,15 @@ static int BtlvEffvm_GetDefenderPositions(BtlvEffvm *wk, int code, int *position
 static int BtlvEffvm_GetTargetPosition(VM *vm, int code);
 static int BtlvEffvm_CheckPosition(BtlvEffvm *wk, int pos);
 static int BtlvEffvm_SwapSide(VM *vm, int pos);
-static int BtlvEffvm_GetDefenderForEmitter(VM *vm, int *pos);
+static int BtlvEffvm_GetDefenderForEmitter(VM *vm, u32 *pos);
 static BOOL BtlvEffvm_FindOrAddParticleId(BtlvEffvm *wk, u32 id, int *index);
 static void BtlvEffvm_SetEmitterCount(BtlvEffvm *wk, int index, void *resource);
 static int BtlvEffvm_FindParticleId(BtlvEffvm *wk, u32 id);
 static u32 BtlvEffvm_GetEmitterCount(BtlvEffvm *wk, int index);
 static void BtlvEffvm_InitEmitter(SPLEmitter *emitter);
-static void BtlvEffvm_MoveEmitterArc(SPLEmitter *emitter, u32 type);
+static void BtlvEffvm_MoveEmitterArc(SPLEmitter *emitter, enum SPLUpdateCallbackType type);
 static void BtlvEffvm_InitCircleEmitter(SPLEmitter *emitter);
-static void BtlvEffvm_MoveCircleEmitter(SPLEmitter *emitter, u32 type);
+static void BtlvEffvm_MoveCircleEmitter(SPLEmitter *emitter, enum SPLUpdateCallbackType type);
 static void BtlvEffvm_DeleteParticle(ParticleSystem *particle);
 static void BtlvEffvm_ResetMcss(BtlvEffvm *wk);
 static void BtlvEffvm_PlaySENow(u32 se, u32 player, int pan, int arg3, int arg4, int vol, int pitch);
@@ -3299,7 +3299,7 @@ static int BtlvEffvm_SwapSide(VM *vm, int pos) {
     return pos;
 }
 
-static int BtlvEffvm_GetDefenderForEmitter(VM *vm, int *pos) {
+static int BtlvEffvm_GetDefenderForEmitter(VM *vm, u32 *pos) {
     BtlvEffvm *wk = VM_GetEnv(vm);
     int ret = BtlvEffect_GetBattleStyle();
 
@@ -3674,7 +3674,7 @@ static void BtlvEffvm_InitEmitter(SPLEmitter *emitter) {
     GFL_HeapFree(param);
 }
 
-static void BtlvEffvm_MoveEmitterArc(SPLEmitter *emitter, u32 type) {
+static void BtlvEffvm_MoveEmitterArc(SPLEmitter *emitter, enum SPLUpdateCallbackType type) {
     BtlvEffvmEmitterMotionWork *work = func_02050364(emitter);
     VecFx32 pos;
     u16 angle;
@@ -3729,7 +3729,7 @@ static void BtlvEffvm_InitCircleEmitter(SPLEmitter *emitter) {
     func_02050354(emitter, BtlvEffvm_MoveCircleEmitter);
 }
 
-static void BtlvEffvm_MoveCircleEmitter(SPLEmitter *emitter, u32 type) {
+static void BtlvEffvm_MoveCircleEmitter(SPLEmitter *emitter, enum SPLUpdateCallbackType type) {
     BtlvEffvmEmitterCircleWork *work = func_02050364(emitter);
     VecFx32 pos;
 
