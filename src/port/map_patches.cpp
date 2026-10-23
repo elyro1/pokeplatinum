@@ -20,6 +20,7 @@
 #ifndef MAP_PATCH_TEST
 #include <SDL2/SDL.h>
 #include "simulator/sim_RomExtractor.h"
+#include "port/rom_setup.h"
 #endif
 
 namespace {
@@ -225,7 +226,7 @@ extern "C" void MapPatches_Ensure(void) {
 #ifndef MAP_PATCH_TEST
     for (const auto &p:mapPatches) {
         if (!std::filesystem::exists(p.path)) {
-            SIM_ShowRomExtractionDialog();
+            if (!RomSetup_TryExtractPlatinum()) SIM_ShowRomExtractionDialog();
             break;
         }
     }

@@ -1075,7 +1075,7 @@ if build_target == 'linux' or build_target == 'win64'
             files('../res/graphics/start_menu/start_menu.order')],
         depends: py_consts_generators,
     )
-    pokeplatinum_c += [files('port/map_patches.cpp'), map_patches_header]
+    pokeplatinum_c += [files('port/map_patches.cpp', 'port/rom_setup.cpp'), map_patches_header]
     public_includes = [public_includes, include_directories('.')]
 endif
 

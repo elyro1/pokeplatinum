@@ -40,6 +40,7 @@
 #include <simulator/sim.h>
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
 #include "port/map_patches.h"
+#include "port/rom_setup.h"
 #endif
 #ifdef SDK_BUILD_LINUX
 #include "port/sim_icon.h"
@@ -94,6 +95,7 @@ void NitroMain(void)
 #endif
     InitSystem();
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
+    RomSetup_AutoExtractBw2();
     MapPatches_Ensure();
 #endif
     InitVRAM();

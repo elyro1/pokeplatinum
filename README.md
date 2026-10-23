@@ -36,7 +36,11 @@ See [graphics notes](docs/visual_upgrades.md).
 
 ## How to run
 
-Use a build from this fork's [Releases](https://github.com/elyro1/pokeplatinum/releases) or [GitHub Actions artifacts](https://github.com/elyro1/pokeplatinum/actions), then follow **[cybervisi0n's setup guide](https://github.com/cybervisi0n/pokeplatinum#setup-guide)**. The launch and first-run ROM extraction steps are the same.
+Use a build from this fork's [Releases](https://github.com/elyro1/pokeplatinum/releases) or [GitHub Actions artifacts](https://github.com/elyro1/pokeplatinum/actions). Place your dumped US Platinum `.nds` ROM beside the executable and launch the game: missing assets are extracted automatically. Filenames do not matter; ROMs are identified by their internal game codes. If no compatible ROM is found, the game opens the usual file picker.
+
+Optionally place your dumped **US Black 2 or White 2** `.nds` ROM beside the executable too. On startup, the game extracts the required battle assets into `bw2/` and automatically enables **BW2 battle visuals**, saving the setting. Existing assets are reused. While a compatible BW2 ROM remains present, startup enables the setting again; move the ROM away if you want to keep BW2 visuals disabled. Platinum is still required.
+
+Discovery checks the executable's directory first, then the working directory. Extraction uses the working directory, alongside settings and saves; normally this is the game folder. You can also select a BW2 ROM manually under **Tab → libntr → Application → Config**.
 
 ## Default keybindings
 
