@@ -11,6 +11,7 @@
 #include "overlay005/daycare.h"
 
 #include "heap.h"
+#include "item.h"
 #include "party.h"
 #include "pokemon.h"
 #include "save_catchrecords.h"
@@ -18,6 +19,10 @@
 #include "savedata.h"
 #include "trainer_info.h"
 #include "unk_02017038.h"
+
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
+#endif
 
 BOOL Pokemon_CanBattle(Pokemon *mon)
 {
@@ -84,6 +89,30 @@ void Party_ResetMonMoveSlot(Party *party, int partySlot, int moveSlot, u16 moveI
 
 // In many of the functions below, C99-style iterator declaration doesn't match
 
+BOOL Pokemon_CanUseFieldMove(Pokemon *mon, u16 moveID)
+{
+    if (Pokemon_GetValue(mon, MON_DATA_IS_EGG, NULL)) {
+        return FALSE;
+    }
+
+    for (int slot = 0; slot < LEARNED_MOVES_MAX; slot++) {
+        if (Pokemon_GetValue(mon, MON_DATA_MOVE1 + slot, NULL) == moveID) {
+            return TRUE;
+        }
+    }
+
+#ifdef SDK_PORT
+    if (GameplayConfig_Get()->unlearnedHMs) {
+        for (int hm = 0; hm < NUM_HMS; hm++) {
+            if (Item_MoveForTMHM(ITEM_HM01 + hm) == moveID) {
+                return Pokemon_CanLearnTM(mon, NUM_TMS + hm);
+            }
+        }
+    }
+#endif
+    return FALSE;
+}
+
 int Party_HasMonWithMove(Party *party, u16 moveID)
 {
     int i;
@@ -96,10 +125,7 @@ int Party_HasMonWithMove(Party *party, u16 moveID)
             continue;
         }
 
-        if (Pokemon_GetValue(mon, MON_DATA_MOVE1, NULL) == moveID
-            || Pokemon_GetValue(mon, MON_DATA_MOVE2, NULL) == moveID
-            || Pokemon_GetValue(mon, MON_DATA_MOVE3, NULL) == moveID
-            || Pokemon_GetValue(mon, MON_DATA_MOVE4, NULL) == moveID) {
+        if (Pokemon_CanUseFieldMove(mon, moveID)) {
             return i;
         }
     }

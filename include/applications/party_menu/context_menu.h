@@ -3,6 +3,8 @@
 
 #include "applications/party_menu/defs.h"
 
+#define PARTY_MENU_ACTION_HMS 32
+
 typedef void (*PartyMenuAction)(PartyMenuApplication *application, int *partyMenuState);
 
 #ifdef SDK_BUILD_ARM

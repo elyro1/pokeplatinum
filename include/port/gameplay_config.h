@@ -14,6 +14,7 @@ typedef struct {
     u16 bpPricePercent; // Global BP price scale, rounded up; 100 = original, 0 = free.
     u16 rareCandyBPPrice; // Exact price; takes precedence over bpPricePercent. 0 = free.
     BOOL forgettableHMs;
+    BOOL unlearnedHMs; // Compatible non-egg party members can use HMs without learning them.
     BOOL freeMoveRelearning;
     BOOL freeMoveTutors;
     BOOL mainStoryMoveTutors;

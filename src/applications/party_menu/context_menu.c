@@ -5,6 +5,7 @@
 
 #include "constants/graphics.h"
 #include "constants/heap.h"
+#include "constants/items.h"
 #include "constants/pokemon.h"
 #include "generated/items.h"
 
@@ -21,6 +22,7 @@
 #include "field_move_tasks.h"
 #include "font.h"
 #include "heap.h"
+#include "item.h"
 #include "menu.h"
 #include "message.h"
 #include "party.h"
@@ -33,12 +35,14 @@
 #include "string_template.h"
 #include "system.h"
 #include "text.h"
+#include "unk_02054884.h"
 
 #include "res/text/bank/party_menu.h"
 
 static void PartyMenu_SelectSwitch(PartyMenuApplication *application, int *partyMenuState);
 static void PartyMenu_SelectSummary(PartyMenuApplication *application, int *partyMenuState);
 static void PartyMenu_SelectFieldMove(PartyMenuApplication *application, int *partyMenuState);
+static void PartyMenu_SelectHMs(PartyMenuApplication *application, int *partyMenuState);
 static void PartyMenu_SelectCut(PartyMenuApplication *application, int *partyMenuState);
 static void PartyMenu_SelectRockSmash(PartyMenuApplication *application, int *partyMenuState);
 static void PartyMenu_SelectStrength(PartyMenuApplication *application, int *partyMenuState);
@@ -121,11 +125,13 @@ enum {
     ACTION_SOFTBOILED,
     ACTION_CANCEL_3,
 
+    ACTION_HMS = PARTY_MENU_ACTION_HMS,
     ACTION_MAX,
 };
 
 // clang-format off
 static const union PartyMenuActionFunc sPartyMenuActions[ACTION_MAX] = {
+    [ACTION_HMS] =         PartyMenu_SelectHMs,
     [ACTION_SWITCH] =      PartyMenu_SelectSwitch,
     [ACTION_SUMMARY] =     PartyMenu_SelectSummary,
     [ACTION_ITEM] =        PartyMenu_SelectItem,
@@ -177,6 +183,31 @@ void PartyMenu_ClearContextWindow(PartyMenuApplication *application)
     Menu_Free(application->contextMenu, NULL);
     StringList_Free(application->contextMenuChoices);
     Window_Remove(&application->menuWindows[0]);
+}
+
+// A separate menu keeps all eight HMs accessible without overflowing the normal context menu.
+static void PartyMenu_SelectHMs(PartyMenuApplication *application, int *partyMenuState)
+{
+    Pokemon *mon = Party_GetPokemonBySlotIndex(application->partyMenu->party, application->currPartySlot);
+    u8 entries[NUM_HMS + 1];
+    u8 count = 0;
+    static const u8 actions[NUM_HMS] = {
+        ACTION_CUT, ACTION_FLY, ACTION_SURF, ACTION_STRENGTH,
+        ACTION_DEFOG, ACTION_ROCK_SMASH, ACTION_WATERFALL, ACTION_ROCK_CLIMB,
+    };
+
+    PartyMenu_ClearContextWindow(application);
+    for (int hm = 0; hm < NUM_HMS; hm++) {
+        u16 move = Item_MoveForTMHM(ITEM_HM01 + hm);
+        if (Pokemon_CanUseFieldMove(mon, move)) {
+            PartyMenu_SetKnownFieldMove(application, move, count);
+            entries[count++] = actions[hm];
+        }
+    }
+    entries[count++] = ACTION_CANCEL;
+    PartyMenu_DrawContextMenu(application, entries, count);
+    // This menu owns menuWindows[0]; the item/mail handler only clears windows[35].
+    *partyMenuState = PARTY_MENU_STATE_HANDLE_PARTY_MENU_ACTION;
 }
 
 static void PartyMenu_SelectItem(PartyMenuApplication *application, int *partyMenuState)

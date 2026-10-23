@@ -139,29 +139,10 @@ BOOL ScrCmd_CheckPartyMonHasMove(ScriptContext *ctx)
 
 BOOL ScrCmd_FindPartySlotWithMove(ScriptContext *ctx)
 {
-    FieldSystem *fieldSystem = ctx->fieldSystem;
     u16 *destVar = ScriptContext_GetVarPointer(ctx);
     u16 move = ScriptContext_GetVar(ctx);
-
-    u8 partyCount = Party_GetCurrentCount(SaveData_GetParty(fieldSystem->saveData));
-
-    u8 slot;
-    for (slot = 0, *destVar = MAX_PARTY_SIZE; slot < partyCount; slot++) {
-        Pokemon *mon = Party_GetPokemonBySlotIndex(SaveData_GetParty(fieldSystem->saveData), slot);
-
-        if (Pokemon_GetValue(mon, MON_DATA_IS_EGG, NULL) != FALSE) {
-            continue;
-        }
-
-        if ((Pokemon_GetValue(mon, MON_DATA_MOVE1, NULL) == move)
-            || (Pokemon_GetValue(mon, MON_DATA_MOVE2, NULL) == move)
-            || (Pokemon_GetValue(mon, MON_DATA_MOVE3, NULL) == move)
-            || (Pokemon_GetValue(mon, MON_DATA_MOVE4, NULL) == move)) {
-            *destVar = slot;
-            break;
-        }
-    }
-
+    int slot = Party_HasMonWithMove(SaveData_GetParty(ctx->fieldSystem->saveData), move);
+    *destVar = slot == PARTY_SLOT_NONE ? MAX_PARTY_SIZE : slot;
     return FALSE;
 }
 

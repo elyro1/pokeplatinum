@@ -21,6 +21,7 @@ static void AssertOriginalDefaults(void)
     assert(config->bpPricePercent == 100);
     assert(config->rareCandyBPPrice == 48);
     assert(config->forgettableHMs == FALSE);
+    assert(config->unlearnedHMs == FALSE);
     assert(config->freeMoveRelearning == FALSE);
     assert(config->freeMoveTutors == FALSE);
     assert(config->mainStoryMoveTutors == FALSE);
@@ -62,6 +63,7 @@ static void TestConfigFile(void)
     assert(strstr(template, "bpPricePercent=100\n"));
     assert(strstr(template, "rareCandyBPPrice=48\n"));
     assert(strstr(template, "forgettableHMs=false\n"));
+    assert(strstr(template, "unlearnedHMs=false\n"));
     assert(strstr(template, "freeMoveRelearning=false\n"));
     assert(strstr(template, "freeMoveTutors=false\n"));
     assert(strstr(template, "mainStoryMoveTutors=false\n"));
@@ -89,6 +91,7 @@ static void TestConfigFile(void)
                 "bpPricePercent=65535\n"
                 "rareCandyBPPrice=0\n"
                 "forgettableHMs=1\n"
+                "unlearnedHMs=true\n"
                 "freeMoveRelearning=true\n"
                 "freeMoveTutors=TRUE\n"
                 "mainStoryMoveTutors=1\n"
@@ -115,6 +118,7 @@ static void TestConfigFile(void)
     assert(config->bpPricePercent == 65535);
     assert(config->rareCandyBPPrice == 0);
     assert(config->forgettableHMs == TRUE);
+    assert(config->unlearnedHMs == TRUE);
     assert(config->freeMoveRelearning == TRUE);
     assert(config->freeMoveTutors == TRUE);
     assert(config->mainStoryMoveTutors == TRUE);
