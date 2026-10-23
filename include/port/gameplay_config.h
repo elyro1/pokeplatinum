@@ -32,7 +32,11 @@ typedef struct {
     u8 catchRateMultiplier; // Final catch rate: 2-255 boosts it; 0 and 1 preserve original rates.
 } GameplayConfig;
 
-// Internal defaults only; no player-facing storage or menu controls yet.
+// Relative to the game working directory, like sim_config_prj.ini and the save files.
+#define GAMEPLAY_CONFIG_FILE_PATH "./gameplay_config.ini"
+
+// Generate an editable defaults template. Never overwrite an existing file.
+BOOL GameplayConfig_GenerateFile(void);
 void GameplayConfig_LoadDefaults(GameplayConfig *config);
 void GameplayConfig_Init(void);
 GameplayConfig *GameplayConfig_Get(void);

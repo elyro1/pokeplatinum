@@ -8,6 +8,8 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 
 ## Features
 
+Configurable gameplay modifiers below are opt-in through `gameplay_config.ini`; built-in gameplay defaults follow original Platinum behavior.
+
 - **Single-screen presentation:** all screens reworked to make the game playable with just the top screen
 - **Widescreen rendering:** broader overworld views, adjusted world
 - **Three save slots:** select a slot from the main menu
@@ -18,7 +20,7 @@ The focus here is a widescreen, single-screen experience, with adapted interface
 - **Free move relearning:** the Move Maniac in Pastoria City no longer requires Heart Scales.
 - **Free shard tutors and main-story access:** shard tutors teach for free, and the Route 212 tutor offers all three tutors' move lists, including Survival Area moves.
 - **Unlimited Great Marsh steps:** explore until you retire or run out of Safari Balls; the entry fee and Ball limit still apply.
-- **Faster egg hatching:** eggs have zero remaining hatch cycles by default and hatch at the next hatch check. Hatch checks take one fifth as many steps.
+- **Faster egg hatching:** optionally remove egg cycles and reduce steps between hatch checks.
 - **Instant Honey Trees:** slather Honey, then interact again immediately for the encounter. Original encounter tables, failure chances, and Honey costs remain.
 - **Reusable TMs:** teaching a move no longer consumes its TM. Selling or discarding a TM still removes it; obtain another to use it again.
 - **Easier evolutions:** plain trade evolutions also evolve from level 40; held-item evolutions trigger on the next level-up with their required item at any time of day. Feebas evolves with a Water Stone.
@@ -75,31 +77,37 @@ Press **Tab** to access:
 
 Settings are stored locally in `sim_config.ini` and `sim_config_prj.ini`. If performance is poor, lower the internal resolution scale in the PC settings.
 
-Gameplay options currently use internal defaults in `src/port/gameplay_config.c`, separate from graphics and developer settings. Forgettable HMs are enabled by default on PC. There is no gameplay config file or menu control yet.
+Gameplay options load built-in defaults from `src/port/gameplay_config.c`, then apply optional overrides from `gameplay_config.ini` in the game folder (the same working directory as `sim_config_prj.ini` and saves). In **libntr → Application → Config → Gameplay**, click **Generate gameplay config** to create a commented file containing every option and its default value. The button preserves any existing file. Edit the file and restart the game to apply changes; delete it and restart to restore built-in defaults. The game does not create this file automatically.
 
-Free move relearning and unlimited Great Marsh steps are also enabled by default. Each has an independent boolean in `GameplayConfig`. `eggHatchSpeedMultiplier` defaults to 5; set it to 1 for original hatching speed (0 also uses original speed). These options apply to existing saves without changing their format.
+The built-in defaults follow original Platinum gameplay. Existing override files retain their configured values; remove the file and restart to use the new defaults. You can also create a partial file yourself, for example to disable battle items while keeping all other defaults:
 
-`freeMoveTutors` defaults to `TRUE`, removing shard requirements and payments at all three shard tutors, with matching greetings and zero displayed costs. `mainStoryMoveTutors` independently defaults to `TRUE`, making all three move lists available from the existing Route 212 tutor during the main story; the other tutors remain at their original locations. Set either to `FALSE` to restore original prices or location-specific move lists, respectively; species compatibility and known-move checks still apply, and shard items remain obtainable and sellable.
+```ini
+[Gameplay]
+prohibitBattleItems=true
+```
 
-`zeroEggCycles` defaults to `TRUE`: newly created eggs start with zero hatch cycles, and existing eggs are set to zero at their next hatch check. Set it to `FALSE` to retain normal egg cycles and use only the hatch-speed multiplier; Flame Body/Magma Armor bonuses still apply in that mode. For new eggs at original hatching speed, disable `zeroEggCycles` and set the multiplier to 1.
+Boolean values accept `true`/`false`, `TRUE`/`FALSE`, or `1`/`0`. Numeric ranges are listed in the generated file. Missing or invalid values keep defaults, and unknown keys are ignored. A malformed INI file falls back to all built-in defaults.
 
-`instantHoneyTrees` and `infiniteTMs` default to `TRUE`; set either to `FALSE` to restore the original behavior. Honey Tree encounters still expire after 24 hours, and enabling instant encounters also makes already-slathered trees ready immediately.
+All boolean gameplay modifiers default to `false`. Enable individual options with `true`:
 
-`shinyRolls` defaults to 1, keeping the original shiny odds of 1/8192. Higher values add rolls only when generating new wild/scripted encounters, eggs, roaming Pokémon, and eligible gifts. For ordinary generation, 2 rolls are approximately 1/4096, and 16 rolls approximately 1/512; the probability is `1 - (8191/8192)^rolls`. Existing Pokémon keep their shiny status, and fixed-personality gifts and shiny locks are preserved. Extra rolls retain nature, gender, ability, and Wurmple's evolution branch; existing breeding and Poké Radar bonuses remain. A value of 0 also keeps original odds.
+- `prohibitBattleItems` blocks player medicine and battle items, while allowing Poké Balls, held items, and opponents' items. `forceSetBattleStyle` suppresses the Shift prompt regardless of the saved Options selection.
+- `unlimitedVitaminEVs` allows vitamins beyond 100 EVs while retaining the normal per-stat and total limits. EV-reducing berries retain their normal behavior.
+- `forgettableHMs` allows HM replacement when learning moves. `infiniteTMs` prevents TM consumption after teaching; selling or discarding TMs still removes them.
+- `freeMoveRelearning` removes the Move Maniac's Heart Scale requirement. `freeMoveTutors` removes shard requirements and payments. `mainStoryMoveTutors` makes all three shard tutors' move lists available from the Route 212 tutor; species compatibility and known-move checks remain.
+- `unlimitedGreatMarshSteps` removes the step limit while retaining the entry fee and Safari Ball limit.
+- `zeroEggCycles` makes new and existing eggs ready to hatch at their next hatch check. Disabling it does not restore cycles already removed from existing eggs. With it disabled, Flame Body/Magma Armor bonuses apply normally.
+- `instantHoneyTrees` skips the six-hour wait, including for already-slathered trees. Encounter chances, Honey costs, and the 24-hour expiration remain.
+- `levelUpHeldItemEvolutions` triggers held-item evolutions on the next level-up at any time of day, consuming the required item. Normal trade evolution remains available.
+- `feebasWaterStoneEvolution` replaces Feebas's Beauty requirement with a Water Stone. `instantSpiritomb` skips Underground conversations, while retaining the Odd Keystone requirement and normal encounter outcome.
+- `disableOverworldPoisonDamage` skips walking poison damage and its effects while preserving poison status and battle damage.
 
-`friendshipGainMultiplier` defaults to 2, doubling positive friendship points from walking, leveling, battles, items, scripted rewards such as massages, and Poffins after existing bonuses (including the Soothe Bell and Luxury Ball). Set it to an integer from 2–255 for that multiplier; 0 or 1 restores original gains. Friendship still caps at 255; losses, initial friendship, egg hatch cycles, and the chance of gaining friendship while walking are unchanged.
+`tradeEvolutionLevel` defaults to 0, retaining trade-only evolutions. Set it to 1–100 to also trigger plain trade evolutions on level-up at or above that level. Held-item trades use `levelUpHeldItemEvolutions` instead.
 
-`catchRateMultiplier` defaults to 2, multiplying the final capture rate after ball, HP, status, and Great Marsh modifiers. Set it to an integer from 2–255 to boost capture rates; 0 or 1 restores original rates. A resulting rate of 255 or higher guarantees capture. Master Balls and guaranteed catches still work, and trainer Pokémon still cannot be caught. Edit the default in `src/port/gameplay_config.c` and rebuild to change it; there is no menu control yet.
+`shinyRolls` defaults to 1, keeping original shiny odds. Higher values add rolls for new eligible Pokémon; existing Pokémon, fixed-personality gifts, and shiny locks are preserved. A value of 0 also keeps original odds.
 
-`tradeEvolutionLevel` defaults to 40: plain trade evolutions trigger on level-up at or above this level. Set it to any level from 1–100, or 0 to disable this alternative. `levelUpHeldItemEvolutions` defaults to `TRUE`: trade evolutions requiring an item, plus day/night held-item evolutions, trigger on the next level-up holding the required item, regardless of time. The item is consumed only after successful evolution. Normal trade evolution remains available with either setting.
+`friendshipGainMultiplier`, `eggHatchSpeedMultiplier`, and `catchRateMultiplier` all default to 1, preserving original behavior (0 also preserves it). Values from 2–255 multiply positive friendship gains, divide steps per hatch check, or multiply final catch rates, respectively. Friendship still caps at 255; losses and initial friendship are unaffected. Hatch checks take at least one step. Master Balls and guaranteed catches still work, and trainer Pokémon cannot be caught.
 
-`feebasWaterStoneEvolution` defaults to `TRUE`, replacing Feebas's Beauty requirement with using a Water Stone. `instantSpiritomb` defaults to `TRUE`, starting the level-25 encounter as soon as an Odd Keystone is inserted (or on interaction if one is already inserted), with the usual battle outcome and tower reset behavior. It bypasses the 32 Underground conversations without changing the saved counter. `disableOverworldPoisonDamage` defaults to `TRUE`, skipping walking/running poison damage, screen effects, and poison-survival events while leaving poison status and battle damage intact. Set each boolean to `FALSE` to restore its original behavior.
-
-`prohibitBattleItems` defaults to `TRUE`, blocking player medicine and battle items before they can take effect or be consumed. Poké Balls, held items, and opponents' items remain usable. `forceSetBattleStyle` defaults to `TRUE`, suppressing the Shift prompt regardless of the saved Options selection. Set either to `FALSE` to restore normal behavior.
-
-`unlimitedVitaminEVs` defaults to `TRUE`, allowing all six vitamins (Protein, Calcium, Iron, Zinc, Carbos, HP Up) beyond 100 EVs, while retaining the normal 255-per-stat and 510-total limits. Set it to `FALSE` to restore the 100-EV vitamin cap. EV-reducing berries still remove only their normal amount, including from stats above 100.
-
-BP prices are configured centrally in `src/port/gameplay_config.c`: `bpPricePercent` defaults to 30 and scales BP shop prices (100 = original, 50 = half, rounded up; 0 = free). `rareCandyBPPrice` sets Rare Candy's exact price independently of that percentage and defaults to 1 BP (0 = free). Both are plain numeric fields in `GameplayConfig`. These settings affect displayed prices and payment together, without changing shop inventories or cash prices.
+BP prices default to their original values: `bpPricePercent=100` and `rareCandyBPPrice=48`. The percentage scales other BP prices, rounded up (50 = half, 0 = free). Rare Candy uses its independent exact price (0 = free). These settings affect displayed prices and payment together, without changing shop inventories or cash prices.
 
 ## Saves
 

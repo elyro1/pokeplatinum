@@ -6,6 +6,7 @@
 #include "sim_gui_prj.hpp"
 
 #include "port/sim_config_prj.h"
+#include "port/gameplay_config.h"
 #include "port/field_lights.h"
 #include "port/field_visuals.h"
 #include "port/field_visual_effects.h"
@@ -87,6 +88,19 @@ void ConfigPrjMain(bool * openState) {
     Bw2BattleVisualsConfig(myConfig, configChanged);
     ConfigCheckBox("Enable GF_Asserts", &myConfig->enableAsserts, configChanged);
     ConfigCheckBox("DebugBreak on GF assertion fail", &myConfig->breakDebuggerOnGfAssert, configChanged);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Gameplay");
+    static const char *gameplayConfigMessage = nullptr;
+    if (ImGui::Button("Generate gameplay config")) {
+        gameplayConfigMessage = GameplayConfig_GenerateFile()
+            ? "Created gameplay_config.ini. Edit it and restart the game to apply changes."
+            : "Could not create gameplay_config.ini. It may already exist, or the game folder may not be writable.";
+    }
+    ImGui::TextWrapped("Optional overrides: gameplay_config.ini in the game folder. Remove it and restart to restore defaults.");
+    if (gameplayConfigMessage) {
+        ImGui::TextWrapped("%s", gameplayConfigMessage);
+    }
 
     ImGui::Separator();
     ImGui::TextUnformatted("Graphics");

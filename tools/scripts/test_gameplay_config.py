@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise gameplay BP pricing and vitamin EV boundaries using the PC build flags."""
+"""Exercise gameplay config file overrides, BP pricing, and vitamin EV boundaries."""
 
 import argparse
 import json
@@ -22,11 +22,12 @@ def main():
     flags = flags[:flags.index("-MD")]
     with tempfile.TemporaryDirectory(prefix="gameplay-config-") as directory:
         executable = Path(directory) / "test"
-        subprocess.run(flags + ["-ffunction-sections", "-fdata-sections",
+        subprocess.run(flags + ["-UNDEBUG", "-ffunction-sections", "-fdata-sections",
                                str(ROOT / "tools/scripts/gameplay_config_test.c"),
                                str(ROOT / "src/port/gameplay_config.c"),
+                               str(ROOT / "subprojects/libntr/libraries/sim/src/config/ini.c"),
                                "-Wl,--gc-sections", "-o", str(executable)], cwd=build, check=True)
-        subprocess.run([str(executable)], check=True)
+        subprocess.run([str(executable)], cwd=directory, check=True)
 
 
 if __name__ == "__main__":
