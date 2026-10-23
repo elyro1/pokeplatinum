@@ -1,0 +1,8 @@
+# original-sha256: f2757c796c7292e019b6674bbc0466dacf36669c2c21a0f327c1f5c8129b1d2e
+--- party_menu.json
++++ party_menu.json
+@@ -1009,4 +1008,0 @@
+-    },
+-    {
+-      "id": "PartyMenu_Text_HMs",
+-      "en_US": "HMs"
