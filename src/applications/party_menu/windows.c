@@ -734,6 +734,7 @@ void PartyMenu_LoadContextMenuStrings(PartyMenuApplication *application)
 {
 #define LoadMenuString(__bankEntry, __arrEntry) MessageLoader_GetString(application->messageLoader, __bankEntry, application->menuStrings[__arrEntry])
 
+    LoadMenuString(PartyMenu_Text_HMs, PARTY_MENU_STR_HMS);
     LoadMenuString(PartyMenu_Text_Switch, PARTY_MENU_STR_SWITCH);
     LoadMenuString(PartyMenu_Text_Summary, PARTY_MENU_STR_SUMMARY);
     LoadMenuString(PartyMenu_Text_Item, PARTY_MENU_STR_ITEM);
@@ -756,7 +757,7 @@ void PartyMenu_LoadContextMenuStrings(PartyMenuApplication *application)
 
 void PartyMenu_SetKnownFieldMove(PartyMenuApplication *application, u16 move, u8 menuEntry)
 {
-    String *string = MessageLoader_GetNewString(application->messageLoader, PartyMenu_Text_FieldMove0 + menuEntry);
+    String *string = MessageLoader_GetNewString(application->messageLoader, PartyMenu_Text_FieldMove0);
     StringTemplate_SetMoveName(application->template, 0, move);
     StringTemplate_Format(application->template, application->menuStrings[PARTY_MENU_STR_MOVE0 + menuEntry], string);
     String_Free(string);
@@ -778,7 +779,10 @@ void PartyMenu_DrawContextMenu(PartyMenuApplication *application, const u8 *entr
 
     u16 numFieldMoves = 0;
     for (u16 i = 0; i < numEntries; i++) {
-        if (entries[i] >= PARTY_MENU_STR_MOVE0) {
+        if (entries[i] == PARTY_MENU_ACTION_HMS) {
+            StringList_AddFromString(application->contextMenuChoices,
+                application->menuStrings[PARTY_MENU_STR_HMS], PartyMenu_GetAction(entries[i]));
+        } else if (entries[i] >= PARTY_MENU_STR_MOVE0) {
             StringList_AddFromString(
                 application->contextMenuChoices,
                 application->menuStrings[PARTY_MENU_STR_MOVE0 + numFieldMoves],

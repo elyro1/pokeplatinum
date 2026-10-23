@@ -31,6 +31,9 @@ void GameplayConfig_LoadDefaults(GameplayConfig *config)
     // FALSE restores HM replacement protection; field-use requirements and HM item reuse stay unchanged.
     config->forgettableHMs = FALSE;
 
+    // HM compatibility is enough for field use; normal badge and location checks still apply.
+    config->unlearnedHMs = FALSE;
+
     // Let the Pastoria City Move Maniac relearn moves without requiring or consuming a Heart Scale.
     // FALSE restores the Heart Scale requirement and payment; other move tutors are unaffected.
     config->freeMoveRelearning = FALSE;
@@ -119,6 +122,7 @@ static const ConfigField sConfigFields[] = {
     FIELD(bpPricePercent, CONFIG_U16, 65535, "Global BP price percentage, rounded up: 100 = original, 0 = free."),
     FIELD(rareCandyBPPrice, CONFIG_U16, 65535, "Exact Rare Candy BP price, overriding the percentage: 0 = free."),
     FIELD(forgettableHMs, CONFIG_BOOL, 1, "Allow HM moves to be replaced when learning another move."),
+    FIELD(unlearnedHMs, CONFIG_BOOL, 1, "Use HMs with compatible party Pokemon without teaching them; badge and location restrictions still apply."),
     FIELD(freeMoveRelearning, CONFIG_BOOL, 1, "The Move Maniac requires no Heart Scale."),
     FIELD(freeMoveTutors, CONFIG_BOOL, 1, "Shard move tutors require no shards."),
     FIELD(mainStoryMoveTutors, CONFIG_BOOL, 1, "The Route 212 tutor offers all three shard tutors' move lists."),

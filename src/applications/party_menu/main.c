@@ -5,6 +5,7 @@
 
 #include "constants/graphics.h"
 #include "constants/heap.h"
+#include "constants/items.h"
 #include "constants/menu.h"
 #include "constants/moves.h"
 #include "constants/pokemon.h"
@@ -61,6 +62,7 @@
 #include "touch_pad.h"
 #include "touch_screen.h"
 #include "tv_segment.h"
+#include "unk_02054884.h"
 #include "unk_0206B9D8.h"
 #include "unk_0208C098.h"
 #include "vram_transfer.h"
@@ -70,6 +72,10 @@
 
 #ifndef SDK_BUILD_ARM
 #include "unk_0208C098.h"
+#endif
+
+#ifdef SDK_PORT
+#include "port/gameplay_config.h"
 #endif
 
 FS_EXTERN_OVERLAY(party_menu_form_change);
@@ -1760,7 +1766,7 @@ static void sub_0207FFC8(PartyMenuApplication *application)
     u8 v1;
 
     Window_EraseMessageBox(&application->windows[32], 1);
-    v0 = Heap_Alloc(HEAP_ID_PARTY_MENU, 8);
+    v0 = Heap_Alloc(HEAP_ID_PARTY_MENU, 9);
 
     switch (application->partyMenu->mode) {
     case PARTY_MENU_MODE_FIELD:
@@ -1834,6 +1840,17 @@ static u8 GetContextMenuEntriesForPartyMon(PartyMenuApplication *application, u8
             }
 
             count++;
+
+#ifdef SDK_PORT
+            if (GameplayConfig_Get()->unlearnedHMs) {
+                for (i = 0; i < NUM_HMS; i++) {
+                    if (Pokemon_CanUseFieldMove(mon, Item_MoveForTMHM(ITEM_HM01 + i))) {
+                        menuEntriesBuffer[count++] = PARTY_MENU_ACTION_HMS;
+                        break;
+                    }
+                }
+            }
+#endif
         } else {
             menuEntriesBuffer[count] = 0;
             count++;
