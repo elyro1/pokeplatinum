@@ -102,16 +102,27 @@ void ConfigPrjMain(bool * openState) {
         ImGui::TextWrapped("%s", gameplayConfigMessage);
     }
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Graphics");
+    if (configChanged) {
+        SIM_Config_prj_SaveConfigFile(myConfig);
+    }
+    ImGui::End();
+}
+
+void GraphicsPrjMain(bool *openState)
+{
+    ImGui::Begin("pokeplatinum Graphics", openState);
+    SIM_Config_prj_type *myConfig = SIM_Config_prj_GetConfig();
+    bool configChanged = false;
+
     ConfigCheckBox("Richer day/night lighting", &myConfig->enhancedDayNight, configChanged);
     ConfigCheckBox("Regional atmosphere", &myConfig->regionalAtmosphere, configChanged);
-    ConfigCheckBox("Smooth 3D edges", &myConfig->antialias3D, configChanged);
-    if (myConfig->antialias3D) {
-        int samples = SIM_Get3DAntialiasingSamples();
-        if (samples) ImGui::TextDisabled("3D edges: %dx MSAA + downsampling", samples);
-        else ImGui::TextDisabled("3D edges: high-resolution downsampling");
-    }
+    // Keep the edge-smoothing control hidden for now. Antialias3D remains available in the INI.
+    // ConfigCheckBox("Smooth 3D edges", &myConfig->antialias3D, configChanged);
+    // if (myConfig->antialias3D) {
+    //     int samples = SIM_Get3DAntialiasingSamples();
+    //     if (samples) ImGui::TextDisabled("3D edges: %dx MSAA + downsampling", samples);
+    //     else ImGui::TextDisabled("3D edges: high-resolution downsampling");
+    // }
     ConfigCheckBox("Correct model lighting", &myConfig->correctLighting, configChanged);
     ConfigCheckBox("Environmental particles", &myConfig->environmentalParticles, configChanged);
     ConfigCheckBox("Soft character shadows", &myConfig->softContactShadows, configChanged);

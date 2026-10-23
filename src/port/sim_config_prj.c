@@ -128,7 +128,7 @@ void SIM_Config_prj_LoadDefaults(SIM_Config_prj_type * aConfig)
   aConfig->breakDebuggerOnGfAssert = FALSE;
   aConfig->enhancedDayNight = TRUE;
   aConfig->regionalAtmosphere = TRUE;
-  aConfig->antialias3D = TRUE;
+  aConfig->antialias3D = FALSE;
   aConfig->correctLighting = TRUE;
   aConfig->environmentalParticles = TRUE;
   aConfig->softContactShadows = TRUE;

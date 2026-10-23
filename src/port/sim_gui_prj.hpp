@@ -5,6 +5,7 @@ namespace SIM::GUI {
 
 void CheatsMain(bool * openState);
 void ConfigPrjMain(bool * openState);
+void GraphicsPrjMain(bool * openState);
 void CreateItemInit();
 void CreateItemMain(bool * openState);
 void CreateMonInit();
