@@ -255,7 +255,7 @@ static void func_0204ce18(ClActTransfer *transfer, u32 count, HeapID heapId);
 static void func_0204ce5c(ClActTransfer *transfer);
 static void func_0204ce6c(ClActTransfer *transfer);
 static ClActTransferTask *func_0204cea0(ClActTransfer *transfer);
-static BOOL func_0204cec8(u32 type, u32 dstAddr, void *src, u32 size);
+static BOOL func_0204cec8(NNS_GFD_DST_TYPE type, u32 dstAddr, void *src, u32 size);
 static void func_0204cf08(ClActTransferTask *task, u32 screen, u32 dst, void *src, u32 size);
 static void func_0204cf14(ClActTransferTask *task);
 static ClActor *func_0204cf38(ClActUnit *unit);
@@ -1720,7 +1720,7 @@ static ClActTransferTask *func_0204cea0(ClActTransfer *transfer) {
     return NULL;
 }
 
-static BOOL func_0204cec8(u32 type, u32 dstAddr, void *src, u32 size) {
+static BOOL func_0204cec8(NNS_GFD_DST_TYPE type, u32 dstAddr, void *src, u32 size) {
     ClActTransferTask *task = func_0204cea0(&g_ClActSys->transfer);
     u32 screen;
 

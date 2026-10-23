@@ -8,6 +8,7 @@
 	debug         \
 	format        \
 	meson         \
+	mingw         \
 	purge         \
 	release       \
 	rom           \
@@ -123,6 +124,10 @@ linux: $(BUILD_LINUX)/build.ninja
 
 win64: $(BUILD_WIN64)/build.ninja
 	$(MESON) compile -C $(BUILD_WIN64)
+
+# Cross-build on Linux; the MSYS2 win64 target above remains the CI entry point.
+mingw:
+	python3 tools/scripts/build_mingw.py --native-build $(BUILD_LINUX) --build $(BUILD_WIN64)
 
 nx: $(BUILD_NX)/build.ninja
 	$(MESON) compile -C $(BUILD_NX)

@@ -87,6 +87,8 @@ An older upstream `save.bin` is copied into slot 1 when `save1.bin` does not alr
 
 ## Building from source
 
+For a Windows executable built locally on Linux, see [the MinGW build guide](docs/build_mingw.md).
+
 Refer to the [Building from source](BUILD.md).
 
 ## Credits and upstream projects

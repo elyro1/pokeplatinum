@@ -18,7 +18,7 @@ typedef struct NARC {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
     enum NarcID narcID;
     const void *optionalData;
-    u32 optionalSize;
+    unsigned int optionalSize;
     u32 optionalCursor;
     const void *resident;
     u32 cursor;

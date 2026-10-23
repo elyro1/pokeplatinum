@@ -438,7 +438,7 @@ static void ReadFromNarcMemberByPathAndIndex(void *dest, const char *path, int m
 static void ReadFromNarcMemberByPathAndIndex(void *dest, const char *path, int memberIndex, int offset, int bytesToRead)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
-    u32 optionalSize;
+    unsigned int optionalSize;
     const u8 *optional = BwBattle_IrisResource(path, memberIndex, &optionalSize);
     if (optional) {
         u32 count = bytesToRead ? bytesToRead : optionalSize;
@@ -520,7 +520,7 @@ static void ReadFromNarcMemberByPathAndIndex(void *dest, const char *path, int m
 static void *AllocAndReadFromNarcMemberByPathAndIndex(const char *path, int memberIndex, enum HeapID heapID, int offset, int bytesToRead, BOOL allocAtEnd)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
-    u32 optionalSize;
+    unsigned int optionalSize;
     const u8 *optional = BwBattle_IrisResource(path, memberIndex, &optionalSize);
     if (optional) {
         u32 count = bytesToRead ? bytesToRead : optionalSize;
@@ -644,7 +644,7 @@ void *NARC_AllocAtEndAndReadFromMemberByIndexPair(enum NarcID narcID, int member
 u32 NARC_GetMemberSizeByIndexPair(enum NarcID narcID, int memberIndex)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
-    u32 optionalSize;
+    unsigned int optionalSize;
     if (BwBattle_IrisResource(sNarcPaths[narcID], memberIndex, &optionalSize)) {
         return optionalSize;
     }
@@ -764,7 +764,7 @@ void NARC_dtor(NARC *param0)
 void *NARC_AllocAndReadWholeMember(NARC *narc, u32 memberIndex, enum HeapID heapID)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
-    u32 optionalSize;
+    unsigned int optionalSize;
     const void *optional = BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &optionalSize);
     if (optional) {
         void *dest = Heap_Alloc(heapID, optionalSize);
@@ -809,7 +809,7 @@ void *NARC_AllocAndReadWholeMember(NARC *narc, u32 memberIndex, enum HeapID heap
 void NARC_ReadWholeMember(NARC *narc, u32 memberIndex, void *dest)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
-    u32 optionalSize;
+    unsigned int optionalSize;
     if (BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &optionalSize)) {
         NARC_ReadFromMember(narc, memberIndex, 0, optionalSize, dest);
         return;
@@ -839,7 +839,7 @@ void NARC_ReadWholeMember(NARC *narc, u32 memberIndex, void *dest)
 u32 NARC_GetMemberSize(NARC *narc, u32 memberIndex)
 {
 #if defined(SDK_BUILD_LINUX) || defined(SDK_BUILD_WIN64)
-    u32 optionalSize;
+    unsigned int optionalSize;
     narc->optionalData = NULL;
     if (BwBattle_IrisResource(sNarcPaths[narc->narcID], memberIndex, &optionalSize)) {
         return optionalSize;
