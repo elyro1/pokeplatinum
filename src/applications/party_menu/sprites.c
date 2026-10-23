@@ -19,6 +19,9 @@
 #include "party.h"
 #include "pokemon.h"
 #include "pokemon_icon.h"
+#ifdef SDK_PORT
+#include "port/sim_config_prj.h"
+#endif
 #include "sprite.h"
 #include "sprite_system.h"
 #include "sprite_util.h"
@@ -552,6 +555,14 @@ void PartyMenu_UpdateMemberIcons(PartyMenuApplication *application)
     PartyMenuMember *member;
     u16 slot;
     u16 anim;
+    fx32 animFrames = FX32_ONE;
+
+#ifdef SDK_PORT
+    // Keep icon animation and the selected member's bounce at their 30 Hz speed.
+    if (SIM_Config_prj_GetConfig()->enable60fps) {
+        animFrames /= 2;
+    }
+#endif
 
     for (slot = 0; slot < MAX_PARTY_SIZE; slot++) {
         member = &application->partyMembers[slot];
@@ -567,7 +578,7 @@ void PartyMenu_UpdateMemberIcons(PartyMenuApplication *application)
         }
 
         StartSpriteAnim(member->sprite, anim);
-        Sprite_UpdateAnim(member->sprite, FX32_ONE);
+        Sprite_UpdateAnim(member->sprite, animFrames);
 
         // Party members that are active and not statused have a slight vertical "bounce."
         if (application->currPartySlot == slot && anim != POKEICON_ANIM_FAINTED && anim != POKEICON_ANIM_STATUSED) {
