@@ -530,6 +530,11 @@ endif
 ichneumon_sub = subproject('libntr').get_variable('ichneumon_sub')
 ichneumon_sub_defs = []
 
+pc_copy_options = []
+if get_option('skip_anim_scripts')
+    pc_copy_options += ['--skip-anim-scripts']
+endif
+
 
 ############################################################
 ###                        DS ROM                        ###
@@ -574,7 +579,8 @@ pokeplatinum_nds = custom_target('pokeplatinum.us',
         meson.global_build_root(),
         filesys_csv,
         'pokeplatinum',
-        '-nx'
+        '-nx',
+        pc_copy_options,
     ],
     build_by_default: true
 )
@@ -596,7 +602,8 @@ pokeplatinum_nds = custom_target('pokeplatinum.us',
         copy_files_script,
         meson.global_build_root(),
         filesys_csv,
-        'pokeplatinum'
+        'pokeplatinum',
+        pc_copy_options,
     ],
     build_by_default: true
 )
