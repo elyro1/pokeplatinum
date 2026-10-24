@@ -23,7 +23,10 @@ dataproc_dep = declare_dependency(
 
         include_directories: include_directories('lib/include'),
         # dataproc requires the byte spans added by our yyjson wrap patches.
-        dependencies: subproject('yyjson').get_variable('yyjson_dep'),
+        # These generators also run outside Meson's DLL-search-path wrapper.
+        dependencies: subproject('yyjson',
+            default_options: {'default_library': 'static'},
+        ).get_variable('yyjson_dep'),
         native: true,
     ),
 )

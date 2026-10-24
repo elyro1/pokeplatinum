@@ -10,6 +10,13 @@ ROOT = Path(__file__).resolve().parents[2]
 SOUND = 'data/sound/pl_sound_data.sdat'
 
 
+def build_tool(build, name):
+    # Use Meson's actual Windows filename rather than relying on suffix lookup.
+    path = build / 'tools' / name / name
+    executable = path.with_suffix('.exe')
+    return str(executable if executable.is_file() else path)
+
+
 def remove_script_entry(data, index, count, end=None):
     """Remove an appended entry; offsets are relative to the following word."""
     data = bytearray(data[:end])
@@ -41,7 +48,7 @@ def resources(build, members):
             source = work / (name + '.json')
             source.write_text(json.dumps(data))
             output = work / name
-            subprocess.run([str(build / 'tools/msgenc/msgenc'), '-e', '--json', '-c',
+            subprocess.run([build_tool(build, 'msgenc'), '-e', '--json', '-c',
                             str(ROOT / 'tools/msgenc/charmap.txt'), str(source), str(output)], check=True)
             text[order.index(name)] = output.read_bytes()
         result['msgdata/pl_msg.narc'] = (build / 'res/text/pl_msg.narc', text)
@@ -90,7 +97,7 @@ def resources(build, members):
         source = work / 'sound.json'
         source.write_text(json.dumps(registry))
         output = work / 'sound.sdat'
-        subprocess.run([str(build / 'tools/nitrosfx/nitrosfx'),
+        subprocess.run([build_tool(build, 'nitrosfx'),
                         str(build / 'res/sound/pl_sound_data.sdat.p'), str(output), str(source), '-symb'], check=True)
         sound = output.read_bytes()
     return result, sound
